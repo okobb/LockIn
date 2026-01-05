@@ -22,7 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
-docker-compose.yml
+docker-compose.override.yml
 /for me
 /n8n_data
 /postgres_data
