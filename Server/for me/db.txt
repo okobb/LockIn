@@ -1,0 +1,213 @@
+erDiagram
+    users ||--o{ integrations : "has"
+    users ||--o{ context_snapshots : "creates"
+    users ||--o{ focus_sessions : "starts"
+    users ||--o{ daily_stats : "tracks"
+    users ||--o{ knowledge_resources : "saves"
+    users ||--o{ incoming_messages : "receives"
+    users ||--o{ calendar_events : "schedules"
+    users ||--o{ tasks : "manages"
+    users ||--o{ read_later_queue : "queues"
+
+    focus_sessions ||--o{ checklist_items : "contains"
+    focus_sessions ||--o| context_snapshots : "triggers"
+    focus_sessions ||--o{ incoming_messages : "filters"
+    
+    context_snapshots ||--o{ checklist_items : "generates"
+    context_snapshots }o--|| focus_sessions : "linked_to"
+    
+    tasks ||--o{ focus_sessions : "worked_on"
+    incoming_messages }o--o| tasks : "extracts"
+    
+    knowledge_resources ||--o{ knowledge_embeddings : "embedded_as"
+    knowledge_resources ||--o{ read_later_queue : "scheduled_in"
+
+    users {
+        bigserial id PK
+        varchar email
+        varchar password
+        varchar name
+        varchar tier
+        jsonb preferences
+        text_array urgent_keywords
+        varchar timezone
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    integrations {
+        bigserial id PK
+        bigint user_id FK
+        varchar provider
+        varchar provider_id
+        text access_token
+        text refresh_token
+        jsonb scopes
+        timestamptz expires_at
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    context_snapshots {
+        bigserial id PK
+        bigint user_id FK
+        varchar title
+        varchar type
+        text git_diff_blob
+        varchar git_branch
+        varchar git_last_commit
+        varchar repository_source
+        jsonb git_files_changed
+        jsonb browser_state
+        jsonb ide_state
+        varchar voice_memo_path
+        integer voice_duration_sec
+        timestamptz voice_recorded_at
+        text voice_transcript
+        text text_note
+        jsonb ai_resume_checklist
+        integer quality_score
+        timestamptz created_at
+        timestamptz restored_at
+        bigint focus_session_id FK
+        tsvector searchable_text
+    }
+
+    focus_sessions {
+        bigserial id PK
+        bigint user_id FK
+        bigint task_id FK
+        varchar title
+        integer planned_duration_min
+        integer actual_duration_min
+        timestamptz started_at
+        timestamptz ended_at
+        integer paused_duration_sec
+        varchar status
+        integer checklist_completed
+        integer checklist_total
+        bigint context_snapshot_id FK
+        timestamptz created_at
+    }
+
+    checklist_items {
+        bigserial id PK
+        bigint focus_session_id FK
+        bigint context_snapshot_id FK
+        text text
+        text meta
+        boolean is_completed
+        timestamptz completed_at
+        integer sort_order
+        varchar source
+        timestamptz created_at
+    }
+
+    daily_stats {
+        bigserial id PK
+        bigint user_id FK
+        date date
+        integer flow_time_min
+        integer deep_work_blocks
+        integer contexts_saved
+        integer contexts_restored
+        integer tasks_completed
+        integer checklist_items_completed
+        integer notifications_blocked
+        integer notifications_allowed
+        integer estimated_time_saved_min
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    knowledge_resources {
+        bigserial id PK
+        bigint user_id FK
+        text url
+        varchar title
+        text summary
+        jsonb metadata
+        text content_text
+        boolean is_read
+        boolean is_archived
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    knowledge_embeddings {
+        bigserial id PK
+        bigint resource_id FK
+        integer chunk_index
+        text content_chunk
+        vector embedding
+        timestamptz created_at
+    }
+
+    incoming_messages {
+        bigserial id PK
+        bigint user_id FK
+        varchar provider
+        varchar external_id
+        varchar sender_info
+        varchar channel_info
+        text content_raw
+        timestamptz processed_at
+        bigint extracted_task_id FK
+        bigint focus_session_id FK
+        boolean was_allowed
+        text decision_reason
+        decimal urgency_score
+        text extracted_action
+        timestamptz received_at
+        timestamptz created_at
+    }
+
+    calendar_events {
+        bigserial id PK
+        bigint user_id FK
+        varchar external_id
+        varchar title
+        timestamptz start_time
+        timestamptz end_time
+        varchar status
+        boolean auto_save_enabled
+        jsonb metadata
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    tasks {
+        bigserial id PK
+        bigint user_id FK
+        varchar title
+        text description
+        integer priority
+        varchar status
+        varchar source_type
+        text source_link
+        jsonb source_metadata
+        text ai_reasoning
+        date due_date
+        integer estimated_minutes
+        timestamptz scheduled_start
+        timestamptz scheduled_end
+        integer progress_percent
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz completed_at
+    }
+
+    read_later_queue {
+        bigserial id PK
+        bigint user_id FK
+        bigint resource_id FK
+        integer estimated_minutes
+        text context_match
+        timestamptz scheduled_for
+        varchar gap_type
+        boolean is_completed
+        timestamptz started_at
+        timestamptz completed_at
+        timestamptz created_at
+    }
