@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\DTOs\AuthPayload;
+use App\Http\DTOs\AuthPayload;
 use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 final class AuthService
 {
@@ -34,10 +35,9 @@ final class AuthService
         $user = User::create([
             'name'     => $data['name'],
             'email'    => $data['email'],
-            'password' => $data['password'], 
+            'password' => Hash::make($data['password']), 
         ]);
 
-        // 2. Login & Generate Token
         $token = (string) Auth::login($user);
 
         return AuthPayload::from($user, $token);
