@@ -19,7 +19,7 @@ class IncomingMessage extends Model
         'sender_info',
         'channel_info',
         'content_raw',
-        'processed_at',
+        'status',
         'extracted_task_id',
         'focus_session_id',
         'was_allowed',
@@ -35,7 +35,6 @@ class IncomingMessage extends Model
     protected function casts(): array
     {
         return [
-            'processed_at' => 'datetime',
             'received_at' => 'datetime',
             'was_allowed' => 'boolean',
             'urgency_score' => 'decimal:1',

@@ -4,16 +4,26 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 // Public Auth Routes
 Route::post('login', [AuthController::class, 'login'])->name('login');
 Route::post('register', [AuthController::class, 'register'])->name('register');
+Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+    ->middleware(['signed'])
+    ->name('verification.verify');
+
+// Webhook Routes
+Route::post('webhooks/incoming', [WebhookController::class, 'incoming'])->name('webhooks.incoming');
 
 // Protected Routes
 Route::middleware('auth:api')->group(function () {
     Route::post('refresh', [AuthController::class, 'refresh'])->name('refresh');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('email/resend', [AuthController::class, 'resendVerification'])
+        ->middleware(['throttle:6,1']) // Limit to 6 requests per minute
+        ->name('verification.resend');
 
     // User Management
     Route::apiResource('users', UserController::class);

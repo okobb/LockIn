@@ -9,7 +9,6 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * Adds PostgreSQL-specific text[] column for urgent keywords.
      */
     public function up(): void
     {
