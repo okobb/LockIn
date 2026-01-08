@@ -81,4 +81,29 @@ final class AuthService
     {
         $user->sendEmailVerificationNotification();
     }
+
+    /**
+     * Login or register a user from OAuth provider data.
+     *
+     * @return array{user: User, token: string, is_new: bool}
+     */
+    public function loginOrRegisterFromOAuth(string $email, string $name, ?string $avatar = null): array
+    {
+        $user = User::where('email', $email)->first();
+        $isNew = false;
+
+        if (!$user) {
+            $user = User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => null, // OAuth users don't need password
+                'email_verified_at' => now(), // OAuth emails are pre-verified
+            ]);
+            $isNew = true;
+        }
+
+        $token = (string) Auth::login($user);
+
+        return ['user' => $user, 'token' => $token, 'is_new' => $isNew];
+    }
 }

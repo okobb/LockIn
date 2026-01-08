@@ -32,29 +32,38 @@ final class ProcessIncomingMessageJob implements ShouldQueue
         }
 
         try {
-            $payload = json_decode($this->message->content_raw, true) ?? [];
+            $payload = json_decode($this->message->content_raw, true);
 
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // If invalid JSON, mark as failed
+                $messageService->markAsFailed($this->message, 'Invalid JSON payload');
+                return;
+            }
+
+            // Urgency Check
+            $score = (float) ($payload['urgency_score'] ?? 0);
+            if (isset($payload['urgency_score']) && $score < 0.4) {
+                $messageService->markAsSkipped($this->message, 'Low urgency score (' . $score . ')');
+                return;
+            }
+
+            // User Resolution
             $userId = $this->resolveUserId($payload);
             if ($userId) {
                 $this->message->update(['user_id' => $userId]);
             }
-
-            $score = (float) ($payload['urgency_score'] ?? 0);
-
-            if ($score < 0.4) {
-                $messageService->markAsSkipped($this->message, 'Low urgency score');
-                return;
-            }
-
             $user = $userId ? $this->message->user : null;
-            //$task = $taskService->createFromWebhookPayload($payload, $user);
 
-            //$messageService->markAsProcessed($this->message, $task->id);
+            // Create Task
+            $task = $taskService->createFromWebhookPayload($payload, $user);
+
+            // Mark as Processed
+            $messageService->markAsProcessed($this->message, $task->id);
 
         } catch (Throwable $e) {
             $messageService->markAsFailed($this->message, $e->getMessage());
-
-            throw $e;
+            
+            // We do not re-throw here to avoid infinite loops, but the message is preserved as failed.
         }
     }
 

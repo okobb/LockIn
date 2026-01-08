@@ -33,11 +33,17 @@ final class TaskService extends BaseService
                 'user_id'           => $user?->id, // Nullable if system task
                 'title'             => $payload['title'] ?? 'Untitled Task',
                 'description'       => $this->formatDescription($payload),
-                'priority'          => $this->mapPriority($payload['priority'] ?? 'normal'),
+                'priority'          => $this->mapPriority($payload),
                 'source_type'       => $payload['source'] ?? 'api',
                 'source_metadata'   => $payload, // Save raw data for debugging
                 'status'            => 'open',   // Default state
                 'received_at'       => now(),
+                'external_id'       => $payload['external_id'] ?? null,
+                'ai_reasoning'      => $payload['reasoning'] ?? $payload['ai_analysis'] ?? null,
+                'due_date'          => $payload['due_date'] ?? null,
+                'estimated_minutes' => $payload['estimated_minutes'] ?? null,
+                'scheduled_start'   => $payload['start_date'] ?? $payload['scheduled_start'] ?? null,
+                'scheduled_end'     => $payload['end_date'] ?? $payload['scheduled_end'] ?? null,
             ];
 
             // 2. Use the parent create() method which handles the DB insert
@@ -54,7 +60,7 @@ final class TaskService extends BaseService
         $body = $payload['description'] ?? '';
         $aiAnalysis = $payload['reasoning'] ?? $payload['ai_analysis'] ?? null;
 
-        $output = "From: {$sender}\n\n{$body}";
+        $output = $body;
 
         if ($aiAnalysis) {
             $output .= "\n\n--- AI Analysis ---\n{$aiAnalysis}";
@@ -64,12 +70,25 @@ final class TaskService extends BaseService
     }
 
     /**
-     * Map string priorities to your integer database column
+     * Map priority from urgency_score or string.
      */
-    private function mapPriority(string $priority): int
+    private function mapPriority(array $payload): int
     {
-        return match (strtolower($priority)) {
-            'urgent', 'critical' => 1, // High
+        // 1. Use urgency_score if available (0.0 to 1.0)
+        if (isset($payload['urgency_score'])) {
+            $score = (float) $payload['urgency_score'];
+            
+            if ($score >= 0.8) return 1; // Critical
+            if ($score >= 0.6) return 2; // High
+            if ($score >= 0.4) return 3; // Normal
+            return 4; // Low
+        }
+
+        // 2. Fallback to string priority
+        $priority = strtolower($payload['priority'] ?? 'normal');
+
+        return match ($priority) {
+            'urgent', 'critical' => 1,
             'high' => 2,
             'normal', 'medium' => 3,
             'low' => 4,

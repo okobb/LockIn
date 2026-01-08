@@ -28,6 +28,7 @@ final class IncomingMessageService extends BaseService
             'sender_info'   => $payload['sender'] ?? 'unknown',
             'channel_info'  => $payload['channel'] ?? 'webhook',
             'urgency_score' => (float) ($payload['urgency_score'] ?? 0),
+            'extracted_action' => $payload['action'] ?? $payload['extracted_action'] ?? null,
             'was_allowed'   => true,
             'status'        => 'pending',
             'received_at'   => now(),
