@@ -9,7 +9,6 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * Adds PostgreSQL-specific tsvector column and GIN index for full-text search.
      */
     public function up(): void
     {
