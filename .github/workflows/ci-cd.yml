@@ -9,6 +9,11 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./Server
+
     services:
       postgres:
         image: postgres:15
@@ -60,12 +65,13 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: Deploy to EC2
+      - name: Deploy to Production
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST_NAME }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           script: |
+            # FIX #2: Use the correct path we set up on your server
             cd /var/www/LockIn/Server
             bash bin/deploy.sh
