@@ -62,8 +62,6 @@ final class ProcessIncomingMessageJob implements ShouldQueue
 
         } catch (Throwable $e) {
             $messageService->markAsFailed($this->message, $e->getMessage());
-            
-            // We do not re-throw here to avoid infinite loops, but the message is preserved as failed.
         }
     }
 

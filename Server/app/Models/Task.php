@@ -32,6 +32,8 @@ class Task extends Model
         'scheduled_end',
         'progress_percent',
         'completed_at',
+        'received_at',
+        'external_id'
     ];
 
     /**

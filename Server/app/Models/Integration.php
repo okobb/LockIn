@@ -37,6 +37,8 @@ class Integration extends Model
     protected function casts(): array
     {
         return [
+            'access_token' => 'encrypted',
+            'refresh_token' => 'encrypted',
             'scopes' => 'array',
             'expires_at' => 'datetime',
             'is_active' => 'boolean',

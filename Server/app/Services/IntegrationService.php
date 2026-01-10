@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exceptions\ServiceException;
 use App\Models\Integration;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\Response;
 
 final class IntegrationService extends BaseService
 {
@@ -93,5 +96,107 @@ final class IntegrationService extends BaseService
     public function disconnect(Integration $integration): bool
     {
         return $integration->update(['is_active' => false]);
+    }
+
+    /**
+     * Get an active integration for a user by provider.
+     */
+    public function getActiveIntegration(int $userId, string $provider): ?Integration
+    {
+        return Integration::where('user_id', $userId)
+            ->where('provider', $provider)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
+     * Check if the integration token is expired.
+     */
+    public function isTokenExpired(Integration $integration): bool
+    {
+        if ($integration->expires_at === null) {
+            return false;
+        }
+
+        // Consider expired if expiring in less than 5 minutes
+        return $integration->expires_at->subMinutes(5)->isPast();
+    }
+
+    /**
+     * Refresh the token if expired and return the updated integration.
+     *
+     * @throws ServiceException
+     */
+    public function refreshTokenIfExpired(Integration $integration): Integration
+    {
+        if (!$this->isTokenExpired($integration)) {
+            return $integration;
+        }
+
+        if ($integration->refresh_token === null) {
+            throw new ServiceException(
+                message: 'Cannot refresh token: no refresh token available',
+                code: 400
+            );
+        }
+
+        return $this->refreshToken($integration);
+    }
+
+    /**
+     * Perform the token refresh using the provider's OAuth endpoint.
+     *
+     * @throws ServiceException
+     */
+    private function refreshToken(Integration $integration): Integration
+    {
+        $provider = $integration->provider;
+
+        $tokenUrl = match ($provider) {
+            'google' => 'https://oauth2.googleapis.com/token',
+            'github' => 'https://github.com/login/oauth/access_token',
+            'slack' => 'https://slack.com/api/oauth.v2.access',
+            default => throw new ServiceException(
+                message: "Token refresh not supported for provider: {$provider}",
+                code: 400
+            ),
+        };
+
+        $clientId = config("services.{$provider}.client_id");
+        $clientSecret = config("services.{$provider}.client_secret");
+
+        if (!$clientId || !$clientSecret) {
+            throw new ServiceException(
+                message: "Missing OAuth credentials for provider: {$provider}",
+                code: 500
+            );
+        }
+
+        /** @var Response $response */
+        $response = Http::asForm()->post($tokenUrl, [
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'refresh_token' => $integration->refresh_token,
+            'grant_type' => 'refresh_token',
+        ]);
+
+        if ($response->failed()) {
+            throw new ServiceException(
+                message: 'Failed to refresh token: ' . ($response->json('error_description') ?? $response->body()),
+                code: 400
+            );
+        }
+
+        $data = $response->json();
+
+        $integration->update([
+            'access_token' => $data['access_token'],
+            'refresh_token' => $data['refresh_token'] ?? $integration->refresh_token,
+            'expires_at' => isset($data['expires_in'])
+                ? now()->addSeconds((int) $data['expires_in'])
+                : null,
+        ]);
+
+        return $integration->fresh();
     }
 }

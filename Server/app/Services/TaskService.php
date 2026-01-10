@@ -30,13 +30,13 @@ final class TaskService extends BaseService
         return $this->executeInTransaction(function () use ($payload, $user) {
             // 1. Map n8n keys to your Database Columns
             $data = [
-                'user_id'           => $user?->id, // Nullable if system task
+                'user_id'           => $user?->id, 
                 'title'             => $payload['title'] ?? 'Untitled Task',
                 'description'       => $this->formatDescription($payload),
                 'priority'          => $this->mapPriority($payload),
                 'source_type'       => $payload['source'] ?? 'api',
-                'source_metadata'   => $payload, // Save raw data for debugging
-                'status'            => 'open',   // Default state
+                'source_metadata'   => $payload, 
+                'status'            => 'open',  
                 'received_at'       => now(),
                 'external_id'       => $payload['external_id'] ?? null,
                 'ai_reasoning'      => $payload['reasoning'] ?? $payload['ai_analysis'] ?? null,
@@ -46,7 +46,6 @@ final class TaskService extends BaseService
                 'scheduled_end'     => $payload['end_date'] ?? $payload['scheduled_end'] ?? null,
             ];
 
-            // 2. Use the parent create() method which handles the DB insert
             return $this->create($data);
         });
     }
@@ -74,7 +73,6 @@ final class TaskService extends BaseService
      */
     private function mapPriority(array $payload): int
     {
-        // 1. Use urgency_score if available (0.0 to 1.0)
         if (isset($payload['urgency_score'])) {
             $score = (float) $payload['urgency_score'];
             
@@ -84,7 +82,6 @@ final class TaskService extends BaseService
             return 4; // Low
         }
 
-        // 2. Fallback to string priority
         $priority = strtolower($payload['priority'] ?? 'normal');
 
         return match ($priority) {
