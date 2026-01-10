@@ -67,5 +67,5 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           script: |
-            cd /var/www/ServerSide-Ats
+            cd /var/www/LockIn
             bash bin/deploy.sh
