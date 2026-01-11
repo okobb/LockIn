@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 final class AuthService
 {
@@ -96,8 +97,8 @@ final class AuthService
             $user = User::create([
                 'name' => $name,
                 'email' => $email,
-                'password' => null, // OAuth users don't need password
-                'email_verified_at' => now(), // OAuth emails are pre-verified
+                'password' => Hash::make(Str::random(32)), 
+                'email_verified_at' => now(), 
             ]);
             $isNew = true;
         }
