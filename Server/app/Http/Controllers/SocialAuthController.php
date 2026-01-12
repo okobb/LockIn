@@ -56,7 +56,7 @@ final class SocialAuthController extends BaseController
             $this->integrationService->upsertFromOAuth(
                 user: $authPayload['user'],
                 provider: $provider,
-                providerId: $socialUser->getId(),
+                providerId: (string) $socialUser->getId(),
                 accessToken: $socialUser->token,
                 refreshToken: $socialUser->refreshToken ?? null,
                 scopes: $this->socialiteService->getLoginScopes($provider),
