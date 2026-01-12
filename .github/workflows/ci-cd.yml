@@ -72,6 +72,11 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           script: |
-            # FIX #2: Use the correct path we set up on your server
             cd /var/www/LockIn/Server
+            # 1. Abort any stuck merges
+            git merge --abort || true
+            # 2. Delete local changes 
+            git reset --hard HEAD
+            git clean -fd
+            # 3. Run deploy script
             bash bin/deploy.sh
