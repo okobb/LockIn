@@ -13,7 +13,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Throwable;
 
 final class ProcessIncomingMessageJob implements ShouldQueue
 {
@@ -31,38 +30,30 @@ final class ProcessIncomingMessageJob implements ShouldQueue
             return;
         }
 
-        try {
-            $payload = json_decode($this->message->content_raw, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                // If invalid JSON, mark as failed
-                $messageService->markAsFailed($this->message, 'Invalid JSON payload');
-                return;
-            }
-
-            // Urgency Check
-            $score = (float) ($payload['urgency_score'] ?? 0);
-            if (isset($payload['urgency_score']) && $score < 0.4) {
-                $messageService->markAsSkipped($this->message, 'Low urgency score (' . $score . ')');
-                return;
-            }
-
-            // User Resolution
-            $userId = $this->resolveUserId($payload);
-            if ($userId) {
-                $this->message->update(['user_id' => $userId]);
-            }
-            $user = $userId ? $this->message->user : null;
-
-            // Create Task
-            $task = $taskService->createFromWebhookPayload($payload, $user);
-
-            // Mark as Processed
-            $messageService->markAsProcessed($this->message, $task->id);
-
-        } catch (Throwable $e) {
-            $messageService->markAsFailed($this->message, $e->getMessage());
+        $payload = json_decode($this->message->content_raw, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $messageService->markAsFailed($this->message, 'Invalid JSON');
+            return;
         }
+        
+        // Urgency Check
+        $score = (float) ($payload['urgency_score'] ?? 0);
+        if (isset($payload['urgency_score']) && $score < 0.4) {
+            $messageService->markAsSkipped($this->message, 'Low urgency score (' . $score . ')');
+            return;
+        }
+
+        // Find the id of the owner of this message
+        $userId = $this->resolveUserId($payload);
+        if ($userId) {
+            $this->message->update(['user_id' => $userId]);
+        }
+        $user = $userId ? $this->message->user : null;
+
+        // Create a task
+        $task = $taskService->createFromWebhookPayload($payload, $user);
+
+        $messageService->markAsProcessed($this->message, $task->id);
     }
 
     /**

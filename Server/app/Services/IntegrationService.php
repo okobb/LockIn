@@ -9,6 +9,7 @@ use App\Models\Integration;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Client\Response;
 
 final class IntegrationService extends BaseService
@@ -123,7 +124,7 @@ final class IntegrationService extends BaseService
     }
 
     /**
-     * Refresh the token if expired and return the updated integration.
+     * Refresh the token safely using an Atomic Lock to prevent race conditions.
      *
      * @throws ServiceException
      */
@@ -140,7 +141,24 @@ final class IntegrationService extends BaseService
             );
         }
 
-        return $this->refreshToken($integration);
+        // Lock specifically for this integration ID.
+        // If another job is already refreshing this specific user's token, we wait 10 seconds.
+        $lock = Cache::lock("refresh_token_integration_{$integration->id}", 10);
+
+        try {
+            return $lock->block(5, function () use ($integration) {
+                
+                $freshIntegration = $integration->fresh();
+                
+                if (!$this->isTokenExpired($freshIntegration)) {
+                    return $freshIntegration;
+                }
+
+                return $this->refreshToken($freshIntegration);
+            });
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            throw new ServiceException("Could not acquire lock to refresh token for integration {$integration->id}");
+        }
     }
 
     /**
