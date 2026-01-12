@@ -73,10 +73,11 @@ jobs:
           key: ${{ secrets.KEY }}
           script: |
             cd /var/www/LockIn/Server
-            # 1. Abort any stuck merges
-            git merge --abort || true
-            # 2. Delete local changes 
-            git reset --hard HEAD
+            # 1. Fetch the latest history from GitHub
+            git fetch origin main   
+            # 2. Force the server to match GitHub exactly
+            git reset --hard origin/main
+            # 3. Clean up any untracked files/folders
             git clean -fd
-            # 3. Run deploy script
+            # 4. Run the deploy script
             bash bin/deploy.sh
