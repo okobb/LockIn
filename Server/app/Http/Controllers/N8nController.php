@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Exceptions\ServiceException;
+use App\Models\IncomingMessage;
 use App\Models\Integration;
 use App\Services\GmailService;
 use App\Services\GoogleCalendarService;
+use App\Services\IncomingMessageService;
 use App\Services\IntegrationService;
 use App\Services\SlackService;
+use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * Controller for n8n API endpoints.
@@ -22,7 +26,9 @@ final class N8nController extends BaseController
         private readonly IntegrationService $integrationService,
         private readonly GoogleCalendarService $googleCalendarService,
         private readonly GmailService $gmailService,
-        private readonly SlackService $slackService
+        private readonly SlackService $slackService,
+        private readonly IncomingMessageService $incomingMessageService,
+        private readonly TaskService $taskService
     ) {}
 
     /**
@@ -72,17 +78,22 @@ final class N8nController extends BaseController
     }
 
     /**
-     * Fetch Gmail messages for a specific user.
+     * Fetch and store Gmail messages for a specific user.
      */
     public function syncGmail(int $userId): JsonResponse
     {
         try {
-            $messages = $this->gmailService->fetchRecentMessages($userId, 20);
+            $storedMessages = $this->gmailService->syncAndStoreMessages($userId, 20);
 
             return $this->successResponse([
                 'user_id' => $userId,
-                'count' => count($messages),
-                'messages' => $messages,
+                'synced' => $storedMessages->count(),
+                'messages' => $storedMessages->map(fn ($m) => [
+                    'id' => $m->id,
+                    'external_id' => $m->external_id,
+                    'sender' => $m->sender_info,
+                    'status' => $m->status,
+                ])->toArray(),
             ]);
         } catch (ServiceException $e) {
             return $this->errorResponse($e->getMessage(), $e->getCode());
@@ -90,20 +101,96 @@ final class N8nController extends BaseController
     }
 
     /**
-     * Fetch Slack messages for a specific user.
+     * Fetch and store Slack messages for a specific user.
      */
     public function syncSlack(int $userId): JsonResponse
     {
         try {
-            $messages = $this->slackService->fetchRecentMessages($userId);
+            $storedMessages = $this->slackService->syncAndStoreMessages($userId);
 
             return $this->successResponse([
                 'user_id' => $userId,
-                'count' => count($messages),
-                'messages' => $messages,
+                'synced' => $storedMessages->count(),
+                'messages' => $storedMessages->map(fn ($m) => [
+                    'id' => $m->id,
+                    'external_id' => $m->external_id,
+                    'channel' => $m->channel_info,
+                    'status' => $m->status,
+                ])->toArray(),
             ]);
         } catch (ServiceException $e) {
             return $this->errorResponse($e->getMessage(), $e->getCode());
         }
     }
+
+    /**
+     * Get all unprocessed messages for AI processing.
+     */
+    public function unprocessedMessages(): JsonResponse
+    {
+        $messages = IncomingMessage::where('status', 'pending')
+            ->select(['id', 'user_id', 'provider', 'external_id', 'content_raw', 'sender_info', 'channel_info', 'created_at'])
+            ->get()
+            ->map(fn ($m) => [
+                'message_id' => $m->id,
+                'user_id' => $m->user_id,
+                'provider' => $m->provider,
+                'external_id' => $m->external_id,
+                'content' => $m->content_raw,
+                'sender' => $m->sender_info,
+                'channel' => $m->channel_info,
+                'received_at' => $m->created_at?->toIso8601String(),
+            ]);
+
+        return $this->successResponse($messages);
+    }
+
+    /**
+     * Handle AI-processed message: create task and mark message as processed.
+     */
+    public function handleProcessedMessage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'message_id' => 'required|integer|exists:incoming_messages,id',
+            'title' => 'required|string|max:255',
+            'priority' => 'nullable|string|in:low,normal,medium,high,urgent,critical',
+            'summary' => 'nullable|string',
+            'due_date' => 'nullable|date',
+        ]);
+
+        try {
+            $message = IncomingMessage::findOrFail($validated['message_id']);
+
+            // Check if already processed
+            if ($message->status !== 'pending') {
+                return $this->errorResponse(
+                    "Message {$validated['message_id']} has already been processed (status: {$message->status})",
+                    400
+                );
+            }
+
+            // Create task from AI output
+            $task = $this->taskService->createFromWebhookPayload([
+                'title' => $validated['title'],
+                'priority' => $validated['priority'] ?? 'normal',
+                'description' => $validated['summary'] ?? '',
+                'source' => $message->provider,
+                'external_id' => $message->external_id,
+                'due_date' => $validated['due_date'] ?? null,
+            ], $message->user);
+
+            // Mark message as processed
+            $this->incomingMessageService->markAsProcessed($message, $task->id);
+
+            return $this->successResponse([
+                'message_id' => $message->id,
+                'task_id' => $task->id,
+                'task_title' => $task->title,
+                'status' => 'processed',
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to process message: ' . $e->getMessage(), 500);
+        }
+    }
 }
+

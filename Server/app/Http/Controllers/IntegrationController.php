@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\IntegrationResource;
 use App\Models\Integration;
+use App\Models\User;
 use App\Services\IntegrationService;
 use App\Services\SocialiteService;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +43,7 @@ final class IntegrationController extends BaseController
             return $this->errorResponse("Invalid service '{$service}' for provider '{$provider}'", 400);
         }
 
-        $url = $this->socialiteService->getConnectRedirectUrl($provider, $service);
+        $url = $this->socialiteService->getConnectRedirectUrl($provider, $service, $request->user()->id);
 
         return $this->successResponse([
             'redirect_url' => $url,
@@ -54,14 +55,31 @@ final class IntegrationController extends BaseController
     /**
      * Handle the OAuth callback for connecting a service.
      */
-    public function callback(Request $request, string $provider): JsonResponse
+    public function callback(Request $request, string $provider): \Illuminate\Http\RedirectResponse
     {
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+
         if (!$this->socialiteService->isProviderSupported($provider)) {
-            return $this->errorResponse("Unsupported provider: {$provider}", 400);
+            return redirect("{$frontendUrl}/settings?error=" . urlencode("Unsupported provider: {$provider}"));
         }
 
-        // Get service from state or query parameter
-        $service = $request->query('service', 'default');
+        // Parse state to get service and user_id
+        $service = 'default';
+        $userId = null;
+        if ($request->has('state')) {
+            parse_str($request->input('state'), $stateParams);
+            $service = $stateParams['service'] ?? 'default';
+            $userId = isset($stateParams['user_id']) ? (int) $stateParams['user_id'] : null;
+        }
+
+        if (!$userId) {
+            return redirect("{$frontendUrl}/settings?error=" . urlencode('Invalid OAuth state: missing user identifier'));
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            return redirect("{$frontendUrl}/settings?error=" . urlencode('User not found'));
+        }
 
         try {
             $socialUser = $this->socialiteService->handleCallback($provider);
@@ -72,7 +90,7 @@ final class IntegrationController extends BaseController
                 : $this->socialiteService->getLoginScopes($provider);
 
             $integration = $this->integrationService->upsertFromOAuth(
-                user: $request->user(),
+                user: $user,
                 provider: $provider,
                 providerId: $socialUser->getId(),
                 accessToken: $socialUser->token,
@@ -83,12 +101,9 @@ final class IntegrationController extends BaseController
                     : null
             );
 
-            return $this->successResponse(
-                new IntegrationResource($integration),
-                'Service connected successfully'
-            );
+            return redirect("{$frontendUrl}/settings?connected=true");
         } catch (\Exception $e) {
-            return $this->errorResponse('Failed to connect service: ' . $e->getMessage(), 400);
+            return redirect("{$frontendUrl}/settings?error=" . urlencode('Failed to connect service: ' . $e->getMessage()));
         }
     }
 

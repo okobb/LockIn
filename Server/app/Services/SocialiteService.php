@@ -12,6 +12,7 @@ require_once __DIR__ . '/../consts.php';
 
 final class SocialiteService
 {
+
     /**
      * Get the OAuth redirect URL for login (identity scopes only).
      */
@@ -22,8 +23,14 @@ final class SocialiteService
         /** @var AbstractProvider $driver */
         $driver = Socialite::driver($provider);
 
+        $parameters = [];
+        if ($provider === PROVIDER_GOOGLE) {
+            $parameters = ['access_type' => 'offline', 'prompt' => 'consent'];
+        }
+
         return $driver
             ->scopes($scopes)
+            ->with($parameters)
             ->stateless()
             ->redirect()
             ->getTargetUrl();
@@ -32,15 +39,22 @@ final class SocialiteService
     /**
      * Get the OAuth redirect URL for connecting a service (resource scopes).
      */
-    public function getConnectRedirectUrl(string $provider, string $service): string
+    public function getConnectRedirectUrl(string $provider, string $service, int $userId): string
     {
         $scopes = $this->getServiceScopes($provider, $service);
 
         /** @var AbstractProvider $driver */
         $driver = Socialite::driver($provider);
 
+        $parameters = ['state' => "service={$service}&user_id={$userId}"];
+        if ($provider === PROVIDER_GOOGLE) {
+            $parameters['access_type'] = 'offline';
+            $parameters['prompt'] = 'consent';
+        }
+
         return $driver
             ->scopes($scopes)
+            ->with($parameters)
             ->stateless()
             ->redirect()
             ->getTargetUrl();
@@ -80,6 +94,13 @@ final class SocialiteService
     public function getServiceScopes(string $provider, string $service): array
     {
         return match ([$provider, $service]) {
+            // Consolidated Google Workspace - includes both Gmail and Calendar
+            [PROVIDER_GOOGLE, 'workspace'] => [
+                'openid', 'email', 'profile',
+                'https://www.googleapis.com/auth/gmail.readonly',
+                'https://www.googleapis.com/auth/calendar.readonly',
+            ],
+            // Legacy individual services (still supported for backwards compatibility)
             [PROVIDER_GOOGLE, SERVICE_GMAIL] => [
                 'openid', 'email', 'profile',
                 'https://www.googleapis.com/auth/gmail.readonly',
@@ -92,8 +113,8 @@ final class SocialiteService
                 'read:user', 'user:email', 'repo',
             ],
             [PROVIDER_SLACK, SERVICE_NOTIFICATIONS] => [
-                'identity.basic', 'identity.email',
-                'chat:write', 'channels:read',
+                'channels:read', 'channels:history',
+                'chat:write',
             ],
             default => $this->getLoginScopes($provider),
         };
@@ -117,7 +138,7 @@ final class SocialiteService
     public function isServiceValid(string $provider, string $service): bool
     {
         return match ($provider) {
-            PROVIDER_GOOGLE => in_array($service, [SERVICE_GMAIL, SERVICE_CALENDAR], true),
+            PROVIDER_GOOGLE => in_array($service, [SERVICE_GMAIL, SERVICE_CALENDAR, 'workspace'], true),
             PROVIDER_GITHUB => $service === SERVICE_REPOS,
             PROVIDER_SLACK => $service === SERVICE_NOTIFICATIONS,
             default => false,

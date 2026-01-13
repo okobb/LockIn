@@ -57,7 +57,18 @@ final class GoogleCalendarService
 
         $integration = $this->integrationService->refreshTokenIfExpired($integration);
 
-        $googleEvents = $this->fetchEvents($integration);
+        try {
+            $googleEvents = $this->fetchEvents($integration);
+        } catch (ServiceException $e) {
+            // Check for missing scopes error from Google
+            if ($e->getCode() === 403 && stripos($e->getMessage(), 'insufficient authentication scopes') !== false) {
+                throw new ServiceException(
+                    message: "Google Permission Error: Your connection is missing 'Calendar' access. Please go to Settings and click 'Connect Calendar' to upgrade your permissions.",
+                    code: 403
+                );
+            }
+            throw $e;
+        }
 
         $syncedEvents = collect();
         foreach ($googleEvents as $googleEvent) {

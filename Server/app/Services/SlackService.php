@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exceptions\ServiceException;
+use App\Models\IncomingMessage;
 use App\Models\Integration;
 use App\Services\Traits\UsesIntegrationTokens;
+use Illuminate\Support\Collection;
 
 require_once __DIR__ . '/../consts.php';
 
@@ -20,8 +22,53 @@ final class SlackService
     private const SLACK_API_BASE = 'https://slack.com/api';
 
     public function __construct(
-        private readonly IntegrationService $integrationService
+        private readonly IntegrationService $integrationService,
+        private readonly IncomingMessageService $incomingMessageService
     ) {}
+
+    /**
+     * Fetch recent messages and store them in the database.
+     *
+     * @return Collection<int, IncomingMessage>
+     * @throws ServiceException
+     */
+    public function syncAndStoreMessages(int $userId, ?string $channel = null, int $limit = 20): Collection
+    {
+        $messages = $this->fetchRecentMessages($userId, $channel, $limit);
+        $stored = collect();
+
+        foreach ($messages as $message) {
+            $externalId = $message['id'] ?? null;
+            if (!$externalId) {
+                continue;
+            }
+
+            // Skip if already exists (deduplication)
+            $exists = IncomingMessage::where('external_id', $externalId)
+                ->where('provider', 'slack')
+                ->where('user_id', $userId)
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            $incomingMessage = $this->incomingMessageService->create([
+                'user_id' => $userId,
+                'provider' => 'slack',
+                'external_id' => $externalId,
+                'sender_info' => $message['user'] ?? 'Unknown',
+                'channel_info' => $message['channel'] ?? null,
+                'content_raw' => $message['text'] ?? '',
+                'status' => 'pending',
+                'received_at' => now(),
+            ]);
+
+            $stored->push($incomingMessage);
+        }
+
+        return $stored;
+    }
 
     /**
      * Fetch recent messages from a channel.
