@@ -19,6 +19,7 @@ class CalendarEvent extends Model
         'start_time',
         'end_time',
         'status',
+        'type',
         'auto_save_enabled',
         'metadata',
     ];

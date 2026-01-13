@@ -28,6 +28,10 @@ Route::prefix('auth')->group(function () {
 // Webhook Routes
 Route::post('webhooks/incoming', [WebhookController::class, 'incoming'])->name('webhooks.incoming');
 
+// Integration OAuth Callback (Public - OAuth redirects don't preserve JWT)
+Route::get('integrations/callback/{provider}', [IntegrationController::class, 'callback'])
+    ->name('integrations.callback');
+
 // Protected Routes
 Route::middleware('auth:api')->group(function () {
     Route::post('refresh', [AuthController::class, 'refresh'])->name('refresh');
@@ -44,16 +48,18 @@ Route::middleware('auth:api')->group(function () {
     Route::get('integrations', [IntegrationController::class, 'index'])->name('integrations.index');
     Route::get('integrations/connect/{provider}/{service}', [IntegrationController::class, 'redirect'])
         ->name('integrations.redirect');
-    Route::get('integrations/callback/{provider}', [IntegrationController::class, 'callback'])
-        ->name('integrations.callback');
     Route::delete('integrations/{integration}', [IntegrationController::class, 'destroy'])
         ->name('integrations.destroy');
 
     // Calendar Events
+    // Calendar Events
     Route::get('calendar/events', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::post('calendar/events', [CalendarController::class, 'store'])->name('calendar.store');
     Route::get('calendar/events/today', [CalendarController::class, 'today'])->name('calendar.today');
     Route::post('calendar/sync', [CalendarController::class, 'sync'])->name('calendar.sync');
     Route::get('calendar/events/{event}', [CalendarController::class, 'show'])->name('calendar.show');
+    Route::patch('calendar/events/{event}', [CalendarController::class, 'update'])->name('calendar.update');
+    Route::delete('calendar/events/{event}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
 });
 
 // n8n API Routes (authenticated via secret header)
@@ -62,4 +68,8 @@ Route::prefix('n8n')->middleware(N8nAuthMiddleware::class)->group(function () {
     Route::post('sync/calendar/{userId}', [N8nController::class, 'syncCalendar'])->name('n8n.sync.calendar');
     Route::post('sync/gmail/{userId}', [N8nController::class, 'syncGmail'])->name('n8n.sync.gmail');
     Route::post('sync/slack/{userId}', [N8nController::class, 'syncSlack'])->name('n8n.sync.slack');
+    Route::get('messages/unprocessed', [N8nController::class, 'unprocessedMessages'])->name('n8n.messages.unprocessed');
+    Route::post('messages/processed', [N8nController::class, 'handleProcessedMessage'])->name('n8n.messages.processed');
 });
+
+

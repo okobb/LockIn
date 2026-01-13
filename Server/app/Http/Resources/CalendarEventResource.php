@@ -19,13 +19,20 @@ final class CalendarEventResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Get user timezone, fallback to UTC
+        $userTimezone = $request->user()?->timezone ?? 'UTC';
+        
+        $startTime = $this->start_time?->copy()->shiftTimezone('UTC')->setTimezone($userTimezone);
+        $endTime = $this->end_time?->copy()->shiftTimezone('UTC')->setTimezone($userTimezone);
+        
         return [
             'id' => $this->id,
             'external_id' => $this->external_id,
             'title' => $this->title,
-            'start_time' => $this->start_time?->toIso8601String(),
-            'end_time' => $this->end_time?->toIso8601String(),
+            'start_time' => $startTime?->toIso8601String(),
+            'end_time' => $endTime?->toIso8601String(),
             'status' => $this->status,
+            'type' => $this->type,
             'auto_save_enabled' => $this->auto_save_enabled,
             'metadata' => $this->when(
                 $request->query('include_metadata') === 'true',

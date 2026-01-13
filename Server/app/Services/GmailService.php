@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exceptions\ServiceException;
+use App\Models\IncomingMessage;
 use App\Models\Integration;
 use App\Services\Traits\UsesIntegrationTokens;
+use Illuminate\Support\Collection;
 
 require_once __DIR__ . '/../consts.php';
 
@@ -20,8 +22,58 @@ final class GmailService
     private const GMAIL_API_BASE = 'https://gmail.googleapis.com/gmail/v1';
 
     public function __construct(
-        private readonly IntegrationService $integrationService
+        private readonly IntegrationService $integrationService,
+        private readonly IncomingMessageService $incomingMessageService
     ) {}
+
+    /**
+     * Fetch recent messages and store them in the database.
+     *
+     * @return Collection<int, IncomingMessage>
+     * @throws ServiceException
+     */
+    public function syncAndStoreMessages(int $userId, int $maxResults = 20): Collection
+    {
+        $messages = $this->fetchRecentMessages($userId, $maxResults);
+        $stored = collect();
+
+        foreach ($messages as $message) {
+            $externalId = $message['id'] ?? null;
+            if (!$externalId) {
+                continue;
+            }
+
+            // Skip if already exists (deduplication)
+            $exists = IncomingMessage::where('external_id', $externalId)
+                ->where('provider', 'gmail')
+                ->where('user_id', $userId)
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            // Build content from subject + body (with snippet as fallback)
+            $body = $message['body'] ?? '';
+            $content = "Subject: " . ($message['subject'] ?? 'No Subject') . "\n\n";
+            $content .= $body ?: ($message['snippet'] ?? '');
+
+            $incomingMessage = $this->incomingMessageService->create([
+                'user_id' => $userId,
+                'provider' => 'gmail',
+                'external_id' => $externalId,
+                'sender_info' => $message['from'] ?? 'Unknown',
+                'channel_info' => $message['thread_id'] ?? null,
+                'content_raw' => $content,
+                'status' => 'pending',
+                'received_at' => now(),
+            ]);
+
+            $stored->push($incomingMessage);
+        }
+
+        return $stored;
+    }
 
     /**
      * Fetch recent messages for a user.
@@ -66,7 +118,7 @@ final class GmailService
         $response = $this->authenticatedGet(
             $integration,
             self::GMAIL_API_BASE . "/users/me/messages/{$messageId}",
-            ['format' => 'metadata', 'metadataHeaders' => ['Subject', 'From', 'Date']],
+            ['format' => 'full'],
             'Failed to fetch Gmail message'
         );
 
@@ -115,6 +167,7 @@ final class GmailService
     private function parseMessage(array $data): array
     {
         $headers = collect($data['payload']['headers'] ?? []);
+        $body = $this->extractBody($data['payload'] ?? []);
 
         return [
             'id' => $data['id'] ?? null,
@@ -123,7 +176,57 @@ final class GmailService
             'from' => $headers->firstWhere('name', 'From')['value'] ?? 'Unknown',
             'date' => $headers->firstWhere('name', 'Date')['value'] ?? null,
             'snippet' => $data['snippet'] ?? '',
+            'body' => $body,
             'label_ids' => $data['labelIds'] ?? [],
         ];
+    }
+
+    /**
+     * Extract the plain text body from Gmail message payload.
+     *
+     * @param array<string, mixed> $payload
+     * @return string
+     */
+    private function extractBody(array $payload): string
+    {
+        // Simple message with body in payload
+        if (isset($payload['body']['data'])) {
+            return $this->decodeBody($payload['body']['data']);
+        }
+
+        // Multipart message - look for text/plain part
+        if (isset($payload['parts'])) {
+            foreach ($payload['parts'] as $part) {
+                // Prefer text/plain
+                if (($part['mimeType'] ?? '') === 'text/plain' && isset($part['body']['data'])) {
+                    return $this->decodeBody($part['body']['data']);
+                }
+                // Recursively check nested parts
+                if (isset($part['parts'])) {
+                    $nestedBody = $this->extractBody($part);
+                    if ($nestedBody) {
+                        return $nestedBody;
+                    }
+                }
+            }
+            // Fallback to text/html if no plain text
+            foreach ($payload['parts'] as $part) {
+                if (($part['mimeType'] ?? '') === 'text/html' && isset($part['body']['data'])) {
+                    return strip_tags($this->decodeBody($part['body']['data']));
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Decode base64url encoded Gmail body.
+     */
+    private function decodeBody(string $data): string
+    {
+        // Gmail uses URL-safe base64
+        $data = str_replace(['-', '_'], ['+', '/'], $data);
+        return base64_decode($data) ?: '';
     }
 }
