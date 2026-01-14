@@ -44,7 +44,7 @@ final class TaskController extends BaseController
             $request->validated()
         );
 
-        return $this->successResponse(new TaskResource($task), 'Task created successfully');
+        return $this->createdResponse(new TaskResource($task), 'Task created successfully');
     }
 
     /**

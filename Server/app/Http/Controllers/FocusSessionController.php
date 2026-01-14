@@ -36,11 +36,16 @@ final class FocusSessionController extends BaseController
             $matchesTask = isset($validated['task_id']) && $activeSession->task_id === $validated['task_id'];
 
             if ($matchesTitle || $matchesTask) {
-                return response()->json([
-                    'data' => $activeSession,
-                    'status' => 'resumed',
-                    'message' => 'Focus session resumed'
-                ], 200);
+            if ($matchesTitle || $matchesTask) {
+                return $this->successResponse(
+                    [
+                        'session' => $activeSession,
+                        'status' => 'resumed'
+                    ],
+                    'Focus session resumed',
+                    200
+                );
+            }
             }
 
             // 3. Scenario B (Context Switch)
@@ -71,12 +76,10 @@ final class FocusSessionController extends BaseController
             $prevSession?->context_snapshot_id // Pass the context ID if found
         );
 
-        return response()->json([
-            'data' => $session,
-            // If we restored context, let frontend know (maybe via a flag or just by the presence of context_snapshot_id)
+        return $this->createdResponse([
+            'session' => $session,
             'status' => 'started',
             'restored_context' => (bool) $prevSession,
-            'message' => $prevSession ? 'Focus session started with restored context' : 'Focus session started'
-        ], 201);
+        ], $prevSession ? 'Focus session started with restored context' : 'Focus session started');
     }
 }

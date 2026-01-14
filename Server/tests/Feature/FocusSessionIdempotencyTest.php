@@ -24,7 +24,7 @@ class FocusSessionIdempotencyTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJson(['status' => 'started']);
+            ->assertJson(['data' => ['status' => 'started']]);
         
         $this->assertDatabaseHas('focus_sessions', [
             'user_id' => $user->id,
@@ -50,8 +50,10 @@ class FocusSessionIdempotencyTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'status' => 'resumed',
-                'data' => ['id' => $session->id]
+                'data' => [
+                    'status' => 'resumed',
+                    'session' => ['id' => $session->id]
+                ]
             ]);
     }
 
@@ -71,7 +73,7 @@ class FocusSessionIdempotencyTest extends TestCase
         $response = $this->postJson('/api/focus-sessions', ['title' => 'Task B']);
 
         $response->assertStatus(201)
-            ->assertJson(['status' => 'started']);
+            ->assertJson(['data' => ['status' => 'started']]);
         
         // Check old session abandoned
         $this->assertDatabaseHas('focus_sessions', [
@@ -112,8 +114,10 @@ class FocusSessionIdempotencyTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJson([
-                'status' => 'started',
-                'restored_context' => true,
+                'data' => [
+                    'status' => 'started',
+                    'restored_context' => true,
+                ]
             ]);
 
         // 3. Verify: New session should have the SAME snapshot ID
