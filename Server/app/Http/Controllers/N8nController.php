@@ -9,6 +9,7 @@ use App\Models\IncomingMessage;
 use App\Models\Integration;
 use App\Services\GmailService;
 use App\Services\GoogleCalendarService;
+use App\Services\GitHubService;
 use App\Services\IncomingMessageService;
 use App\Services\IntegrationService;
 use App\Services\SlackService;
@@ -27,6 +28,7 @@ final class N8nController extends BaseController
         private readonly GoogleCalendarService $googleCalendarService,
         private readonly GmailService $gmailService,
         private readonly SlackService $slackService,
+        private readonly GitHubService $gitHubService,
         private readonly IncomingMessageService $incomingMessageService,
         private readonly TaskService $taskService
     ) {}
@@ -36,7 +38,8 @@ final class N8nController extends BaseController
      */
     public function activeIntegrations(): JsonResponse
     {
-        $integrations = Integration::where('is_active', true)
+        $integrations = Integration::query()
+            ->where('is_active', '=', true)
             ->select(['user_id', 'provider', 'provider_id', 'scopes'])
             ->get()
             ->groupBy('user_id')
@@ -124,11 +127,31 @@ final class N8nController extends BaseController
     }
 
     /**
+     * Sync GitHub PRs and create tasks for review requests.
+     * Direct mapping (no AI) - faster, cheaper, 100% accurate.
+     */
+    public function syncGitHub(int $userId): JsonResponse
+    {
+        try {
+            $result = $this->gitHubService->syncAndCreateTasksFromPRs($userId, $this->taskService);
+
+            return $this->successResponse([
+                'user_id' => $userId,
+                'synced' => $result['synced'],
+                'tasks' => $result['tasks'],
+            ]);
+        } catch (ServiceException $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode());
+        }
+    }
+
+    /**
      * Get all unprocessed messages for AI processing.
      */
     public function unprocessedMessages(): JsonResponse
     {
-        $messages = IncomingMessage::where('status', 'pending')
+        $messages = IncomingMessage::query()
+            ->where('status', '=', 'pending')
             ->select(['id', 'user_id', 'provider', 'external_id', 'content_raw', 'sender_info', 'channel_info', 'created_at'])
             ->get()
             ->map(fn ($m) => [

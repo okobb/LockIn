@@ -78,8 +78,24 @@ final class TaskController extends BaseController
             return $this->forbiddenResponse('You do not own this task');
         }
 
-        $task->delete();
+        Task::destroy($task->id);
 
         return $this->successResponse(null, 'Task deleted successfully');
+    }
+    /**
+     * Get task suggestions for autocomplete.
+     */
+    public function suggestions(Request $request): JsonResponse
+    {
+        $suggestions = $this->taskService->getSuggestions(
+            $request->user()->id,
+            $request->input('query')
+        );
+
+        return $this->successResponse($suggestions->map(fn($task) => [
+            'id' => $task->id,
+            'title' => $task->title,
+            'number' => $task->id // Using ID as number for now
+        ]));
     }
 }

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ContextSnapshotController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\N8nController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\FocusSessionController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\N8nAuthMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +24,7 @@ Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
 
 // OAuth Login Routes (Public)
 Route::prefix('auth')->group(function () {
+    Route::post('refresh', [AuthController::class, 'refresh'])->name('refresh');
     Route::get('{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('oauth.redirect');
     Route::get('{provider}/callback', [SocialAuthController::class, 'callback'])->name('oauth.callback');
 });
@@ -32,7 +35,6 @@ Route::get('integrations/callback/{provider}', [IntegrationController::class, 'c
 
 // Protected Routes
 Route::middleware('auth:api')->group(function () {
-    Route::post('refresh', [AuthController::class, 'refresh'])->name('refresh');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('email/resend', [AuthController::class, 'resendVerification'])
         ->middleware(['throttle:6,1']) // Limit to 6 requests per minute
@@ -66,6 +68,14 @@ Route::middleware('auth:api')->group(function () {
     Route::patch('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::delete('tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
 
+    Route::get('tasks/suggestions/list', [TaskController::class, 'suggestions'])->name('tasks.suggestions');
+
+    // Focus Sessions
+    Route::post('focus-sessions', [FocusSessionController::class, 'store'])->name('focus-sessions.store');
+    
+    // Context Snapshots
+    Route::post('context/save', [ContextSnapshotController::class, 'store'])->name('context.save');
+
     // Dashboard
     Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
     Route::get('dashboard/priority-tasks', [DashboardController::class, 'priorityTasks'])->name('dashboard.priority-tasks');
@@ -79,6 +89,7 @@ Route::prefix('n8n')->middleware(N8nAuthMiddleware::class)->group(function () {
     Route::post('sync/calendar/{userId}', [N8nController::class, 'syncCalendar'])->name('n8n.sync.calendar');
     Route::post('sync/gmail/{userId}', [N8nController::class, 'syncGmail'])->name('n8n.sync.gmail');
     Route::post('sync/slack/{userId}', [N8nController::class, 'syncSlack'])->name('n8n.sync.slack');
+    Route::post('sync/github/{userId}', [N8nController::class, 'syncGitHub'])->name('n8n.sync.github');
     Route::get('messages/unprocessed', [N8nController::class, 'unprocessedMessages'])->name('n8n.messages.unprocessed');
     Route::post('messages/processed', [N8nController::class, 'handleProcessedMessage'])->name('n8n.messages.processed');
 });

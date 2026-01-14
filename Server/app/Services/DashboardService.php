@@ -22,13 +22,15 @@ final class DashboardService
     {
         $today = Carbon::today();
 
-        $tasksDone = Task::where('user_id', $userId)
-            ->where('status', 'done')
+        $tasksDone = Task::query()
+            ->where('user_id', '=', $userId)
+            ->where('status', '=', 'done')
             ->whereDate('completed_at', $today)
             ->count();
 
-        $deepWorkBlocks = CalendarEvent::where('user_id', $userId)
-            ->where('type', 'deep_work')
+        $deepWorkBlocks = CalendarEvent::query()
+            ->where('user_id', '=', $userId)
+            ->where('type', '=', 'deep_work')
             ->whereDate('start_time', $today)
             ->count();
 
@@ -50,14 +52,15 @@ final class DashboardService
      */
     public function getPriorityTasks(int $userId, int $limit = 5): Collection
     {
-        return Task::where('user_id', $userId)
-            ->where('status', 'open')
+        return Task::query()
+            ->where('user_id', '=', $userId)
+            ->where('status', '=', 'open')
             ->where('priority', '<=', 2)
             ->orderBy('priority', 'asc')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get()
-            ->map(fn($task) => [
+            ->map(fn(Task $task) => [
                 'id' => (string) $task->id,
                 'title' => $task->title,
                 'tag' => $this->mapSourceToTag($task->source_type),
@@ -73,7 +76,8 @@ final class DashboardService
      */
     public function getUpcomingEvents(int $userId, int $limit = 5): Collection
     {
-        return CalendarEvent::where('user_id', $userId)
+        return CalendarEvent::query()
+            ->where('user_id', '=', $userId)
             ->whereDate('start_time', Carbon::today())
             ->where('start_time', '>=', now())
             ->orderBy('start_time')
@@ -93,8 +97,10 @@ final class DashboardService
      */
     public function getCommunications(int $userId, int $limit = 5): Collection
     {
-        return IncomingMessage::where('user_id', $userId)
+        return IncomingMessage::query()
+            ->where('user_id', '=', $userId)
             ->whereIn('status', ['pending', 'processed'])
+            ->orderBy('urgency_score', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get()
@@ -114,8 +120,9 @@ final class DashboardService
      */
     private function calculateDeepWorkMinutes(int $userId, Carbon $date): int
     {
-        return (int) CalendarEvent::where('user_id', $userId)
-            ->where('type', 'deep_work')
+        return (int) CalendarEvent::query()
+            ->where('user_id', '=', $userId)
+            ->where('type', '=', 'deep_work')
             ->whereDate('start_time', $date)
             ->get()
             ->sum(function ($event) {

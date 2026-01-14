@@ -1,0 +1,339 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Exceptions\ServiceException;
+use App\Models\Integration;
+use App\Models\Task;
+use App\Models\User;
+use App\Services\Traits\UsesIntegrationTokens;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Log;
+
+require_once __DIR__ . '/../consts.php';
+
+/**
+ * Service for interacting with GitHub API and n8n webhooks.
+ */
+final class GitHubService
+{
+    use UsesIntegrationTokens;
+
+
+    public function __construct(
+        private readonly IntegrationService $integrationService
+    ) {}
+
+    /**
+     * Get the user's most recently active repository.
+     *
+     * Returns the repository with the most recent push activity.
+     *
+     * @return array<string, mixed> Repository data or empty state object
+     * @throws ServiceException
+     */
+    public function getLatestActiveRepo(int $userId): array
+    {
+        $integration = $this->getGitHubIntegration($userId);
+        $integration = $this->integrationService->refreshTokenIfExpired($integration);
+
+        $response = $this->authenticatedGet(
+            $integration,
+            GITHUB_API_BASE . '/user/repos',
+            [
+                'sort' => 'pushed',
+                'direction' => 'desc',
+                'per_page' => 10, // Fetch a few to find one owned by the user
+            ],
+            'Failed to fetch GitHub repositories'
+        );
+
+        $repos = $response->json();
+
+        if (empty($repos) || !is_array($repos)) {
+            return $this->emptyState('No repositories found');
+        }
+
+        // Get the authenticated user's login to filter repos
+        $userResponse = $this->authenticatedGet(
+            $integration,
+            GITHUB_API_BASE . '/user',
+            [],
+            'Failed to fetch GitHub user info'
+        );
+
+        $githubUsername = $userResponse->json('login');
+
+        $ownedRepos = array_filter($repos, function ($repo) use ($githubUsername) {
+            return isset($repo['owner']['login']) && $repo['owner']['login'] === $githubUsername;
+        });
+
+        $latestRepo = reset($ownedRepos) ?: reset($repos);
+
+        if (!$latestRepo) {
+            return $this->emptyState('No active repositories found');
+        }
+
+        return [
+            'status' => 'ok',
+            'name' => $latestRepo['full_name'] ?? $latestRepo['name'] ?? 'Unknown',
+            'description' => $latestRepo['description'] ?? null,
+            'url' => $latestRepo['html_url'] ?? null,
+            'pushed_at' => $latestRepo['pushed_at'] ?? null,
+            'language' => $latestRepo['language'] ?? null,
+            'default_branch' => $latestRepo['default_branch'] ?? 'main',
+        ];
+    }
+
+    /**
+     * Get uncommitted/recent changes for a repository via n8n webhook.
+     * @return array<int, array{file: string, additions: int, deletions: int}>|array{status: string, message: string}
+     * @throws ServiceException
+     */
+    public function getUncommittedChanges(string $repoName, int $userId): array
+    {
+        $integration = $this->getGitHubIntegration($userId);
+        $integration = $this->integrationService->refreshTokenIfExpired($integration);
+
+        $webhookUrl = config('services.n8n.github_webhook_url');
+
+        if (empty($webhookUrl)) {
+            throw new ServiceException(
+                message: 'n8n GitHub webhook URL not configured',
+                code: 500
+            );
+        }
+
+        /** @var Response $response */
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $integration->access_token,
+        ])->post($webhookUrl, [
+            'github_token' => $integration->access_token,
+            'repo_name' => $repoName,
+            'user_id' => $userId,
+        ]);
+
+        if ($response->failed()) {
+            // Don't crash the frontend on n8n errors - return empty state
+            return $this->emptyState('Unable to fetch changes from n8n workflow');
+        }
+
+        $data = $response->json();
+
+        if ($data === null || (is_array($data) && empty($data))) {
+            return $this->emptyState('No active work detected');
+        }
+
+        if (is_array($data) && isset($data['status']) && $data['status'] === 'error') {
+            return $this->emptyState($data['message'] ?? 'n8n returned an error');
+        }
+
+        // Transform to expected format if needed
+        return $this->formatChanges($data);
+    }
+
+    /**
+     * Get GitHub integration for a user.
+     *
+     * @throws ServiceException
+     */
+    private function getGitHubIntegration(int $userId): Integration
+    {
+        $integration = $this->integrationService->getActiveIntegration($userId, PROVIDER_GITHUB);
+
+        if ($integration === null) {
+            throw new ServiceException(
+                message: 'GitHub not connected',
+                code: 400
+            );
+        }
+
+        return $integration;
+    }
+
+    /**
+     * Format changes array to consistent output format.
+     * [{ "file": "path/to/file.php", "additions": 10, "deletions": 5 }, ...]
+     * 
+     * @param array<mixed> $data Raw data from n8n
+     * @return array<int, array{file: string, additions: int, deletions: int}>
+     */
+    private function formatChanges(array $data): array
+    {
+        // If data is already in the correct format, return as-is
+        if (isset($data[0]['file'])) {
+            return array_map(fn($item) => [
+                'file' => $item['file'] ?? $item['filename'] ?? 'unknown',
+                'additions' => (int) ($item['additions'] ?? 0),
+                'deletions' => (int) ($item['deletions'] ?? 0),
+            ], $data);
+        }
+
+        // Handle GitHub's native file format from commits/compare API
+        if (isset($data['files'])) {
+            return array_map(fn($file) => [
+                'file' => $file['filename'] ?? 'unknown',
+                'additions' => (int) ($file['additions'] ?? 0),
+                'deletions' => (int) ($file['deletions'] ?? 0),
+            ], $data['files']);
+        }
+
+        // Fallback: try to adapt unknown format
+        return array_values(array_map(fn($item) => [
+            'file' => $item['file'] ?? $item['filename'] ?? $item['path'] ?? 'unknown',
+            'additions' => (int) ($item['additions'] ?? $item['added'] ?? 0),
+            'deletions' => (int) ($item['deletions'] ?? $item['removed'] ?? $item['deleted'] ?? 0),
+        ], $data));
+    }
+
+    /**
+     * Fetch PRs where user is requested as reviewer and create tasks.
+     *
+     * @return array{synced: int, tasks: array<int, array{id: int, title: string, pr_url: string}>}
+     * @throws ServiceException
+     */
+    public function syncAndCreateTasksFromPRs(int $userId, TaskService $taskService): array
+    {
+        $integration = $this->getGitHubIntegration($userId);
+        $integration = $this->integrationService->refreshTokenIfExpired($integration);
+
+        // Fetch PRs where review is requested from the authenticated user
+        $response = $this->authenticatedGet(
+            $integration,
+            GITHUB_API_BASE . '/user/repos',
+            ['per_page' => 50, 'sort' => 'pushed'],
+            'Failed to fetch GitHub repositories'
+        );
+
+        $repos = $response->json();
+        if (empty($repos) || !is_array($repos)) {
+            return ['synced' => 0, 'tasks' => []];
+        }
+
+        // Get the authenticated user's login
+        $userResponse = $this->authenticatedGet(
+            $integration,
+            GITHUB_API_BASE . '/user',
+            [],
+            'Failed to fetch GitHub user info'
+        );
+        $githubUsername = $userResponse->json('login');
+        Log::info("GitHub Sync: Authenticated as {$githubUsername}");
+
+        $createdTasks = [];
+
+        // Search for PRs involving this user (author, assignee, mentions, or reviewer)
+        $query = "is:pr is:open involves:@me";
+        Log::info("GitHub Sync: Searching with query: {$query}");
+
+        $searchResponse = $this->authenticatedGet(
+            $integration,
+            GITHUB_API_BASE . '/search/issues',
+            [
+                'q' => $query,
+                'per_page' => 30,
+            ],
+            'Failed to search for review requests'
+        );
+
+        $prs = $searchResponse->json('items', []);
+        Log::info("GitHub Sync: Found " . count($prs) . " PRs");
+
+        foreach ($prs as $pr) {
+            $externalId = 'github_pr_' . ($pr['id'] ?? $pr['number'] ?? uniqid());
+            $repoUrl = $pr['repository_url']; 
+            
+            // Fetch full PR details to get additions/deletions/head ref (search result is partial)
+            $fullPrResponse = $this->authenticatedGet(
+                $integration,
+                $repoUrl . '/pulls/' . $pr['number'],
+                [],
+                'Failed to fetch full PR details'
+            );
+            $fullPr = $fullPrResponse->json();
+
+            // Skip if task already exists 
+            /** @var bool $exists */
+            $exists = Task::query()
+                ->where('external_id', '=', $externalId)
+                ->where('user_id', '=', $userId)
+                ->exists();
+
+            if ($exists) {
+                Log::info("GitHub Sync: Task already exists for PR #{$pr['number']} ({$externalId})");
+                continue;
+            }
+
+            $task = $taskService->createFromWebhookPayload([
+                'title' => $pr['title'] ?? 'Review PR',
+                'description' => $this->formatPRDescription($pr),
+                'source_type' => 'github_pr',
+                'source_link' => $pr['html_url'] ?? null,
+                'external_id' => $externalId,
+                'priority' => 'normal',
+                'source_metadata' => [
+                    'repo' => $fullPr['base']['repo']['name'] ?? 'Unknown',
+                    'number' => $fullPr['number'],
+                    'branch' => $fullPr['head']['ref'] ?? 'unknown',
+                    'state' => $fullPr['state'],
+                    'additions' => $fullPr['additions'] ?? 0,
+                    'deletions' => $fullPr['deletions'] ?? 0,
+                    'sender' => $fullPr['user']['login'] ?? 'Unknown',
+                ]
+            ], User::query()->find($userId));
+
+            $createdTasks[] = [
+                'external_id' => $pr['id'],
+                'number' => $pr['number'],
+                'title' => $pr['title'],
+                'repo' => $fullPr['base']['repo']['name'] ?? 'Unknown',
+                'branch' => $fullPr['head']['ref'] ?? 'unknown',
+                'state' => $fullPr['state'],
+                'pr_url' => $pr['html_url'],
+                'additions' => $fullPr['additions'] ?? 0,
+                'deletions' => $fullPr['deletions'] ?? 0,
+            ];
+        }
+
+        return [
+            'synced' => count($createdTasks),
+            'tasks' => $createdTasks,
+        ];
+    }
+
+    /**
+     * Format PR description for task.
+     */
+    private function formatPRDescription(array $pr): string
+    {
+        $body = $pr['body'] ?? '';
+        $repoName = $pr['repository_url'] ?? '';
+        $repoName = basename($repoName); // Extract repo name from URL
+        
+        $description = "**Repository:** {$repoName}\n";
+        $description .= "**PR:** #{$pr['number']}\n";
+        $description .= "**Author:** " . ($pr['user']['login'] ?? 'Unknown') . "\n\n";
+        
+        if ($body) {
+            $description .= "---\n" . $body;
+        }
+
+        return $description;
+    }
+
+    /**
+     * Create an empty state response.
+     *
+     * @return array{status: string, message: string}
+     */
+    private function emptyState(string $message): array
+    {
+        return [
+            'status' => 'empty',
+            'message' => $message,
+        ];
+    }
+}
