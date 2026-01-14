@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import type { BacklogTask, CalendarBlock } from "../types/calendar";
 import { useCalendarNavigation } from "./useCalendarNavigation";
 import { useCalendarEvents } from "./useCalendarEvents";
-import { useTaskBacklog } from "./useTaskBacklog";
+import { useTaskBacklog } from "../../tasks/hooks/useTaskBacklog";
 import { WORK_END_HOUR, formatDateWithOffset } from "../utils/domain";
 
 export function useWeeklyPlanner() {
@@ -146,7 +146,7 @@ export function useWeeklyPlanner() {
     const currentHour = now.getHours();
 
     // Default logic: Next hour today
-    let targetDate = new Date(now);
+    const targetDate = new Date(now);
     let targetHour = currentHour + 1;
 
     // Fallback: If it's past Work End Hour, default to 9 AM Tomorrow

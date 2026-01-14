@@ -28,7 +28,7 @@ import "./WeeklyPlanner.css";
 import DayColumn from "../../components/DayColumn";
 import { CreateBlockModal } from "../../components/modals/CreateBlockModal";
 import { ConnectModal } from "../../../settings/components/ConnectModal";
-import { EditTaskModal } from "../../components/modals/EditTaskModal";
+import { EditTaskModal } from "../../../tasks/components/EditTaskModal";
 import { EditBlockModal } from "../../components/modals/EditBlockModal";
 import {
   TIME_SLOTS,

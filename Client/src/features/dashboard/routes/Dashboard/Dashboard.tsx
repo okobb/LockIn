@@ -12,6 +12,8 @@ import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { useDashboard } from "../../hooks/useDashboard";
 import "./Dashboard.css";
 
+import MissionBar from "../../components/MissionBar/MissionBar";
+
 export default function Dashboard() {
   const { stats, priorityTasks, upcomingEvents, communications } =
     useDashboard();
@@ -95,6 +97,9 @@ export default function Dashboard() {
         <div className="dashboard-grid">
           {/* Left Column */}
           <div className="main-column">
+            {/* Mission Bar */}
+            <MissionBar />
+
             {/* Priority Tasks */}
             <div className="dashboard-card">
               <div className="card-title">
