@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\N8nController;
 use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\WebhookController;
 use App\Http\Middleware\N8nAuthMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -24,9 +25,6 @@ Route::prefix('auth')->group(function () {
     Route::get('{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('oauth.redirect');
     Route::get('{provider}/callback', [SocialAuthController::class, 'callback'])->name('oauth.callback');
 });
-
-// Webhook Routes
-Route::post('webhooks/incoming', [WebhookController::class, 'incoming'])->name('webhooks.incoming');
 
 // Integration OAuth Callback (Public - OAuth redirects don't preserve JWT)
 Route::get('integrations/callback/{provider}', [IntegrationController::class, 'callback'])
@@ -60,6 +58,19 @@ Route::middleware('auth:api')->group(function () {
     Route::get('calendar/events/{event}', [CalendarController::class, 'show'])->name('calendar.show');
     Route::patch('calendar/events/{event}', [CalendarController::class, 'update'])->name('calendar.update');
     Route::delete('calendar/events/{event}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
+
+    // Tasks
+    Route::get('tasks', [TaskController::class, 'index'])->name('tasks.index');
+    Route::post('tasks', [TaskController::class, 'store'])->name('tasks.store');
+    Route::get('tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    Route::patch('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+    Route::delete('tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+
+    // Dashboard
+    Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
+    Route::get('dashboard/priority-tasks', [DashboardController::class, 'priorityTasks'])->name('dashboard.priority-tasks');
+    Route::get('dashboard/upcoming', [DashboardController::class, 'upcoming'])->name('dashboard.upcoming');
+    Route::get('dashboard/communications', [DashboardController::class, 'communications'])->name('dashboard.communications');
 });
 
 // n8n API Routes (authenticated via secret header)

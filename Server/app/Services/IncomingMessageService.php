@@ -19,9 +19,10 @@ final class IncomingMessageService extends BaseService
     /**
      * Custom method to store raw webhook data safely.
      */
-    public function storeRawPayload(array $payload, string $source, ?string $ip = null): IncomingMessage
+    public function storeRawPayload(array $payload, string $source, int $userId, ?string $ip = null): IncomingMessage
     {
         return $this->create([
+            'user_id'       => $userId,
             'content_raw'   => json_encode($payload),
             'provider'      => $source,
             'external_id'   => $payload['external_id'] ?? null,

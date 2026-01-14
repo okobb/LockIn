@@ -1,7 +1,7 @@
 export interface BacklogTask {
   id: string;
   title: string;
-  priority?: "urgent" | "high" | "medium" | "low";
+  priority?: "high" | "low" | "urgent" | "medium" | undefined;
   estimatedMinutes: number;
   tags?: string[];
 }

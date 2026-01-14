@@ -19,10 +19,56 @@ final class CalendarEventService extends BaseService
     }
 
     /**
+     * Create a calendar event for a user.
+     */
+    public function createForUser(int $userId, array $data): CalendarEvent
+    {
+        return $this->create([
+            'user_id' => $userId,
+            'title' => $data['title'],
+            'start_time' => $this->toUtc($data['start_time']),
+            'end_time' => $this->toUtc($data['end_time']),
+            'type' => $data['type'] ?? 'deep_work',
+            'metadata' => isset($data['description']) ? ['description' => $data['description']] : null,
+        ]);
+    }
+
+    /**
+     * Update a calendar event.
+     */
+    public function updateEvent(CalendarEvent $event, array $data): CalendarEvent
+    {
+        $updateData = [];
+
+        if (isset($data['title'])) {
+            $updateData['title'] = $data['title'];
+        }
+
+        if (isset($data['start_time'])) {
+            $updateData['start_time'] = $this->toUtc($data['start_time']);
+        }
+
+        if (isset($data['end_time'])) {
+            $updateData['end_time'] = $this->toUtc($data['end_time']);
+        }
+
+        if (isset($data['type'])) {
+            $updateData['type'] = $data['type'];
+        }
+
+        if (isset($data['description'])) {
+            $metadata = $event->metadata ?? [];
+            $metadata['description'] = $data['description'];
+            $updateData['metadata'] = $metadata;
+        }
+
+        $event->update($updateData);
+
+        return $event->fresh();
+    }
+
+    /**
      * Create or update a calendar event from Google API response.
-     * All times are normalized to UTC before saving to ensure correct sorting.
-     *
-     * @param array<string, mixed> $googleEvent
      */
     public function upsertFromGoogle(int $userId, array $googleEvent): CalendarEvent
     {
@@ -31,20 +77,10 @@ final class CalendarEventService extends BaseService
         $startTime = $this->parseGoogleDateTime($googleEvent['start'] ?? []);
         $endTime = $this->parseGoogleDateTime($googleEvent['end'] ?? []);
 
-        // Convert to UTC for consistent database storage and sorting
         $startTimeUtc = $startTime?->setTimezone('UTC')->toDateTimeString();
         $endTimeUtc = $endTime?->setTimezone('UTC')->toDateTimeString();
 
-        // Determine type based on Google Event properties
-        $type = 'external'; // Default for general imported events
-        
-        $eventType = $googleEvent['eventType'] ?? 'default';
-        
-        if ($eventType === 'focusTime' || stripos($googleEvent['summary'] ?? '', 'Focus Time') !== false || stripos($googleEvent['summary'] ?? '', 'Deep Work') !== false) {
-            $type = 'deep_work';
-        } elseif (!empty($googleEvent['attendees'])) {
-            $type = 'meeting';
-        }
+        $type = $this->determineEventType($googleEvent);
 
         if ($externalId === null) {
             return $this->create([
@@ -129,23 +165,44 @@ final class CalendarEventService extends BaseService
     }
 
     /**
+     * Convert a datetime string to UTC format for storage.
+     */
+    private function toUtc(string $dateTime): string
+    {
+        return Carbon::parse($dateTime)->setTimezone('UTC')->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Determine event type based on Google Event properties.
+     */
+    private function determineEventType(array $googleEvent): string
+    {
+        $eventType = $googleEvent['eventType'] ?? 'default';
+        $summary = $googleEvent['summary'] ?? '';
+
+        if ($eventType === 'focusTime' || stripos($summary, 'Focus Time') !== false || stripos($summary, 'Deep Work') !== false) {
+            return 'deep_work';
+        }
+
+        if (!empty($googleEvent['attendees'])) {
+            return 'meeting';
+        }
+
+        return 'external';
+    }
+
+    /**
      * Parse Google Calendar datetime object.
-     * Returns a Carbon instance for consistent timezone handling.
      *
      * @param array<string, mixed> $dateTime
      */
     private function parseGoogleDateTime(array $dateTime): ?Carbon
     {
-        // Google returns 'dateTime' for timed events (with timezone offset)
         if (isset($dateTime['dateTime'])) {
-            // Carbon::parse handles various timezone formats (Z, +00:00, -05:00, etc.)
             return Carbon::parse($dateTime['dateTime']);
         }
 
-        // Google returns 'date' (YYYY-MM-DD) for all-day events
         if (isset($dateTime['date'])) {
-            // Create as midnight UTC explicitly to prevent timezone shifts
-            // that could cause the event to appear on the wrong day
             return Carbon::createFromFormat('Y-m-d', $dateTime['date'], 'UTC')
                 ->startOfDay();
         }
