@@ -152,14 +152,17 @@ final class N8nController extends BaseController
     {
         $validated = $request->validate([
             'message_id' => 'required|integer|exists:incoming_messages,id',
+            'action' => 'nullable|string|in:create_task,ignore', 
             'title' => 'required|string|max:255',
             'priority' => 'nullable|string|in:low,normal,medium,high,urgent,critical',
-            'summary' => 'nullable|string',
+            'description' => 'nullable|string',
             'due_date' => 'nullable|date',
+            'estimated_minutes' => 'nullable|integer',
+            'reasoning' => 'nullable|string',
         ]);
 
         try {
-            $message = IncomingMessage::findOrFail($validated['message_id']);
+            $message = IncomingMessage::with('user')->findOrFail($validated['message_id']);
 
             // Check if already processed
             if ($message->status !== 'pending') {
@@ -169,14 +172,37 @@ final class N8nController extends BaseController
                 );
             }
 
+            if (($validated['action'] ?? '') === 'ignore') {
+            $this->incomingMessageService->markAsSkipped(
+                $message, 
+                $validated['reasoning'] ?? 'AI suggested ignoring this message.'
+            );
+
+            return $this->successResponse([
+                'status' => 'skipped',
+                'message' => 'Message skipped (no task created)'
+            ]);
+        }
+
+            // Ensure message has a user
+            if (!$message->user) {
+                return $this->errorResponse(
+                    "Message {$validated['message_id']} has no associated user",
+                    400
+                );
+            }
+
+            $title = $validated['title'] ?? 'Untitled Task';
             // Create task from AI output
             $task = $this->taskService->createFromWebhookPayload([
-                'title' => $validated['title'],
+                'title' => $title,
                 'priority' => $validated['priority'] ?? 'normal',
-                'description' => $validated['summary'] ?? '',
-                'source' => $message->provider,
-                'external_id' => $message->external_id,
+                'description' => $validated['description'] ?? '',
+                'source_type' => $message->provider,
+                'source_link' => $message->external_id,
                 'due_date' => $validated['due_date'] ?? null,
+                'estimated_minutes' => $validated['estimated_minutes'] ?? null,
+                'ai_reasoning' => $validated['reasoning'] ?? null,
             ], $message->user);
 
             // Mark message as processed

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Exceptions\ServiceException;
+use App\Http\Requests\Calendar\StoreCalendarEventRequest;
+use App\Http\Requests\Calendar\UpdateCalendarEventRequest;
 use App\Http\Resources\CalendarEventResource;
 use App\Models\CalendarEvent;
 use App\Services\CalendarEventService;
@@ -13,7 +15,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 final class CalendarController extends BaseController
 {
@@ -62,94 +63,30 @@ final class CalendarController extends BaseController
     /**
      * Create a new calendar event.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreCalendarEventRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'start_time' => 'required|date',
-            'end_time' => 'required|date|after:start_time',
-            'type' => 'nullable|string|in:deep_work,meeting,external',
-            'description' => 'nullable|string',
-        ]);
-
-        // Parse incoming times and convert to UTC string for storage
-        $startTime = Carbon::parse($validated['start_time'])->setTimezone('UTC')->format('Y-m-d H:i:s');
-        $endTime = Carbon::parse($validated['end_time'])->setTimezone('UTC')->format('Y-m-d H:i:s');
-
-        $event = $this->calendarEventService->create([
-            'user_id' => $request->user()->id,
-            'title' => $validated['title'],
-            'start_time' => $startTime,
-            'end_time' => $endTime,
-            'type' => $validated['type'] ?? 'deep_work',
-            'metadata' => isset($validated['description']) ? ['description' => $validated['description']] : null,
-        ]);
+        $event = $this->calendarEventService->createForUser(
+            $request->user()->id,
+            $request->validated()
+        );
 
         return $this->successResponse(new CalendarEventResource($event), 'Event created successfully');
     }
 
-
     /**
      * Update a calendar event.
      */
-    public function update(Request $request, CalendarEvent $event): JsonResponse
+    public function update(UpdateCalendarEventRequest $request, CalendarEvent $event): JsonResponse
     {
         Log::info('Update Event Request', [
             'event_id' => $event->id,
             'user_id' => $request->user()->id,
-            'data' => $request->all()
+            'data' => $request->validated()
         ]);
 
-        // Ensure user owns this event
-        if ($event->user_id !== $request->user()->id) {
-            return $this->forbiddenResponse('You do not own this calendar event');
-        }
+        $updatedEvent = $this->calendarEventService->updateEvent($event, $request->validated());
 
-        try {
-            $validated = $request->validate([
-                'title' => 'sometimes|string|max:255',
-                'start_time' => 'sometimes|date',
-                'end_time' => 'sometimes|date|after:start_time',
-                'type' => 'sometimes|string|in:deep_work,meeting,external',
-                'description' => 'nullable|string',
-            ]);
-
-            Log::info('Validated Data', $validated);
-
-            $updateData = [];
-            if (isset($validated['title'])) $updateData['title'] = $validated['title'];
-    
-            if (isset($validated['start_time'])) {
-                $parsed = Carbon::parse($validated['start_time']);
-                $utcTime = $parsed->setTimezone('UTC');
-                $updateData['start_time'] = $utcTime->format('Y-m-d H:i:s');
-                Log::info('Timezone Debug', [
-                    'input' => $validated['start_time'],
-                    'utc_string' => $updateData['start_time'],
-                ]);
-            }
-            if (isset($validated['end_time'])) {
-                $parsed = Carbon::parse($validated['end_time']);
-                $updateData['end_time'] = $parsed->setTimezone('UTC')->format('Y-m-d H:i:s');
-            }
-            if (isset($validated['type'])) $updateData['type'] = $validated['type'];
-            
-            if (isset($validated['description'])) {
-                $metadata = $event->metadata ?? [];
-                $metadata['description'] = $validated['description'];
-                $updateData['metadata'] = $metadata;
-            }
-
-            $event->update($updateData);
-            $event->refresh();
-
-            Log::info('Event After Update (DB State)', $event->toArray());
-
-            return $this->successResponse(new CalendarEventResource($event), 'Event updated successfully');
-        } catch (\Exception $e) {
-            Log::error('Update Event Failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
+        return $this->successResponse(new CalendarEventResource($updatedEvent), 'Event updated successfully');
     }
 
     /**

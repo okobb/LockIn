@@ -97,17 +97,36 @@ final class SocialAuthController extends BaseController
                 avatar: $socialUser->getAvatar()
             );
 
-            $this->integrationService->upsertFromOAuth(
-                user: $authPayload['user'],
-                provider: $provider,
-                providerId: (string) $socialUser->getId(),
-                accessToken: $socialUser->token,
-                refreshToken: $socialUser->refreshToken ?? null,
-                scopes: $scopes,
-                expiresAt: isset($socialUser->expiresIn)
-                    ? now()->addSeconds($socialUser->expiresIn)
-                    : null
+            // Check if user already has an integration with broader scopes
+            // If so, don't overwrite their tokens (which would lose permissions)
+            $existingIntegration = $this->integrationService->getActiveIntegration(
+                $authPayload['user']->id,
+                $provider
             );
+            
+            $shouldUpdateTokens = true;
+            if ($existingIntegration) {
+                $existingScopes = $existingIntegration->scopes ?? [];
+                // If existing integration has more scopes than login scopes,
+                // preserve the existing tokens to maintain those permissions
+                if (count($existingScopes) > count($scopes)) {
+                    $shouldUpdateTokens = false;
+                }
+            }
+
+            if ($shouldUpdateTokens) {
+                $this->integrationService->upsertFromOAuth(
+                    user: $authPayload['user'],
+                    provider: $provider,
+                    providerId: (string) $socialUser->getId(),
+                    accessToken: $socialUser->token,
+                    refreshToken: $socialUser->refreshToken ?? null,
+                    scopes: $scopes,
+                    expiresAt: isset($socialUser->expiresIn)
+                        ? now()->addSeconds($socialUser->expiresIn)
+                        : null
+                );
+            }
 
             $token = $authPayload['token'];
             $userArray = [

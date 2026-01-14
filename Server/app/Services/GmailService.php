@@ -63,7 +63,7 @@ final class GmailService
                 'provider' => 'gmail',
                 'external_id' => $externalId,
                 'sender_info' => $message['from'] ?? 'Unknown',
-                'channel_info' => $message['thread_id'] ?? null,
+                'channel_info' => $message['subject'] ?? 'No Subject',
                 'content_raw' => $content,
                 'status' => 'pending',
                 'received_at' => now(),

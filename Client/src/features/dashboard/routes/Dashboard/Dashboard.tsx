@@ -112,7 +112,21 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="task-list">
-                  {/* Tasks would be rendered here */}
+                  {priorityTasks.map((task) => (
+                    <div key={task.id} className="task-item">
+                      <div className="task-item-header">
+                        <span className={`task-tag ${task.tagColor}`}>
+                          {task.tag}
+                        </span>
+                        <span className="task-time">{task.timeAgo}</span>
+                      </div>
+                      <div className="task-title">{task.title}</div>
+                      {task.reference && (
+                        <div className="task-reference">{task.reference}</div>
+                      )}
+                      <div className="task-reason">{task.reason}</div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -221,7 +235,20 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div>{/* Events would be rendered here */}</div>
+                <div className="upcoming-list">
+                  {upcomingEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className={`upcoming-item ${event.type}`}
+                    >
+                      <span className="upcoming-time">{event.time}</span>
+                      <div className="upcoming-info">
+                        <div className="upcoming-title">{event.title}</div>
+                        <div className="upcoming-meta">{event.meta}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
 
               <Link
