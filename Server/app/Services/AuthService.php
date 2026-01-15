@@ -53,9 +53,12 @@ final class AuthService
      */
     public function refresh(): array
     {
-        /** @var User $user */
-        $user = Auth::user();
+        // Refresh the token (works even if expired, as long as within refresh window)
         $token = (string) Auth::refresh();
+        
+        // Get the user associated with the new token
+        /** @var User $user */
+        $user = Auth::setToken($token)->user();
 
         return ['user' => $user, 'token' => $token];
     }

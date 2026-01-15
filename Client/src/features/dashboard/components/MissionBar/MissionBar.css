@@ -1,0 +1,225 @@
+.mission-bar-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: var(--space-6);
+  z-index: 20;
+}
+
+.mission-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 48px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 0 var(--space-3);
+  transition: all var(--ease-default);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 21;
+}
+
+.mission-bar.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-soft);
+  background: var(--bg-elevated);
+}
+
+.mission-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  margin-right: var(--space-3);
+  transition: color var(--transition-fast);
+}
+
+.mission-bar.active .mission-icon {
+  color: var(--primary);
+}
+
+.icon-zap {
+  color: var(--warning);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.mission-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  height: 100%;
+  outline: none;
+}
+
+.mission-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.mission-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mission-action-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* Suggestions Dropdown */
+.mission-suggestions {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 21;
+  max-height: 300px;
+  overflow-y: auto;
+  animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.1s;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+  background-color: var(--bg-active);
+}
+
+.suggestion-item.freestyle {
+  background: linear-gradient(to right, rgba(245, 158, 11, 0.05), transparent);
+  border-left: 2px solid var(--warning);
+}
+
+.suggestion-item.freestyle.selected {
+  background: linear-gradient(to right, rgba(245, 158, 11, 0.1), transparent);
+}
+
+.suggestion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  margin-right: var(--space-3);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  flex-shrink: 0;
+}
+
+.suggestion-item.freestyle .suggestion-icon {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.suggestion-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.suggestion-title {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-white {
+  color: var(--text-primary);
+}
+
+.suggestion-meta {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.suggestion-shortcut {
+  font-size: var(--text-xs);
+  color: var(--text-disabled);
+  background: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.suggestions-group {
+  padding-top: var(--space-1);
+}
+
+.suggestions-header {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.mission-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background: transparent;
+}
+
+/* Hide the default datalist arrow in Chrome/Edge */
+.mission-input::-webkit-calendar-picker-indicator {
+  display: none !important;
+}

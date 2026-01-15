@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import type { BacklogTask } from "../../types/calendar";
+// UPDATED IMPORT: Pointing to calendar types from tasks feature
+import type { BacklogTask } from "../../calendar/types/calendar";
 
 export const EditTaskModal = ({
   isOpen,

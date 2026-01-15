@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Login, Signup, ProtectedRoute, AuthCallback } from "../features/auth";
 import { WeeklyPlanner } from "../features/calendar";
 import { Dashboard } from "../features/dashboard";
+import FocusMode from "../features/focus/routes/FocusMode";
 import { Settings } from "../features/settings";
 import { ModalProvider } from "../shared/context/ModalContext";
 import "../shared/styles/global.css";
@@ -18,6 +19,7 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/weekly-planner" element={<WeeklyPlanner />} />
+            <Route path="/focus" element={<FocusMode />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>

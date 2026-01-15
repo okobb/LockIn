@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('ALTER TABLE context_snapshots ADD COLUMN searchable_text tsvector');
         DB::statement('CREATE INDEX snapshots_search_gin ON context_snapshots USING gin(searchable_text)');
     }

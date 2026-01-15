@@ -41,6 +41,21 @@ final class TaskService extends BaseService
     }
 
     /**
+     * Get task suggestions for autocomplete.
+     */
+    public function getSuggestions(int $userId, ?string $query, int $limit = 10): Collection
+    {
+        return Task::where('user_id', $userId)
+            ->where('status', 'open')
+            ->when($query, function ($q) use ($query) {
+                $q->where('title', 'ilike', '%' . $query . '%');
+            })
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get(['id', 'title']);
+    }
+
+    /**
      * Create a new task for a user.
      */
     public function createForUser(int $userId, array $data): Task

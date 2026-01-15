@@ -19,3 +19,5 @@ const SERVICE_NOTIFICATIONS = 'notifications';
 
 // API Endpoints
 const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
+const GITHUB_API_BASE = 'https://api.github.com';
+
