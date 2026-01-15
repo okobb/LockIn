@@ -46,6 +46,7 @@ class ReproduceRefreshTest extends TestCase
         
         $response->assertStatus(200);
         
-        $this->assertArrayHasKey('token', $response->json('data'));
+        $this->assertArrayHasKey('authorization', $response->json('data'));
+        $this->assertArrayHasKey('token', $response->json('data.authorization'));
     }
 }
