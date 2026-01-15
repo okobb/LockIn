@@ -475,6 +475,7 @@
 
 .calendar-block:hover .block-badge {
   opacity: 0;
+  pointer-events: none;
 }
 
 .block-delete-btn:hover {

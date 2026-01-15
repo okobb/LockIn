@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { startFocusSession, FocusSession } from "../api/focusApi";
+import { startFocusSession, type FocusSession } from "../api/focusApi";
 
 interface FocusState {
   taskId?: number;

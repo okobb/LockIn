@@ -45,7 +45,7 @@ final class GitHubService
             [
                 'sort' => 'pushed',
                 'direction' => 'desc',
-                'per_page' => 10, // Fetch a few to find one owned by the user
+                'per_page' => 10, 
             ],
             'Failed to fetch GitHub repositories'
         );
@@ -163,30 +163,18 @@ final class GitHubService
      */
     private function formatChanges(array $data): array
     {
-        // If data is already in the correct format, return as-is
-        if (isset($data[0]['file'])) {
-            return array_map(fn($item) => [
-                'file' => $item['file'] ?? $item['filename'] ?? 'unknown',
-                'additions' => (int) ($item['additions'] ?? 0),
-                'deletions' => (int) ($item['deletions'] ?? 0),
-            ], $data);
+        // Normalize the input:
+        $items = $data['files'] ?? $data;
+
+        if (!is_array($items)) {
+            return [];
         }
 
-        // Handle GitHub's native file format from commits/compare API
-        if (isset($data['files'])) {
-            return array_map(fn($file) => [
-                'file' => $file['filename'] ?? 'unknown',
-                'additions' => (int) ($file['additions'] ?? 0),
-                'deletions' => (int) ($file['deletions'] ?? 0),
-            ], $data['files']);
-        }
-
-        // Fallback: try to adapt unknown format
         return array_values(array_map(fn($item) => [
             'file' => $item['file'] ?? $item['filename'] ?? $item['path'] ?? 'unknown',
             'additions' => (int) ($item['additions'] ?? $item['added'] ?? 0),
             'deletions' => (int) ($item['deletions'] ?? $item['removed'] ?? $item['deleted'] ?? 0),
-        ], $data));
+        ], $items));
     }
 
     /**
@@ -199,6 +187,7 @@ final class GitHubService
     {
         $integration = $this->getGitHubIntegration($userId);
         $integration = $this->integrationService->refreshTokenIfExpired($integration);
+        $user = User::findOrFail($userId);
 
         // Fetch PRs where review is requested from the authenticated user
         $response = $this->authenticatedGet(
@@ -283,9 +272,10 @@ final class GitHubService
                     'deletions' => $fullPr['deletions'] ?? 0,
                     'sender' => $fullPr['user']['login'] ?? 'Unknown',
                 ]
-            ], User::query()->find($userId));
+            ], $user);
 
             $createdTasks[] = [
+                'id' => $task->id,
                 'external_id' => $pr['id'],
                 'number' => $pr['number'],
                 'title' => $pr['title'],

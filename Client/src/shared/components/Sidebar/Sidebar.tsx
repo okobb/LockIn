@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
   Lock,
@@ -83,6 +83,12 @@ export default function Sidebar({
     return isMac ? "⌘K" : "Ctrl+K";
   };
 
+  const navigate = useNavigate();
+
+  const handleLockIn = () => {
+    navigate("/context-save");
+  };
+
   return (
     <aside className={`sidebar ${isCollapsed ? "collapsed" : ""}`}>
       {/* Collapse Toggle */}
@@ -109,10 +115,7 @@ export default function Sidebar({
       </button>
 
       {/* Lock In CTA */}
-      <button
-        className="lock-in-cta"
-        onClick={() => (window.location.href = "/context-save")}
-      >
+      <button className="lock-in-cta" onClick={handleLockIn}>
         <Lock className="icon" />
         <span>Lock In</span>
       </button>

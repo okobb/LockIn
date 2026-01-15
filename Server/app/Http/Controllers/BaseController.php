@@ -12,7 +12,6 @@ use Illuminate\Routing\Controller;
 /**
  * Abstract base controller.
  * Uses ApiResponses trait for standardized JSON responses.
- * Extend this for shared controller-specific behavior only.
  */
 abstract class BaseController extends Controller
 {

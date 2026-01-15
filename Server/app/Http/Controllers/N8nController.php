@@ -128,7 +128,6 @@ final class N8nController extends BaseController
 
     /**
      * Sync GitHub PRs and create tasks for review requests.
-     * Direct mapping (no AI) - faster, cheaper, 100% accurate.
      */
     public function syncGitHub(int $userId): JsonResponse
     {
@@ -175,7 +174,7 @@ final class N8nController extends BaseController
     {
         $validated = $request->validate([
             'message_id' => 'required|integer|exists:incoming_messages,id',
-            'action' => 'nullable|string|in:create_task,ignore', 
+            'action' => 'nullable|string|in:create_task,ignore',
             'title' => 'required|string|max:255',
             'priority' => 'nullable|string|in:low,normal,medium,high,urgent,critical',
             'description' => 'nullable|string',
@@ -197,7 +196,7 @@ final class N8nController extends BaseController
 
             if (($validated['action'] ?? '') === 'ignore') {
             $this->incomingMessageService->markAsSkipped(
-                $message, 
+                $message,
                 $validated['reasoning'] ?? 'AI suggested ignoring this message.'
             );
 

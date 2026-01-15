@@ -42,18 +42,15 @@ final class ContextSnapshotService extends BaseService
                 'repository_source' => $data['git_state']['repo'] ?? null,
             ];
 
-            // Handle Voice File Upload
             if ($voiceFile) {
                 $path = $voiceFile->store('voice_memos');
                 $snapshotData['voice_memo_path'] = $path;
                 $snapshotData['voice_recorded_at'] = now();
             }
 
-            // Create the Snapshot
             /** @var ContextSnapshot $snapshot */
             $snapshot = $this->create($snapshotData);
 
-            // Link Session to this Snapshot
             $session->update([
                 'context_snapshot_id' => $snapshot->id
             ]);

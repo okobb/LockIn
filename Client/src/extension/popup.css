@@ -1,0 +1,16 @@
+/* Popup specific styles */
+/* We are primarily using the variables and utility classes from shared/styles/global.css */
+
+body {
+  width: 350px;
+  height: 500px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}

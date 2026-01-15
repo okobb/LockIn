@@ -33,7 +33,7 @@ final class IntegrationService extends BaseService
         array $scopes,
         ?\DateTimeInterface $expiresAt = null
     ): Integration {
-        $existing = Integration::where('user_id', $user->id)
+        $existing = Integration::query()->where('user_id', $user->id)
             ->where('provider', $provider)
             ->where('provider_id', $providerId)
             ->first();
@@ -75,7 +75,7 @@ final class IntegrationService extends BaseService
      */
     public function getForUser(User $user): Collection
     {
-        return Integration::where('user_id', $user->id)
+        return Integration::query()->where('user_id', $user->id)
             ->where('is_active', true)
             ->get();
     }
@@ -85,7 +85,7 @@ final class IntegrationService extends BaseService
      */
     public function hasProvider(User $user, string $provider): bool
     {
-        return Integration::where('user_id', $user->id)
+        return Integration::query()->where('user_id', $user->id)
             ->where('provider', $provider)
             ->where('is_active', true)
             ->exists();
@@ -104,7 +104,7 @@ final class IntegrationService extends BaseService
      */
     public function getActiveIntegration(int $userId, string $provider): ?Integration
     {
-        return Integration::where('user_id', $userId)
+        return Integration::query()->where('user_id', $userId)
             ->where('provider', $provider)
             ->where('is_active', true)
             ->first();

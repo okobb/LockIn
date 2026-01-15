@@ -44,7 +44,7 @@ final class GmailService
             }
 
             // Skip if already exists (deduplication)
-            $exists = IncomingMessage::where('external_id', $externalId)
+            $exists = IncomingMessage::query()->where('external_id', $externalId)
                 ->where('provider', 'gmail')
                 ->where('user_id', $userId)
                 ->exists();
