@@ -44,7 +44,7 @@ final class SlackService
             }
 
             // Skip if already exists (deduplication)
-            $exists = IncomingMessage::where('external_id', $externalId)
+            $exists = IncomingMessage::query()->where('external_id', $externalId)
                 ->where('provider', 'slack')
                 ->where('user_id', $userId)
                 ->exists();

@@ -211,7 +211,6 @@ final class DashboardService
         // Pattern: "Name <email@domain.com>" → extract "Name"
         if (preg_match('/^(.+?)\s*<[^>]+>$/', $sender, $matches)) {
             $name = trim($matches[1]);
-            // Only return the name if it's not empty
             if (!empty($name)) {
                 return $name;
             }

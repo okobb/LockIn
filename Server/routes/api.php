@@ -52,7 +52,6 @@ Route::middleware('auth:api')->group(function () {
         ->name('integrations.destroy');
 
     // Calendar Events
-    // Calendar Events
     Route::get('calendar/events', [CalendarController::class, 'index'])->name('calendar.index');
     Route::post('calendar/events', [CalendarController::class, 'store'])->name('calendar.store');
     Route::get('calendar/events/today', [CalendarController::class, 'today'])->name('calendar.today');

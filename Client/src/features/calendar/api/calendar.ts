@@ -1,35 +1,5 @@
 import api from "../../../shared/lib/axios";
-
-export interface CalendarEvent {
-  id: number;
-  title: string;
-  description: string | null;
-  start_time: string;
-  end_time: string;
-  type: "deep_work" | "meeting" | "external";
-  source: "manual" | "google_calendar";
-  external_id: string | null;
-}
-
-export interface CreateBlockData {
-  title: string;
-  start_time: string;
-  end_time: string;
-  type: "deep_work" | "meeting" | "external";
-  description?: string;
-}
-
-export interface UpdateBlockData {
-  title?: string;
-  start_time?: string;
-  end_time?: string;
-  type?: "deep_work" | "meeting" | "external";
-  description?: string;
-}
-
-export interface CalendarEventsResponse {
-  data: CalendarEvent[];
-}
+import type { CalendarEvent, CalendarEventsResponse, CreateBlockData, UpdateBlockData } from "../types/calendar";
 
 export const calendar = {
   getEvents: async (weekStart: string, weekEnd: string) => {

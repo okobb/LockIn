@@ -6,11 +6,10 @@ namespace App\Http\Controllers;
 
 use App\Models\FocusSession;
 use App\Services\ContextSnapshotService;
-use Illuminate\Http\Request;
+use App\Http\Requests\ContextSnapshot\StoreContextSnapshotRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 
-class ContextSnapshotController extends Controller
+class ContextSnapshotController extends BaseController
 {
     public function __construct(
         protected ContextSnapshotService $service
@@ -19,22 +18,14 @@ class ContextSnapshotController extends Controller
     /**
      * Store a new context snapshot.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreContextSnapshotRequest $request): JsonResponse
     {
-        // 1. Validate
-        $validated = $request->validate([
-            'focus_session_id' => 'required|integer|exists:focus_sessions,id',
-            'note' => 'nullable|string',
-            'browser_state' => 'nullable', 
-            'git_state' => 'nullable', 
-            'voice_file' => 'nullable|file|mimes:audio/mpeg,mpga,mp3,wav,m4a|max:10240', 
-        ]);
-
-        $user = Auth::user();
+        $validated = $request->validated();
+        $user = $request->user();
         $session = FocusSession::findOrFail($validated['focus_session_id']);
 
         if ($session->user_id !== $user->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return $this->errorResponse('Unauthorized', 403);
         }
 
         $browserState = $validated['browser_state'] ?? null;
@@ -59,13 +50,9 @@ class ContextSnapshotController extends Controller
             $request->file('voice_file')
         );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Context saved successfully',
-            'data' => [
-                'id' => $snapshot->id,
-                'created_at' => $snapshot->created_at->toIso8601String(),
-            ]
-        ], 201);
+        return $this->createdResponse([
+            'id' => $snapshot->id,
+            'created_at' => $snapshot->created_at->toIso8601String(),
+        ], 'Context saved successfully');
     }
 }

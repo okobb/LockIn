@@ -7,13 +7,8 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import type { CalendarBlock, CapacityStats } from "../types/calendar";
-import {
-  calendar,
-  type CreateBlockData,
-  type UpdateBlockData,
-  type CalendarEventsResponse,
-  type CalendarEvent,
-} from "../api/calendar";
+import {calendar} from "../api/calendar";
+import type  { CreateBlockData, UpdateBlockData, CalendarEventsResponse, CalendarEvent } from "../types/calendar";
 import {
   checkBlocksOverlap,
   isOvertime,
@@ -90,25 +85,28 @@ export function useCalendarEvents({
       const previousData =
         queryClient.getQueryData<CalendarEventsResponse>(queryKey);
 
-      queryClient.setQueryData<CalendarEventsResponse>(queryKey, (old) => {
-        if (!old) return old;
-        // Use negative ID for temp blocks to match `number` type but distinguish from DB IDs
-        const tempId = -Date.now();
-        const optimistBlock: CalendarEvent = {
-          id: tempId,
-          title: newBlockData.title,
-          start_time: newBlockData.start_time,
-          end_time: newBlockData.end_time,
-          type: newBlockData.type,
-          description: newBlockData.description || null,
-          source: "manual",
-          external_id: null,
-        };
-        return {
-          ...old,
-          data: [...old.data, optimistBlock],
-        };
-      });
+      queryClient.setQueryData<CalendarEventsResponse>(
+        queryKey,
+        (old: CalendarEventsResponse | undefined) => {
+          if (!old) return old;
+          // Use negative ID for temp blocks to match `number` type but distinguish from DB IDs
+          const tempId = -Date.now();
+          const optimistBlock: CalendarEvent = {
+            id: tempId,
+            title: newBlockData.title,
+            start_time: newBlockData.start_time,
+            end_time: newBlockData.end_time,
+            type: newBlockData.type,
+            description: newBlockData.description || null,
+            source: "manual",
+            external_id: null,
+          };
+          return {
+            ...old,
+            data: [...old.data, optimistBlock],
+          };
+        }
+      );
 
       return { previousData };
     },
@@ -160,13 +158,16 @@ export function useCalendarEvents({
       const previousData =
         queryClient.getQueryData<CalendarEventsResponse>(queryKey);
 
-      queryClient.setQueryData<CalendarEventsResponse>(queryKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          data: old.data.filter((event) => String(event.id) !== id),
-        };
-      });
+      queryClient.setQueryData<CalendarEventsResponse>(
+        queryKey,
+        (old: CalendarEventsResponse | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: old.data.filter((event : CalendarEvent) => String(event.id) !== id),
+          };
+        }
+      );
 
       return { previousData };
     },
@@ -285,17 +286,20 @@ export function useCalendarEvents({
       await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
 
       // Optimistically update Cache
-      queryClient.setQueryData<CalendarEventsResponse>(queryKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          data: old.data.map((event) =>
-            String(event.id) === blockId
-              ? { ...event, ...updates, id: event.id } // Preserve ID
-              : event
-          ),
-        };
-      });
+      queryClient.setQueryData<CalendarEventsResponse>(
+        queryKey,
+        (old: CalendarEventsResponse | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: old.data.map((event : CalendarEvent) =>
+              String(event.id) === blockId
+                ? { ...event, ...updates, id: event.id } // Preserve ID
+                : event
+            ),
+          };
+        }
+      );
 
       updateMutation.mutate({ id: blockId, data: updateData });
     },
@@ -326,30 +330,29 @@ export function useCalendarEvents({
         calculatedStartISO: newStart.toISOString(),
       });
 
-      // CRITICAL: Cancel any in-flight queries BEFORE optimistic update
-      // This prevents race conditions where a refetch overwrites our optimistic state
       await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
 
-      // Snapshot current state for rollback
       const previousData =
         queryClient.getQueryData<CalendarEventsResponse>(queryKey);
 
-      // Apply optimistic update
-      queryClient.setQueryData<CalendarEventsResponse>(queryKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          data: old.data.map((event) =>
-            String(event.id) === blockId
-              ? {
-                  ...event,
-                  start_time: formatDateWithOffset(newStart),
-                  end_time: formatDateWithOffset(newEnd),
-                }
-              : event
-          ),
-        };
-      });
+      queryClient.setQueryData<CalendarEventsResponse>(
+        queryKey,
+        (old: CalendarEventsResponse | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: old.data.map((event : CalendarEvent) =>
+              String(event.id) === blockId
+                ? {
+                    ...event,
+                    start_time: formatDateWithOffset(newStart),
+                    end_time: formatDateWithOffset(newEnd),
+                  }
+                : event
+            ),
+          };
+        }
+      );
 
       if (checkOverlap(newStart, newEnd, blockId)) {
         const confirmed = await modal.open({
@@ -420,9 +423,7 @@ export function useCalendarEvents({
   }, [pendingMoveState, updateMutation]);
 
   const cancelPendingMove = useCallback(async () => {
-    // Cancel any in-flight queries before reverting to prevent race conditions
     await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
-    // Now invalidate to refetch the true server state
     queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     setPendingMoveState(null);
   }, [queryClient]);

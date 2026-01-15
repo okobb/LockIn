@@ -98,7 +98,7 @@ final class CalendarController extends BaseController
             return $this->forbiddenResponse('You do not own this calendar event');
         }
 
-        $event->delete();
+        $this->calendarEventService->delete($event->id);
 
         return $this->successResponse(null, 'Event deleted successfully');
     }

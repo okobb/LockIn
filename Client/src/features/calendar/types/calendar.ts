@@ -21,3 +21,34 @@ export interface CapacityStats {
   availableMinutes: number;
   targetMet: boolean;
 }
+
+export interface CalendarEvent {
+  id: number;
+  title: string;
+  description: string | null;
+  start_time: string;
+  end_time: string;
+  type: "deep_work" | "meeting" | "external";
+  source: "manual" | "google_calendar";
+  external_id: string | null;
+}
+
+export interface CreateBlockData {
+  title: string;
+  start_time: string;
+  end_time: string;
+  type: "deep_work" | "meeting" | "external";
+  description?: string;
+}
+
+export interface UpdateBlockData {
+  title?: string;
+  start_time?: string;
+  end_time?: string;
+  type?: "deep_work" | "meeting" | "external";
+  description?: string;
+}
+
+export interface CalendarEventsResponse {
+  data: CalendarEvent[];
+}

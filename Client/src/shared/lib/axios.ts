@@ -52,7 +52,7 @@ api.interceptors.response.use(
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
-      originalRequest.url === "refresh"
+      originalRequest.url === "/auth/refresh"
     ) {
       return Promise.reject(error);
     }
@@ -82,7 +82,7 @@ api.interceptors.response.use(
       const response = await axios.post(
         `${
           import.meta.env.VITE_API_URL || "http://localhost:8000/api"
-        }/refresh`,
+        }/auth/refresh`,
         {},
         {
           headers: {
