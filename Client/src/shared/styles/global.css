@@ -8,28 +8,28 @@
 
 @layer base {
   :root {
-    /* === COLOR PALETTE (Premium Mauve / Deep Void) === */
-    /* Canvas - Background: Deep Purple Void */
-    --background: 270 50% 8%;
+    /* === COLOR PALETTE (Pale Lavender / Solid Light) === */
+    /* Canvas - Background: Very subtle lavender tint */
+    --background: 280 30% 98%;
 
-    /* Surface - Card, Popover, Secondary: Rich Dark Mauve */
-    --card: 270 30% 12%;
-    --popover: 270 30% 12%;
-    --secondary: 270 30% 15%;
+    /* Surface - Card, Popover: Pure White */
+    --card: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --secondary: 280 20% 96%;
 
-    /* Border - Border, Input: Mauve lines */
-    --border: 270 20% 20%;
-    --input: 270 20% 20%;
+    /* Border - Border, Input: Subtle purple-grey */
+    --border: 280 20% 90%;
+    --input: 280 20% 90%;
 
     /* Muted - Muted: Secondary backgrounds */
-    --muted: 270 20% 15%;
-    --muted-foreground: 270 10% 65%;
+    --muted: 280 20% 96%;
+    --muted-foreground: 270 10% 45%;
 
-    /* Text - Foreground: Off-white */
-    --foreground: 0 0% 98%;
-    --card-foreground: 0 0% 98%;
-    --popover-foreground: 0 0% 98%;
-    --secondary-foreground: 0 0% 98%;
+    /* Text - Foreground: Deep Purple-Black */
+    --foreground: 280 50% 5%;
+    --card-foreground: 280 50% 5%;
+    --popover-foreground: 280 50% 5%;
+    --secondary-foreground: 280 50% 5%;
 
     /* Accent (#9302d6) - Primary: Electric Purple */
     --primary: 281 98% 42%;
@@ -38,12 +38,12 @@
     --ring: 281 98% 42%;
 
     /* Accent - Interactive states */
-    --accent: 270 30% 20%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 280 30% 94%;
+    --accent-foreground: 280 50% 5%;
 
     /* Destructive - Error states */
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Semantic Colors */
     --success: 142 71% 45%;
@@ -52,7 +52,7 @@
     --warning-foreground: 0 0% 100%;
 
     /* Radius - Technical, developer-centric values */
-    --radius: 4px;
+    --radius: 1rem;
 
     /* === LAYOUT === */
     --sidebar-width: 260px;
@@ -67,27 +67,42 @@
   }
 
   .dark {
-    /* Dark mode duplicates root values for this dark-first design */
-    --background: 270 50% 8%;
-    --card: 270 30% 12%;
-    --popover: 270 30% 12%;
-    --secondary: 270 30% 15%;
-    --border: 270 20% 20%;
-    --input: 270 20% 20%;
-    --muted: 270 20% 15%;
-    --muted-foreground: 270 10% 65%;
-    --foreground: 0 0% 98%;
-    --card-foreground: 0 0% 98%;
-    --popover-foreground: 0 0% 98%;
-    --secondary-foreground: 0 0% 98%;
+    /* === COLOR PALETTE (Deep Purple Void) === */
+    /* Canvas - Background: Deepest Violet (Rich, not Grey) */
+    --background: 280 50% 5%;
+
+    /* Surface - Card, Popover: Solid Purple-Black */
+    --card: 280 35% 14%;
+    --popover: 280 35% 14%;
+    --secondary: 280 35% 19%;
+
+    /* Border - Border, Input: Deep Purple Lines */
+    --border: 280 30% 20%;
+    --input: 280 30% 20%;
+
+    /* Muted - Muted: Secondary backgrounds */
+    --muted: 280 30% 15%;
+    --muted-foreground: 270 20% 70%;
+
+    /* Text - Foreground: Off-white */
+    --foreground: 0 0% 100%;
+    --card-foreground: 0 0% 100%;
+    --popover-foreground: 0 0% 100%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Primary remains the same Electric Purple */
     --primary: 281 98% 42%;
     --primary-light: 281 100% 63%;
     --primary-foreground: 0 0% 100%;
     --ring: 281 98% 42%;
-    --accent: 270 30% 20%;
-    --accent-foreground: 0 0% 98%;
+
+    /* Accent - Interactive states */
+    --accent: 280 40% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Semantic */
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;

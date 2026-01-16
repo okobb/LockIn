@@ -72,15 +72,34 @@ export default function Sidebar({
   hideToggle,
 }: SidebarProps) {
   const location = useLocation();
-  const [isDarkTheme, setIsDarkTheme] = React.useState(true);
+  const [isDarkTheme, setIsDarkTheme] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("theme");
+      // Default to dark if no preference
+      return saved ? saved === "dark" : true;
+    }
+    return true;
+  });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  /* Effect to sync theme with DOM on mount and updates */
+  React.useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkTheme) {
+      root.classList.add("dark");
+      root.setAttribute("data-theme", "dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      root.setAttribute("data-theme", "light");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkTheme]);
+
   const toggleTheme = () => {
-    const newTheme = isDarkTheme ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", newTheme);
-    setIsDarkTheme(!isDarkTheme);
+    setIsDarkTheme((prev) => !prev);
   };
 
   const handleLockIn = () => {

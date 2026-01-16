@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Zap } from "lucide-react";
+import { ArrowRight, Zap, Command } from "lucide-react";
 import api from "../../../../shared/lib/axios";
-import "./MissionBar.css";
+import { cn } from "../../../../shared/lib/utils";
 
 interface TaskSuggestion {
   id: number;
@@ -13,7 +13,10 @@ interface TaskSuggestion {
 export default function MissionBar() {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<TaskSuggestion[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -38,6 +41,23 @@ export default function MissionBar() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Handle clicking outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsFocused(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const handleNavigation = (value: string) => {
     if (!value.trim()) return;
 
@@ -54,63 +74,85 @@ export default function MissionBar() {
         state: { title: value, isFreestyle: true },
       });
     }
+    setIsFocused(false);
+    setSuggestions([]);
+  };
+
+  const selectSuggestion = (task: TaskSuggestion) => {
+    setQuery(task.title);
+    handleNavigation(task.title);
   };
 
   return (
-    <div className="mission-bar-container">
-      <div className="mission-bar active">
-        <div className="mission-icon">
-          <Zap size={18} className="icon-zap" />
+    <div className="w-full max-w-2xl mx-auto" ref={containerRef}>
+      <div
+        className={cn(
+          "relative flex items-center group transition-all duration-300 ease-out",
+          "bg-card/90 backdrop-blur-sm border border-border/40 rounded-2xl shadow-sm",
+          "hover:border-primary/30 hover:shadow-md hover:bg-card",
+          "hover:border-primary/30 hover:shadow-md hover:bg-card",
+          isFocused &&
+            "ring-2 ring-primary/50 border-primary shadow-[0_0_30px_hsl(var(--primary)/0.3)] bg-card"
+        )}
+      >
+        <div className="pl-4 pr-3 text-primary/70 group-focus-within:text-primary transition-colors">
+          <Zap className="w-5 h-5" strokeWidth={2.5} />
         </div>
+
         <input
+          ref={inputRef}
           type="text"
-          className="mission-input"
+          className="flex-1 h-12 md:h-14 border-none focus:outline-none focus:border-none focus:ring-offset-0 text-base md:text-lg text-foreground placeholder:text-muted-foreground/60 w-full bg-transparent outline-none ring-0 !ring-offset-0 !shadow-none focus:!ring-0 focus-visible:!ring-0 focus-visible:!ring-offset-0"
           placeholder="What are you working on?"
           value={query}
-          onChange={(e) => {
-            const val = e.target.value;
-            const prevLen = query.length;
-            setQuery(val);
-
-            const nativeEvent = e.nativeEvent as InputEvent;
-
-            const matchesSuggestion = suggestions.some(
-              (s) => s.title.toLowerCase() === val.toLowerCase()
-            );
-
-            if (!matchesSuggestion) return;
-
-            const isReplacement =
-              nativeEvent.inputType === "insertReplacementText";
-            const isHeuristic =
-              val.length - prevLen > 1 ||
-              (nativeEvent.data === null && val.length > prevLen);
-
-            if (isReplacement || isHeuristic) {
-              handleNavigation(val);
-            }
-          }}
+          onFocus={() => setIsFocused(true)}
+          onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
               handleNavigation(query);
             }
           }}
-          list="task-suggestions"
         />
-        <datalist id="task-suggestions">
-          {suggestions.map((task) => (
-            <option key={task.id} value={task.title}>
-              #{task.number}
-            </option>
-          ))}
-        </datalist>
-        <button
-          className="mission-action-btn"
-          onClick={() => handleNavigation(query)}
-        >
-          <ArrowRight size={16} />
-        </button>
+
+        <div className="pr-2">
+          <button
+            onClick={() => handleNavigation(query)}
+            className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            disabled={!query.trim()}
+          >
+            <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+          </button>
+        </div>
+
+        {/* Custom Suggestions Dropdown */}
+        {isFocused && suggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 p-1 bg-popover/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+              {suggestions.map((task, index) => (
+                <button
+                  key={task.id}
+                  onClick={() => selectSuggestion(task)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors",
+                    "hover:bg-primary/10 hover:text-primary group/item",
+                    index === 0 && "bg-accent/50"
+                  )}
+                >
+                  <div className="flex-none flex items-center justify-center w-8 h-8 rounded-md bg-background border border-border/50 text-muted-foreground text-xs group-hover/item:border-primary/20 group-hover/item:text-primary transition-colors">
+                    <Command className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{task.title}</div>
+                    <div className="text-xs text-muted-foreground/70 flex items-center gap-1.5">
+                      <span className="opacity-70">Task #{task.number}</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

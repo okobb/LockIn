@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Play,
   RotateCcw,
@@ -19,9 +20,34 @@ import MissionBar from "../../components/MissionBar/MissionBar";
 export default function NewDashboard() {
   const { stats, priorityTasks, upcomingEvents } = useDashboard();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [lastSession, setLastSession] = useState<any>(null);
+  const navigate = useNavigate();
 
-  const handleStartSession = (title: string) => {
-    console.log("Start Session:", title);
+  useEffect(() => {
+    const savedSession = localStorage.getItem("current_focus_session");
+    if (savedSession) {
+      try {
+        setLastSession(JSON.parse(savedSession));
+      } catch (e) {
+        console.error("Failed to parse saved session", e);
+      }
+    }
+  }, []);
+
+  const handleResumeSession = () => {
+    if (lastSession) {
+      navigate("/focus", {
+        state: {
+          taskId: lastSession.taskId,
+          title: lastSession.title,
+          sessionId: lastSession.sessionId,
+          isFreestyle: lastSession.isFreestyle,
+        },
+      });
+    } else {
+      // If no session, go to focus mode in freestyle
+      navigate("/focus");
+    }
   };
 
   return (
@@ -53,8 +79,8 @@ export default function NewDashboard() {
               label="Flow Time"
               value={stats.flowTime}
               icon={Zap}
-              color="text-amber-500"
-              bg="bg-amber-500/10"
+              color="text-warning"
+              bg="bg-warning/10"
             />
             <StatCard
               label="Contexts Saved"
@@ -69,8 +95,8 @@ export default function NewDashboard() {
               value={stats.deepWorkBlocks}
               unit="blocks"
               icon={Layers}
-              color="text-violet-500"
-              bg="bg-violet-500/10"
+              color="text-primary"
+              bg="bg-primary/10"
             />
             <StatCard
               label="Tasks Done"
@@ -97,17 +123,20 @@ export default function NewDashboard() {
                   <div className="flex items-center gap-3">
                     <span className="flex h-3 w-3 rounded-full bg-primary animate-pulse shadow-[0_0_10px_currentColor] text-primary" />
                     <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
-                      Active Session
+                      {lastSession ? "Active Session" : "No Active Session"}
                     </span>
                   </div>
 
                   <div>
                     <h2 className="text-3xl md:text-4xl font-light leading-tight text-foreground">
-                      Auth Middleware Refactor
+                      {lastSession
+                        ? lastSession.title
+                        : "Ready to start focusing?"}
                     </h2>
                     <p className="mt-4 text-lg text-muted-foreground font-light max-w-2xl">
-                      "Resuming work on the OAuth 2.0 implementation. Last
-                      worked on the refresh token rotation logic..."
+                      {lastSession
+                        ? "Resume your last session where you left off."
+                        : "Select a task from the mission bar above or start a freestyle session."}
                     </p>
                   </div>
 
@@ -115,15 +144,18 @@ export default function NewDashboard() {
                     <Button
                       size="lg"
                       className="h-12 px-8 rounded-full! text-base text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
+                      onClick={handleResumeSession}
                     >
-                      <Play className="w-5 h-5 mr-2 fill-current" /> Resume Work
+                      <Play className="w-5 h-5 mr-2 fill-current" />
+                      {lastSession ? "Resume Work" : "Start Focus"}
                     </Button>
                     <Button
                       variant="ghost"
                       size="lg"
                       className="h-12 px-8 rounded-full! text-base hover:bg-primary/5 text-foreground/80 hover:text-foreground"
+                      onClick={() => navigate("/calendar")}
                     >
-                      <Activity className="w-5 h-5 mr-2" /> View Timeline
+                      <CalendarIcon className="w-5 h-5 mr-2" /> View Timeline
                     </Button>
                   </div>
                 </div>
@@ -189,7 +221,7 @@ export default function NewDashboard() {
             </div>
 
             <div className="lg:col-span-4 space-y-10">
-              <Card className="rounded-3xl bg-secondary/10 border-border/20">
+              <Card className="rounded-3xl bg-card border-border/20 shadow-sm">
                 <CardContent className="p-8">
                   <div className="flex items-center gap-3 mb-8">
                     <div className="p-2.5 bg-background rounded-xl shadow-sm">
@@ -266,10 +298,19 @@ export default function NewDashboard() {
 
 function StatCard({ label, value, unit, icon: Icon, trend, color, bg }: any) {
   return (
-    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+    <Card
+      className={cn(
+        "group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-transparent",
+        bg // Apply the background tint to the whole card
+      )}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div className={cn("p-2.5 rounded-xl transition-colors", bg)}>
+          <div
+            className={cn(
+              "p-2.5 rounded-xl transition-colors bg-background/50 border border-border/10"
+            )}
+          >
             <Icon className={cn("w-5 h-5", color)} />
           </div>
           {trend && (
@@ -294,7 +335,7 @@ function StatCard({ label, value, unit, icon: Icon, trend, color, bg }: any) {
         </div>
         <div
           className={cn(
-            "absolute -bottom-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-10 group-hover:opacity-20 transition-opacity",
+            "absolute -bottom-6 -right-6 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity",
             color.replace("text-", "bg-")
           )}
         />
