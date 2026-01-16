@@ -16,6 +16,11 @@ class KnowledgeChunk extends Model
         'resource_id',
         'chunk_index',
         'content_chunk',
+        'qdrant_point_id',
+        'chunk_type',
+        'token_count',
+        'chunk_metadata',
+        'is_embedded',
     ];
 
     /**
@@ -25,6 +30,9 @@ class KnowledgeChunk extends Model
     {
         return [
             'chunk_index' => 'integer',
+            'token_count' => 'integer',
+            'chunk_metadata' => 'array',
+            'is_embedded' => 'boolean',
         ];
     }
 

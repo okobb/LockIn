@@ -19,6 +19,12 @@ final class ContextSnapshotService extends BaseService
         return ContextSnapshot::class;
     }
 
+    public function __construct(
+        protected TranscriptionService $transcriptionService
+    ) {
+        parent::__construct();
+    }
+
     /**
      * Create a snapshot and link it to the session.
      *
@@ -29,7 +35,8 @@ final class ContextSnapshotService extends BaseService
      */
     public function createSnapshot(FocusSession $session, array $data, ?UploadedFile $voiceFile = null): ContextSnapshot
     {
-        return $this->executeInTransaction(function () use ($session, $data, $voiceFile) {
+        /** @var ContextSnapshot $snapshot */
+        $snapshot = $this->executeInTransaction(function () use ($session, $data, $voiceFile) {
             $snapshotData = [
                 'user_id' => $session->user_id,
                 'focus_session_id' => $session->id,
@@ -57,5 +64,16 @@ final class ContextSnapshotService extends BaseService
 
             return $snapshot;
         });
+
+        // Transcribe audio if present
+        if ($voiceFile && $snapshot->voice_memo_path) {
+            $transcript = $this->transcriptionService->transcribe($snapshot->voice_memo_path);
+            
+            if ($transcript) {
+                $snapshot->update(['voice_transcript' => $transcript]);
+            }
+        }
+
+        return $snapshot;
     }
 }

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, Zap, Command, Plus } from "lucide-react";
 import api from "../../../../shared/lib/axios";
 import { cn } from "../../../../shared/lib/utils";
-import { CreateContextModal } from "../../../context/components/CreateContextModal";
 
 interface TaskSuggestion {
   id: number;
@@ -15,7 +14,6 @@ export default function MissionBar() {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<TaskSuggestion[]>([]);
   const [isFocused, setIsFocused] = useState(false);
-  const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,7 +125,6 @@ export default function MissionBar() {
             </button>
           </div>
 
-          {/* Custom Suggestions Dropdown */}
           {isFocused && suggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 p-1 bg-popover/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
@@ -170,11 +167,6 @@ export default function MissionBar() {
           <Plus className="w-6 h-6 text-muted-foreground group-hover/plus:text-primary transition-colors" />
         </button>
       </div>
-
-      <CreateContextModal
-        isOpen={isContextModalOpen}
-        onClose={() => setIsContextModalOpen(false)}
-      />
     </div>
   );
 }

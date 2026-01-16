@@ -62,4 +62,15 @@ return [
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
         'redirect' => env('GITHUB_REDIRECT_URI'),
     ],
+
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'embedding_model' => env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
+    ],
+
+    'qdrant' => [
+        'host' => env('QDRANT_URL'),
+        'key' => env('QDRANT_API_KEY'),
+        'collection' => env('QDRANT_COLLECTION', 'knowledge_chunks'),
+    ],
 ];
