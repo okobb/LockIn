@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { X, Trash2 } from "lucide-react";
 import type { CalendarBlock } from "../../types/calendar";
 import { formatDateWithOffset } from "../../utils/domain";
+import { cn } from "../../../../shared/lib/utils";
+import { Button } from "../../../../shared/components/UI/Button";
+import { Input } from "../../../../shared/components/UI/Input";
+import { Label } from "../../../../shared/components/UI/Label";
 
 interface EditBlockModalProps {
   isOpen: boolean;
@@ -71,58 +75,76 @@ export const EditBlockModal = ({
   if (!isOpen || !block) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h3>Edit Block</h3>
-          <button className="btn-close" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] animate-in fade-in duration-150">
+      <div className="bg-card border border-border rounded-lg w-full max-w-[400px] shadow-2xl animate-in slide-in-from-bottom-2 duration-150">
+        <div className="flex justify-between items-center p-4 border-b border-border">
+          <h3 className="text-lg font-semibold text-foreground">Edit Block</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={onClose}
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
-        <div className="modal-body">
-          <div className="form-group">
-            <label>Title</label>
-            <input
+
+        <div className="p-4 space-y-4">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="form-control"
               autoFocus
             />
           </div>
 
-          <div className="form-group">
-            <label>Type</label>
-            <div className="type-options">
-              <button
-                className={`type-option ${
-                  type === "deep_work" ? "active" : ""
-                }`}
+          <div className="space-y-2">
+            <Label>Type</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant={type === "deep_work" ? "default" : "outline"}
+                className={cn(
+                  "w-full",
+                  type === "deep_work" && "bg-primary text-primary-foreground"
+                )}
                 onClick={() => setType("deep_work")}
               >
                 Deep Work
-              </button>
-              <button
-                className={`type-option ${type === "meeting" ? "active" : ""}`}
+              </Button>
+              <Button
+                type="button"
+                variant={type === "meeting" ? "default" : "outline"}
+                className={cn(
+                  "w-full",
+                  type === "meeting" && "bg-primary text-primary-foreground"
+                )}
                 onClick={() => setType("meeting")}
               >
                 Meeting
-              </button>
-              <button
-                className={`type-option ${type === "external" ? "active" : ""}`}
+              </Button>
+              <Button
+                type="button"
+                variant={type === "external" ? "default" : "outline"}
+                className={cn(
+                  "w-full",
+                  type === "external" && "bg-primary text-primary-foreground"
+                )}
                 onClick={() => setType("external")}
               >
                 External
-              </button>
+              </Button>
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Duration</label>
+          <div className="space-y-2">
+            <Label>Duration</Label>
             <select
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="form-control"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value={15}>15 min</option>
               <option value={30}>30 min</option>
@@ -135,25 +157,21 @@ export const EditBlockModal = ({
             </select>
           </div>
         </div>
-        <div
-          className="modal-footer"
-          style={{ justifyContent: "space-between" }}
-        >
-          <button
-            className="btn btn-ghost"
+
+        <div className="flex justify-between items-center p-4 border-t border-border">
+          <Button
+            variant="ghost"
             onClick={handleDelete}
-            style={{ color: "var(--color-danger, #ef4444)" }}
+            className="text-white hover:text-white bg-destructive hover:bg-destructive/90"
           >
-            <Trash2 size={16} />
+            <Trash2 size={16} className="mr-2" />
             Delete
-          </button>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button className="btn btn-ghost" onClick={onClose}>
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose}>
               Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleSubmit}>
-              Save Changes
-            </button>
+            </Button>
+            <Button onClick={handleSubmit}>Save Changes</Button>
           </div>
         </div>
       </div>

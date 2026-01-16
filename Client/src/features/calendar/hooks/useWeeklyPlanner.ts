@@ -3,7 +3,11 @@ import type { BacklogTask, CalendarBlock } from "../types/calendar";
 import { useCalendarNavigation } from "./useCalendarNavigation";
 import { useCalendarEvents } from "./useCalendarEvents";
 import { useTaskBacklog } from "../../tasks/hooks/useTaskBacklog";
-import { WORK_END_HOUR, formatDateWithOffset } from "../utils/domain";
+import {
+  WORK_END_HOUR,
+  CALENDAR_END_HOUR,
+  formatDateWithOffset,
+} from "../utils/domain";
 
 export function useWeeklyPlanner() {
   const {
@@ -62,15 +66,18 @@ export function useWeeklyPlanner() {
       const endTime = new Date(startTime);
       endTime.setMinutes(startTime.getMinutes() + task.estimatedMinutes);
 
+      // Check against CALENDAR_END_HOUR
+      const endHour = endTime.getHours() + endTime.getMinutes() / 60;
+      if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
+        alert("Cannot schedule tasks past 9 PM.");
+        return;
+      }
+
       if (checkOverlap(startTime, endTime)) {
         alert("This time slot overlaps with an existing block.");
         return;
       }
 
-      // ATOMIC OPERATION: Remove from backlog first (synchronous),
-      // then add to calendar. This ensures no duplication.
-      // If calendar add fails, user sees error but task is removed from backlog
-      // (acceptable UX - they can re-add the task)
       removeBacklogTask(taskId);
 
       // Add block to calendar (async with optimistic update)
@@ -104,11 +111,6 @@ export function useWeeklyPlanner() {
         priority: "medium",
         estimatedMinutes: durationMinutes,
       };
-
-      // ATOMIC OPERATION: Add to backlog first (synchronous),
-      // then remove from calendar. This ensures no item is lost.
-      // If calendar delete fails, item exists in both places temporarily
-      // (acceptable UX - user can manually delete from calendar)
       addBacklogTask(newTask);
       removeBlock(blockId);
     },
@@ -124,6 +126,12 @@ export function useWeeklyPlanner() {
 
       const endTime = new Date(startTime);
       endTime.setMinutes(startTime.getMinutes() + 90);
+
+      const endHour = endTime.getHours() + endTime.getMinutes() / 60;
+      if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
+        alert("Cannot schedule blocks past 9 PM.");
+        return;
+      }
 
       if (checkOverlap(startTime, endTime)) {
         alert(
@@ -155,6 +163,11 @@ export function useWeeklyPlanner() {
       targetHour = 9;
     }
 
+    // Safety check against CALENDAR_END_HOUR
+    if (targetHour >= CALENDAR_END_HOUR) {
+      targetHour = CALENDAR_END_HOUR - 1; // Default to last available slot
+    }
+
     setCreateBlockState({
       isOpen: true,
       date: targetDate,
@@ -178,6 +191,12 @@ export function useWeeklyPlanner() {
 
       const endTime = new Date(startTime);
       endTime.setMinutes(startTime.getMinutes() + durationMinutes);
+
+      const endHour = endTime.getHours() + endTime.getMinutes() / 60;
+      if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
+        alert("Cannot schedule blocks past 9 PM.");
+        return;
+      }
 
       if (checkOverlap(startTime, endTime)) {
         alert("This time slot overlap with an existing block.");
@@ -203,14 +222,13 @@ export function useWeeklyPlanner() {
   }, [setCreateBlockState]);
 
   return {
-    // Week state
     weekLabel,
     weekDays,
     weekStart,
     weekEnd,
     currentWeekOffset,
 
-    // Events
+
     events: calendarBlocks,
     isLoading,
     isSyncing,
@@ -219,15 +237,12 @@ export function useWeeklyPlanner() {
     error: null,
     getEventsForDay,
 
-    // Capacity
     capacityStats,
 
-    // Backlog
     backlogTasks,
     isBacklogCollapsed,
     toggleBacklog,
 
-    // Actions
     selectedBlockType,
     setSelectedBlockType,
     selectedDuration,
@@ -242,18 +257,15 @@ export function useWeeklyPlanner() {
     addBacklogTask,
     updateCalendarBlock,
 
-    // Pending move (overtime confirmation)
     pendingMoveState,
     confirmPendingMove,
     cancelPendingMove,
 
-    // Modal state
     createBlockState,
     setCreateBlockState,
     confirmCreateBlock,
     closeCreateBlockModal,
 
-    // Navigation
     goToPreviousWeek,
     goToNextWeek,
     goToToday,

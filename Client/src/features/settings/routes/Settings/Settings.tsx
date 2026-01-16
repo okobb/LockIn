@@ -5,15 +5,25 @@ import {
   Mail,
   Settings as SettingsIcon,
   Globe,
+  Loader2,
 } from "lucide-react";
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { useIntegrations } from "../../hooks/useIntegrations";
 import { useAuthContext } from "../../../auth/context/AuthContext";
 import { useModal } from "../../../../shared/context/ModalContext";
 import { user as userApi } from "../../api/user";
-import "./Settings.css";
+import { cn } from "../../../../shared/lib/utils";
+import { Button } from "../../../../shared/components/UI/Button";
+import { Switch } from "../../../../shared/components/UI/Switch";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "../../../../shared/components/UI/Card";
+import { Label } from "../../../../shared/components/UI/Label";
 
-// Common timezones grouped by region
 const TIMEZONE_OPTIONS = [
   {
     group: "Americas",
@@ -94,7 +104,6 @@ export default function Settings() {
   const { user, setAuth } = useAuthContext();
   const { open: openModal } = useModal();
   const [timezone, setTimezone] = useState(() => {
-    // Use user's saved timezone or auto-detect from browser
     return user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   });
   const [isSavingTimezone, setIsSavingTimezone] = useState(false);
@@ -119,7 +128,6 @@ export default function Settings() {
     },
   });
 
-  // Auto-save timezone on first render if user doesn't have one set
   useEffect(() => {
     const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (
@@ -139,322 +147,348 @@ export default function Settings() {
       const response = await userApi.updateProfile(user.id, {
         timezone: newTimezone,
       });
-      // Update auth context with new timezone
       setAuth(
         { ...user, timezone: response.data.timezone },
         localStorage.getItem("token") || ""
       );
     } catch (error) {
       console.error("Failed to save timezone:", error);
-      // Revert on error
       setTimezone(user.timezone || "UTC");
     } finally {
       setIsSavingTimezone(false);
     }
   };
 
+  const SettingRow = ({
+    label,
+    description,
+    children,
+    className,
+  }: {
+    label: React.ReactNode;
+    description?: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <div
+      className={cn(
+        "flex flex-col sm:flex-row justify-between sm:items-center py-4 border-t border-border first:border-0 first:pt-0 gap-4 sm:gap-0",
+        className
+      )}
+    >
+      <div className="flex-1 pr-4">
+        <div className="font-semibold text-foreground mb-1 flex items-center">
+          {label}
+        </div>
+        {description && (
+          <div className="text-sm text-muted-foreground">{description}</div>
+        )}
+      </div>
+      <div className="flex-shrink-0">{children}</div>
+    </div>
+  );
+
   return (
-    <div className="settings-layout">
+    <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      <main
-        className={`settings-content ${
-          isSidebarCollapsed ? "sidebar-collapsed" : ""
-        }`}
-      >
-        <header className="settings-header">
-          <h1 className="settings-title">Settings</h1>
-          <p className="settings-subtitle">
+      <main className="flex-1 p-8 overflow-y-auto max-w-5xl mx-auto w-full">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold mb-2 tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
             Manage your integrations and preferences
           </p>
         </header>
 
-        <section className="settings-section">
-          <h2 className="section-title">Account</h2>
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Current Plan</div>
-              <div className="setting-description">You're on the Free tier</div>
-            </div>
-            <button className="btn btn-primary">Upgrade to Pro</button>
-          </div>
-        </section>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                label="Current Plan"
+                description="You're on the Free tier"
+              >
+                <Button>Upgrade to Pro</Button>
+              </SettingRow>
+            </CardContent>
+          </Card>
 
-        <section className="settings-section">
-          <h2 className="section-title">Preferences</h2>
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">
-                <Globe
-                  size={16}
-                  style={{ marginRight: "8px", verticalAlign: "middle" }}
-                />
-                Timezone
-              </div>
-              <div className="setting-description">
-                Your calendar events will be displayed in this timezone
-              </div>
-            </div>
-            <select
-              className="form-select"
-              value={timezone}
-              onChange={(e) => handleTimezoneChange(e.target.value)}
-              disabled={isSavingTimezone}
-            >
-              {TIMEZONE_OPTIONS.map((group) => (
-                <optgroup key={group.group} label={group.group}>
-                  {group.zones.map((tz) => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-        </section>
-
-        <section className="settings-section">
-          <h2 className="section-title">Integrations</h2>
-
-          {isLoading ? (
-            <div className="loading-state">Loading integrations...</div>
-          ) : (
-            availableIntegrations.map((config) => {
-              const connected = isConnected(config.provider, config.service);
-              const integration = getIntegration(config.provider);
-              const isProcessingDisconnect =
-                integration && disconnectingId === integration.id;
-
-              return (
-                <div
-                  key={`${config.provider}-${config.service}`}
-                  className="integration-card"
+            <Card>
+            <CardHeader>
+              <CardTitle>Preferences</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                label={
+                  <>
+                    <Globe size={16} className="mr-2" />
+                    Timezone
+                  </>
+                }
+                description="Your calendar events will be displayed in this timezone"
+              >
+                <select
+                  className="w-full sm:w-auto px-3 py-2 bg-background border border-border rounded-md text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  value={timezone}
+                  onChange={(e) => handleTimezoneChange(e.target.value)}
+                  disabled={isSavingTimezone}
                 >
-                  <div className="integration-icon">
-                    {getIntegrationIcon(config.icon)}
-                  </div>
-                  <div className="integration-info">
-                    <div className="integration-name">
-                      {config.name}
-                      {config.description && (
-                        <span className="integration-description">
-                          {" "}
-                          — {config.description}
-                        </span>
-                      )}
-                    </div>
-                    <div className="integration-status">
-                      {connected ? (
-                        <>
-                          <span className="status-badge status-connected">
-                            ● Connected
-                          </span>
-                          <span>Active integration</span>
-                        </>
-                      ) : (
-                        <span className="status-badge status-disconnected">
-                          ● Not Connected
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {connected ? (
-                    <button
-                      className="btn-danger"
-                      onClick={() => integration && disconnect(integration.id)}
-                      disabled={isProcessingDisconnect}
-                    >
-                      {isProcessingDisconnect
-                        ? "Disconnecting..."
-                        : "Disconnect"}
-                    </button>
-                  ) : (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => connect(config.provider, config.service)}
-                      disabled={connectingKey !== null}
-                    >
-                      {connectingKey === `${config.provider}-${config.service}`
-                        ? "Connecting..."
-                        : "Connect"}
-                    </button>
-                  )}
+                  {TIMEZONE_OPTIONS.map((group) => (
+                    <optgroup key={group.group} label={group.group}>
+                      {group.zones.map((tz) => (
+                        <option key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </SettingRow>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Integrations</CardTitle>
+              <CardDescription>
+                Connect your external tools to Lock In.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center p-8 text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading integrations...
                 </div>
-              );
-            })
-          )}
-        </section>
+              ) : (
+                <div className="space-y-4">
+                  {availableIntegrations.map((config) => {
+                    const connected = isConnected(
+                      config.provider,
+                      config.service
+                    );
+                    const integration = getIntegration(config.provider);
+                    const isProcessingDisconnect =
+                      integration && disconnectingId === integration.id;
 
-        <section className="settings-section">
-          <h2 className="section-title">Focus Mode</h2>
+                    return (
+                      <div
+                        key={`${config.provider}-${config.service}`}
+                        className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-secondary/20 border border-border rounded-lg"
+                      >
+                        <div className="w-12 h-12 bg-background rounded-md flex items-center justify-center text-muted-foreground shrink-0 border border-border/50">
+                          {getIntegrationIcon(config.icon)}
+                        </div>
+                        <div className="flex-1 text-center sm:text-left">
+                          <div className="font-semibold text-foreground mb-1">
+                            {config.name}
+                            {config.description && (
+                              <span className="font-normal text-muted-foreground text-sm">
+                                {" "}
+                                — {config.description}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground flex items-center justify-center sm:justify-start gap-2">
+                            {connected ? (
+                              <>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                  ● Connected
+                                </span>
+                              </>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-secondary text-muted-foreground">
+                                ● Not Connected
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {connected ? (
+                          <Button
+                            variant="outline"
+                            className="w-full sm:w-auto text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+                            onClick={() =>
+                              integration && disconnect(integration.id)
+                            }
+                            disabled={isProcessingDisconnect}
+                          >
+                            {isProcessingDisconnect
+                              ? "Disconnecting..."
+                              : "Disconnect"}
+                          </Button>
+                        ) : (
+                          <Button
+                            className="w-full sm:w-auto"
+                            onClick={() =>
+                              connect(config.provider, config.service)
+                            }
+                            disabled={connectingKey !== null}
+                          >
+                            {connectingKey ===
+                            `${config.provider}-${config.service}`
+                              ? "Connecting..."
+                              : "Connect"}
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Default Timer Duration</div>
-            </div>
-            <select className="form-select" defaultValue="45">
-              <option value="25">25 minutes (Pomodoro)</option>
-              <option value="45">45 minutes</option>
-              <option value="90">90 minutes (Deep Work)</option>
-              <option value="custom">Custom</option>
-            </select>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Focus Mode</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SettingRow label="Default Timer Duration">
+                <select
+                  className="w-full sm:w-auto px-3 py-2 bg-background border border-border rounded-md text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  defaultValue="45"
+                >
+                  <option value="25">25 minutes (Pomodoro)</option>
+                  <option value="45">45 minutes</option>
+                  <option value="90">90 minutes (Deep Work)</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </SettingRow>
 
-          <div className="setting-row">
-            <div className="setting-info" style={{ flex: 1 }}>
-              <div className="setting-label">
-                Urgent Keywords (bypasses Focus Mode)
-              </div>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Add keyword and press Enter"
-                style={{ marginTop: "var(--space-2)" }}
-              />
-              <div className="keyword-tags">
-                <span className="keyword-tag">
-                  production down <button className="keyword-remove">×</button>
-                </span>
-                <span className="keyword-tag">
-                  urgent <button className="keyword-remove">×</button>
-                </span>
-                <span className="keyword-tag">
-                  blocking <button className="keyword-remove">×</button>
-                </span>
-                <span className="keyword-tag">
-                  p0 <button className="keyword-remove">×</button>
-                </span>
-              </div>
-            </div>
-          </div>
+              <SettingRow
+                label="Urgent Keywords (bypasses Focus Mode)"
+                className="items-start flex-col sm:flex-row sm:items-start"
+              >
+                <div className="w-full sm:w-auto flex flex-col items-end gap-2">
+                  <input
+                    type="text"
+                    className="w-full sm:w-64 px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Add keyword and press Enter"
+                  />
+                  <div className="flex flex-wrap gap-2 justify-end w-full">
+                    {["production down", "urgent", "blocking", "p0"].map(
+                      (tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center gap-2 px-2 py-1 bg-secondary text-secondary-foreground border border-border rounded text-xs font-medium"
+                        >
+                          {tag}
+                          <button className="text-muted-foreground hover:text-destructive transition-colors focus:outline-none ml-1">
+                            ×
+                          </button>
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+              </SettingRow>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Auto-save Context</div>
-              <div className="setting-description">
-                Automatically save your context before calendar meetings
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input type="checkbox" defaultChecked />
-              <span className="toggle-slider" />
-            </label>
-          </div>
+              <SettingRow
+                label="Auto-save Context"
+                description="Automatically save your context before calendar meetings"
+              >
+                <Switch checked={true} onCheckedChange={() => {}} />
+              </SettingRow>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Update Slack Status</div>
-              <div className="setting-description">
-                Set status to "In Focus Mode" during deep work
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input type="checkbox" defaultChecked />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </section>
+              <SettingRow
+                label="Update Slack Status"
+                description='Set status to "In Focus Mode" during deep work'
+              >
+                <Switch checked={true} onCheckedChange={() => {}} />
+              </SettingRow>
+            </CardContent>
+          </Card>
 
-        <section className="settings-section">
-          <h2 className="section-title">Notifications</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                label="Browser Push Notifications"
+                description="Get notified of urgent messages"
+              >
+                <Switch checked={true} onCheckedChange={() => {}} />
+              </SettingRow>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Browser Push Notifications</div>
-              <div className="setting-description">
-                Get notified of urgent messages
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input type="checkbox" defaultChecked />
-              <span className="toggle-slider" />
-            </label>
-          </div>
+              <SettingRow
+                label="Daily Briefing Reminder"
+                description="Remind me to check my morning briefing at 9:00 AM"
+              >
+                <Switch checked={true} onCheckedChange={() => {}} />
+              </SettingRow>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Daily Briefing Reminder</div>
-              <div className="setting-description">
-                Remind me to check my morning briefing at 9:00 AM
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input type="checkbox" defaultChecked />
-              <span className="toggle-slider" />
-            </label>
-          </div>
+              <SettingRow
+                label="End of Day Save Prompt"
+                description="Prompt to save context at 5:30 PM"
+              >
+                <Switch checked={true} onCheckedChange={() => {}} />
+              </SettingRow>
+            </CardContent>
+          </Card>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">End of Day Save Prompt</div>
-              <div className="setting-description">
-                Prompt to save context at 5:30 PM
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input type="checkbox" defaultChecked />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </section>
+          <Card>
+            <CardHeader>
+              <CardTitle>Learning Engine</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                label="Proactive Suggestions"
+                description="Show relevant saved resources while you work"
+              >
+                <Switch checked={true} onCheckedChange={() => {}} />
+              </SettingRow>
 
-        <section className="settings-section">
-          <h2 className="section-title">Learning Engine</h2>
+              <SettingRow
+                label="Liquid Scheduler"
+                description="Auto-schedule learning content in calendar gaps"
+              >
+                <Switch checked={false} onCheckedChange={() => {}} />
+              </SettingRow>
+            </CardContent>
+          </Card>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Proactive Suggestions</div>
-              <div className="setting-description">
-                Show relevant saved resources while you work
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input type="checkbox" defaultChecked />
-              <span className="toggle-slider" />
-            </label>
-          </div>
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                label={
+                  <span className="text-destructive font-medium">
+                    Clear All Contexts
+                  </span>
+                }
+                description="Delete all saved cognitive snapshots"
+                className="border-destructive/10"
+              >
+                <Button
+                  variant="outline"
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  Clear
+                </Button>
+              </SettingRow>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Liquid Scheduler</div>
-              <div className="setting-description">
-                Auto-schedule learning content in calendar gaps
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input type="checkbox" />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </section>
-
-        <section className="settings-section danger-section">
-          <h2 className="section-title">Danger Zone</h2>
-
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Clear All Contexts</div>
-              <div className="setting-description">
-                Delete all saved cognitive snapshots
-              </div>
-            </div>
-            <button className="btn-danger">Clear</button>
-          </div>
-
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Delete Account</div>
-              <div className="setting-description">
-                Permanently delete your Lock In account
-              </div>
-            </div>
-            <button className="btn-danger-solid">Delete Account</button>
-          </div>
-        </section>
+              <SettingRow
+                label={
+                  <span className="text-destructive font-medium">
+                    Delete Account
+                  </span>
+                }
+                description="Permanently delete your Lock In account"
+                className="border-destructive/10"
+              >
+                <Button variant="destructive">Delete Account</Button>
+              </SettingRow>
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   );

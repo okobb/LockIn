@@ -26,7 +26,6 @@ export const useDashboard = () => {
     staleTime: 1000 * 60,
   });
 
-  // Default values for when API fails or hasn't loaded
   const defaultStats: DashboardStats = {
     flowTime: "0h 0m",
     contextsSaved: 0,

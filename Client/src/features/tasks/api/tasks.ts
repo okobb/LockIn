@@ -1,6 +1,5 @@
 import api from "../../../shared/lib/axios";
 
-// Types matching backend TaskResource
 export interface Task {
   id: number;
   title: string;

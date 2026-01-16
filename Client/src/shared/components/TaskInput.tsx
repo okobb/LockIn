@@ -206,7 +206,6 @@ export function TaskInput({
         )}
       </form>
 
-      {/* Overtime Confirmation Modal */}
       {showOvertimeModal && pendingTask && (
         <div ref={modalRef} className="overtime-modal">
           <div className="overtime-modal-header">

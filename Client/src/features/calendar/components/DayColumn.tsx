@@ -5,9 +5,16 @@ import {
   type DragEvent,
   type MouseEvent,
 } from "react";
-import { TIME_SLOTS, formatTime } from "../utils/domain";
+import {
+  TIME_SLOTS,
+  formatTime,
+  SLOT_HEIGHT,
+  HEADER_HEIGHT,
+  CALENDAR_END_HOUR,
+} from "../utils/domain";
 import CalendarBlock from "./CalendarBlock";
 import type { CalendarBlock as ICalendarBlock } from "../types/calendar";
+import { cn } from "../../../shared/lib/utils";
 
 interface DayInfo {
   name: string;
@@ -47,8 +54,7 @@ interface DayColumnProps {
   ) => void;
 }
 
-const SLOT_HEIGHT = 60; // pixels per hour slot
-const HALF_SLOT_HEIGHT = 30; // pixels per half-hour
+// SLOT_HEIGHT imported from domain
 
 export const DayColumn = ({
   day,
@@ -67,52 +73,23 @@ export const DayColumn = ({
   onRangeSelect,
 }: DayColumnProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Drag-to-Create State
   const [isDrafting, setIsDrafting] = useState(false);
   const [draftStart, setDraftStart] = useState<number | null>(null);
   const [draftEnd, setDraftEnd] = useState<number | null>(null);
 
-  const eventsByHour = useMemo(() => {
-    const map = new Map<number, ICalendarBlock[]>();
-    TIME_SLOTS.forEach((h) => map.set(h, []));
-
-    events.forEach((event) => {
-      const h = new Date(event.start_time).getHours();
-      if (map.has(h)) map.get(h)?.push(event);
-    });
-    return map;
-  }, [events]);
-
-  // Calculate time (in decimal hours) from event Y position
-  const getTimeFromEvent = (
-    e: MouseEvent<HTMLDivElement> | DragEvent<HTMLDivElement>
-  ): number => {
+  const getTimeFromEvent = (e: MouseEvent | DragEvent): number => {
     if (!containerRef.current) return TIME_SLOTS[0];
-
     const rect = containerRef.current.getBoundingClientRect();
     const y = e.clientY - rect.top;
     const firstSlot = TIME_SLOTS[0];
-
-    // Calculate hours from top (with 15-min precision)
     const rawHours = y / SLOT_HEIGHT;
-    const quarterHours = Math.floor(rawHours * 4) / 4; // Snap to 15-min intervals
-
+    const quarterHours = Math.floor(rawHours * 4) / 4;
     return firstSlot + quarterHours;
-  };
-
-  // --- Drag to Create Handlers ---
-  const resetDraft = () => {
-    setIsDrafting(false);
-    setDraftStart(null);
-    setDraftEnd(null);
   };
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (isDragging) return;
-    // Skip if clicking on a block (let it handle its own events)
     if ((e.target as HTMLElement).closest(".calendar-block")) return;
-
     const time = getTimeFromEvent(e);
     setIsDrafting(true);
     setDraftStart(time);
@@ -122,8 +99,7 @@ export const DayColumn = ({
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (isDragging) return;
     if (isDrafting && draftStart !== null) {
-      const time = getTimeFromEvent(e);
-      setDraftEnd(time);
+      setDraftEnd(getTimeFromEvent(e));
     }
   };
 
@@ -131,108 +107,191 @@ export const DayColumn = ({
     if (isDrafting && draftStart !== null && draftEnd !== null) {
       const start = Math.min(draftStart, draftEnd);
       const end = Math.max(draftStart, draftEnd);
-      // Duration: difference between start and end, with minimum of 30 minutes
-      const durationHours = Math.max(end - start, 0.5);
-      const durationMinutes = durationHours * 60;
 
-      onRangeSelect(day.date, start, durationMinutes);
+      // Enforce 9 PM limit
+      const validatedEnd = Math.min(end, CALENDAR_END_HOUR);
+
+      const duration = Math.max(validatedEnd - start, 0.5) * 60;
+      onRangeSelect(day.date, start, duration);
     }
-    
-    // Reset
-    resetDraft();
+    setIsDrafting(false);
+    setDraftStart(null);
+    setDraftEnd(null);
   };
 
-  const handleMouseLeave = () => {
-    // Cancel draft if leaving the column to prevent stuck state
-    resetDraft();
-  };
-
-  // Calculate Ghost Block position and height (for drag-to-create)
   const ghostBlockStyle = useMemo(() => {
-    if (!isDrafting || draftStart === null || draftEnd === null) {
-      return null;
-    }
-    const startTime = Math.min(draftStart, draftEnd);
-    const endTime = Math.max(draftStart, draftEnd);
+    if (!isDrafting || draftStart === null || draftEnd === null) return null;
+    const start = Math.min(draftStart, draftEnd);
+    const end = Math.max(draftStart, draftEnd);
     const firstSlot = TIME_SLOTS[0];
-
-    const topOffset = (startTime - firstSlot) * SLOT_HEIGHT;
-    // Height: minimum 30 pixels (30 min), otherwise based on selection
-    const height = Math.max(endTime - startTime, 0.5) * SLOT_HEIGHT;
-
     return {
-      top: `${topOffset}px`,
-      height: `${Math.max(height, HALF_SLOT_HEIGHT)}px`,
+      top: `${(start - firstSlot) * SLOT_HEIGHT}px`,
+      height: `${Math.max((end - start) * SLOT_HEIGHT, 30)}px`,
     };
   }, [isDrafting, draftStart, draftEnd]);
 
-  // Calculate Drop Preview Style (for drag-and-drop of existing blocks/tasks)
   const dropPreviewStyle = useMemo(() => {
-    // Only show if dragging, this column is the target, and we have a valid time
     if (!isDragging || dropTarget?.day !== dayIndex || !dropTarget) return null;
-
-    const startHour = dropTarget.hour;
     const firstSlot = TIME_SLOTS[0];
-    const topOffset = (startHour - firstSlot) * SLOT_HEIGHT;
-    const height = (draggedDuration / 60) * SLOT_HEIGHT;
-
     return {
-      top: `${topOffset}px`,
-      height: `${height}px`,
-      display: "flex",
+      top: `${(dropTarget.hour - firstSlot) * SLOT_HEIGHT}px`,
+      height: `${(draggedDuration / 60) * SLOT_HEIGHT}px`,
     };
   }, [isDragging, dropTarget, dayIndex, draggedDuration]);
 
-  return (
-    <div className="day-column">
+  const now = new Date();
+  const currentHour = now.getHours() + now.getMinutes() / 60;
+  const lastSlot = TIME_SLOTS[TIME_SLOTS.length - 1];
+  const calendarEndTime = lastSlot + 1;
 
-      <div className={`day-column-header ${day.isToday ? "today" : ""}`}>
-        <div className="day-name">{day.name}</div>
-        <div className="day-date">{day.date.getDate()}</div>
+  const showCurrentTime =
+    day.isToday &&
+    currentHour >= TIME_SLOTS[0] &&
+    currentHour < calendarEndTime;
+
+  const currentTimeTop = (currentHour - TIME_SLOTS[0]) * SLOT_HEIGHT;
+
+  return (
+    <div className="flex-1 min-w-[160px] border-r border-border/40 last:border-r-0 flex flex-col group/column">
+      <div
+        className={cn(
+          "flex flex-col justify-center items-center text-center sticky top-0 z-30 border-b border-border/40 transition-colors",
+          day.isToday ? "bg-background border-b-primary/20" : "bg-background"
+        )}
+        style={{ height: HEADER_HEIGHT }}
+      >
+        <span
+          className={cn(
+            "text-sm font-medium",
+            day.isToday ? "text-primary font-bold" : "text-foreground/90"
+          )}
+        >
+          {day.name}{" "}
+          <span className="text-xs opacity-75 font-normal ml-1">
+            {day.date.getDate()}
+          </span>
+        </span>
       </div>
 
       <div
         ref={containerRef}
-        className="day-slots-container relative"
+        className="flex-1 relative"
+        style={{
+          backgroundImage: `
+            linear-gradient(to bottom, hsl(var(--border) / 0.5) 1px, transparent 1px),
+            linear-gradient(to bottom, hsl(var(--border) / 0.2) 1px, transparent 1px)
+          `,
+          backgroundSize: `100% ${SLOT_HEIGHT}px, 100% ${SLOT_HEIGHT / 2}px`,
+        }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onMouseLeave={() => {
+          setIsDrafting(false);
+          onDragLeave();
+        }}
       >
+        {showCurrentTime && (
+          <div
+            className="absolute w-full border-t-2 border-red-500 z-20 pointer-events-none opacity-90"
+            style={{ top: `${currentTimeTop}px` }}
+          >
+            <div className="absolute -left-[4px] -top-[5px] w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+          </div>
+        )}
+
         {ghostBlockStyle && (
-          <div className="ghost-block" style={ghostBlockStyle} />
+          <div
+            className="absolute inset-x-1 bg-primary/20 border border-primary/40 rounded z-20 pointer-events-none"
+            style={ghostBlockStyle}
+          />
         )}
 
         {dropPreviewStyle && (
-          <div className="ghost-block" style={dropPreviewStyle}>
-            <span className="ghost-block-label">
+          <div
+            className="absolute inset-x-1 bg-primary/20 border-2 border-dashed border-primary/50 rounded z-20 pointer-events-none flex items-center justify-center"
+            style={dropPreviewStyle}
+          >
+            <span className="text-[10px] font-mono font-medium text-primary-foreground bg-primary px-1.5 rounded">
               {formatTime(dropTarget!.hour)}
             </span>
           </div>
         )}
 
         {TIME_SLOTS.map((hour) => (
-          <div
-            key={hour}
-            className={`time-slot ${day.isToday ? "today" : ""}`}
-            onDragOver={(e) => onDragOver(e, dayIndex, getTimeFromEvent(e))}
-            onDragLeave={onDragLeave}
-            onDrop={(e) => onDrop(e, dayIndex, getTimeFromEvent(e))}
-            onClick={() => onTimeSlotClick(dayIndex, hour)}
-          >
-            <div className="time-slot-content">
-              {eventsByHour.get(hour)?.map((block) => (
-                <CalendarBlock
-                  key={block.id}
-                  block={block}
-                  onDragStart={onBlockDragStart}
-                  onClick={onBlockClick}
-                  onDelete={onBlockDelete}
-                />
-              ))}
-            </div>
+          <div key={hour} className="contents">
+            <div
+              className="absolute w-full z-0 hover:bg-white/5 transition-colors border-b border-white/5"
+              style={{
+                height: `${SLOT_HEIGHT / 4}px`,
+                top: `${(hour - TIME_SLOTS[0]) * SLOT_HEIGHT}px`,
+              }}
+              onDragOver={(e) => onDragOver(e, dayIndex, getTimeFromEvent(e))}
+              onDrop={(e) => onDrop(e, dayIndex, getTimeFromEvent(e))}
+              onClick={() => onTimeSlotClick(dayIndex, hour)}
+            />
+            <div
+              className="absolute w-full z-0 hover:bg-white/5 transition-colors border-b border-white/5"
+              style={{
+                height: `${SLOT_HEIGHT / 4}px`,
+                top: `${
+                  (hour - TIME_SLOTS[0]) * SLOT_HEIGHT + SLOT_HEIGHT / 4
+                }px`,
+              }}
+              onDragOver={(e) => onDragOver(e, dayIndex, getTimeFromEvent(e))}
+              onDrop={(e) => onDrop(e, dayIndex, getTimeFromEvent(e))}
+              onClick={() => onTimeSlotClick(dayIndex, hour + 0.25)}
+            />
+            <div
+              className="absolute w-full z-0 hover:bg-white/5 transition-colors border-b border-white/5"
+              style={{
+                height: `${SLOT_HEIGHT / 4}px`,
+                top: `${
+                  (hour - TIME_SLOTS[0]) * SLOT_HEIGHT + (SLOT_HEIGHT / 4) * 2
+                }px`,
+              }}
+              onDragOver={(e) => onDragOver(e, dayIndex, getTimeFromEvent(e))}
+              onDrop={(e) => onDrop(e, dayIndex, getTimeFromEvent(e))}
+              onClick={() => onTimeSlotClick(dayIndex, hour + 0.5)}
+            />
+            <div
+              className="absolute w-full z-0 hover:bg-white/5 transition-colors"
+              style={{
+                height: `${SLOT_HEIGHT / 4}px`,
+                top: `${
+                  (hour - TIME_SLOTS[0]) * SLOT_HEIGHT + (SLOT_HEIGHT / 4) * 3
+                }px`,
+              }}
+              onDragOver={(e) => onDragOver(e, dayIndex, getTimeFromEvent(e))}
+              onDrop={(e) => onDrop(e, dayIndex, getTimeFromEvent(e))}
+              onClick={() => onTimeSlotClick(dayIndex, hour + 0.75)}
+            />
           </div>
         ))}
+
+        {events.map((block) => {
+          const start = new Date(block.start_time);
+          const end = new Date(block.end_time);
+
+          const startHour = start.getHours();
+          const startMinutes = start.getMinutes();
+          const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+
+          const hoursFromStart = startHour - TIME_SLOTS[0] + startMinutes / 60;
+          const top = hoursFromStart * SLOT_HEIGHT;
+          const height = durationMinutes * (SLOT_HEIGHT / 60);
+
+          return (
+            <CalendarBlock
+              key={block.id}
+              block={block}
+              onDragStart={onBlockDragStart}
+              onClick={onBlockClick}
+              onDelete={onBlockDelete}
+              style={{ top: `${top}px`, height: `${height}px` }}
+            />
+          );
+        })}
       </div>
     </div>
   );

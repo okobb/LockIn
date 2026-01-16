@@ -1,273 +1,304 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import {
-  AlertCircle,
+  Play,
   RotateCcw,
-  Inbox,
-  Clock,
+  CheckCircle2,
+  Calendar as CalendarIcon,
   ArrowRight,
-  CalendarRange,
+  Zap,
+  Layers,
+  Activity,
 } from "lucide-react";
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { useDashboard } from "../../hooks/useDashboard";
-import "./Dashboard.css";
-
+import { Button } from "../../../../shared/components/UI/Button";
+import { Card, CardContent } from "../../../../shared/components/UI/Card";
+import { cn } from "../../../../shared/lib/utils";
 import MissionBar from "../../components/MissionBar/MissionBar";
 
-export default function Dashboard() {
-  const { stats, priorityTasks, upcomingEvents, communications } =
-    useDashboard();
+export default function NewDashboard() {
+  const { stats, priorityTasks, upcomingEvents } = useDashboard();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Dynamic greeting based on time of day
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
-
-  // Format current date
-  const formatDate = () => {
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    };
-    return new Date().toLocaleDateString("en-US", options);
-  };
-
-  // Get current time
-  const getCurrentTime = () => {
-    return new Date().toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+  const handleStartSession = (title: string) => {
+    console.log("Start Session:", title);
   };
 
   return (
-    <div className="dashboard-layout">
+    <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300 font-sans selection:bg-primary/20">
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       <main
-        className={`main-content ${
-          isSidebarCollapsed ? "sidebar-collapsed" : ""
-        }`}
+        className={cn(
+          "flex-1 overflow-y-auto h-screen w-full transition-all duration-300",
+          isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]"
+        )}
       >
-        {/* Header */}
-        <header className="page-header">
-          <h1 className="greeting">{getGreeting()}</h1>
-          <p className="date-info">
-            {formatDate()} •{" "}
-            {priorityTasks.length > 0 ? (
-              <strong>{priorityTasks.length} priority items</strong>
-            ) : (
-              "No priority items"
-            )}
-          </p>
-        </header>
+        <div className="w-full h-full px-6 py-8 md:px-10 md:py-12 space-y-12">
+          <header className="flex flex-col gap-2">
+            <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+              {new Date().toLocaleDateString("default", { weekday: "long" })},{" "}
+              <span className="opacity-60">
+                {new Date().toLocaleDateString("default", { month: "long" })}
+              </span>{" "}
+              {new Date().getDate()}
+            </h1>
+          </header>
 
-        {/* Stats Bar */}
-        <div className="stats-bar">
-          <div className="stat-item">
-            <span className="stat-value">{stats.flowTime}</span>
-            <span className="stat-label">Flow Time</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{stats.contextsSaved}</span>
-            <span className="stat-label">Contexts Saved</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{stats.deepWorkBlocks}</span>
-            <span className="stat-label">Deep Work Blocks</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{stats.tasksDone}</span>
-            <span className="stat-label">Tasks Done</span>
-          </div>
-          <Link to="/stats" className="stats-link">
-            View Stats <ArrowRight size={14} />
-          </Link>
-        </div>
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard
+              label="Flow Time"
+              value={stats.flowTime}
+              icon={Zap}
+              color="text-amber-500"
+              bg="bg-amber-500/10"
+            />
+            <StatCard
+              label="Contexts Saved"
+              value={stats.contextsSaved}
+              unit="sessions"
+              icon={RotateCcw}
+              color="text-primary"
+              bg="bg-primary/10"
+            />
+            <StatCard
+              label="Deep Work"
+              value={stats.deepWorkBlocks}
+              unit="blocks"
+              icon={Layers}
+              color="text-violet-500"
+              bg="bg-violet-500/10"
+            />
+            <StatCard
+              label="Tasks Done"
+              value={stats.tasksDone}
+              unit="completed"
+              icon={CheckCircle2}
+              color="text-emerald-500"
+              bg="bg-emerald-500/10"
+            />
+          </section>
 
-        <div className="dashboard-grid">
-          {/* Left Column */}
-          <div className="main-column">
-            {/* Mission Bar */}
-            <MissionBar />
-
-            {/* Priority Tasks */}
-            <div className="dashboard-card">
-              <div className="card-title">
-                <AlertCircle size={14} />
-                Priority Tasks
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            <div className="lg:col-span-8 space-y-10">
+              <div className="sticky top-0 z-50 py-4 -mx-6 px-6 backdrop-blur-xl transition-all border-b border-transparent data-[stuck=true]:border-[#333]/50">
+                <div className="w-full">
+                  <MissionBar />
+                </div>
               </div>
 
-              {priorityTasks.length === 0 ? (
-                <div className="empty-state">
-                  <AlertCircle className="icon" />
-                  <div className="empty-state-title">No priority tasks</div>
-                  <div className="empty-state-text">
-                    Tasks requiring immediate attention will appear here
+              <div className="group relative rounded-3xl border border-primary/20 bg-card/40 hover:bg-card/60 transition-all duration-500 overflow-hidden">
+                <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                <div className="relative p-8 md:p-10 space-y-8">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-3 w-3 rounded-full bg-primary animate-pulse shadow-[0_0_10px_currentColor] text-primary" />
+                    <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
+                      Active Session
+                    </span>
                   </div>
-                </div>
-              ) : (
-                <div className="task-list">
-                  {priorityTasks.map((task) => (
-                    <div key={task.id} className="task-item">
-                      <div className="task-item-header">
-                        <span className={`task-tag ${task.tagColor}`}>
-                          {task.tag}
-                        </span>
-                        <span className="task-time">{task.timeAgo}</span>
-                      </div>
-                      <div className="task-title">{task.title}</div>
-                      {task.reference && (
-                        <div className="task-reference">{task.reference}</div>
-                      )}
-                      <div className="task-reason">{task.reason}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Context Restoration */}
-            <div className="dashboard-card">
-              <div className="card-title">
-                <RotateCcw size={14} />
-                Context Restoration
-              </div>
-
-              <div className="empty-state">
-                <RotateCcw className="icon" />
-                <div className="empty-state-title">No saved context</div>
-                <div className="empty-state-text">
-                  Lock In to save your work context for later
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="sidebar-column">
-            {/* Communications Hub */}
-            <div className="comm-hub">
-              <div className="comm-hub-header">
-                <div className="card-title">
-                  <Inbox size={14} />
-                  Communications
-                </div>
-                <span className="comm-count">{communications.length} new</span>
-              </div>
-
-              <div className="comm-tabs">
-                <button className="comm-tab active">
-                  {/* Slack Icon */}
-                  <svg
-                    role="img"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={14}
-                    height={14}
-                    fill="currentColor"
-                  >
-                    <title>Slack</title>
-                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
-                  </svg>
-                  Slack
-                </button>
-                <button className="comm-tab">
-                  {/* GitHub Icon */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <title>GitHub</title>
-                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-                  </svg>
-                  PRs
-                </button>
-                <button className="comm-tab">
-                  {/* Gmail Icon */}
-                  <svg
-                    role="img"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={14}
-                    height={14}
-                    fill="currentColor"
-                  >
-                    <title>Gmail</title>
-                    <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" />
-                  </svg>
-                  Email
-                </button>
-              </div>
-
-              <div className="empty-state">
-                <Inbox className="icon" />
-                <div className="empty-state-title">No messages</div>
-                <div className="empty-state-text">
-                  Connect your integrations to see messages
-                </div>
-              </div>
-            </div>
-
-            {/* Upcoming Events */}
-            <div className="upcoming-widget">
-              <div className="upcoming-header">
-                <div className="card-title">
-                  <Clock size={14} />
-                  Upcoming
-                </div>
-                <span className="current-time">{getCurrentTime()}</span>
-              </div>
-
-              {upcomingEvents.length === 0 ? (
-                <div className="empty-state">
-                  <CalendarRange className="icon" />
-                  <div className="empty-state-title">No upcoming events</div>
-                  <div className="empty-state-text">
-                    Connect your calendar to see events
+                  <div>
+                    <h2 className="text-3xl md:text-4xl font-light leading-tight text-foreground">
+                      Auth Middleware Refactor
+                    </h2>
+                    <p className="mt-4 text-lg text-muted-foreground font-light max-w-2xl">
+                      "Resuming work on the OAuth 2.0 implementation. Last
+                      worked on the refresh token rotation logic..."
+                    </p>
                   </div>
-                </div>
-              ) : (
-                <div className="upcoming-list">
-                  {upcomingEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className={`upcoming-item ${event.type}`}
+
+                  <div className="flex flex-wrap gap-4">
+                    <Button
+                      size="lg"
+                      className="h-12 px-8 rounded-full! text-base text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
                     >
-                      <span className="upcoming-time">{event.time}</span>
-                      <div className="upcoming-info">
-                        <div className="upcoming-title">{event.title}</div>
-                        <div className="upcoming-meta">{event.meta}</div>
-                      </div>
-                    </div>
-                  ))}
+                      <Play className="w-5 h-5 mr-2 fill-current" /> Resume Work
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="h-12 px-8 rounded-full! text-base hover:bg-primary/5 text-foreground/80 hover:text-foreground"
+                    >
+                      <Activity className="w-5 h-5 mr-2" /> View Timeline
+                    </Button>
+                  </div>
                 </div>
-              )}
+              </div>
 
-              <Link
-                to="/weekly-planner"
-                className="btn btn-ghost"
-                style={{ width: "100%", marginTop: "var(--space-3)" }}
-              >
-                <CalendarRange size={16} />
-                View Full Schedule
-              </Link>
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-medium tracking-tight">
+                    Priority Items{" "}
+                    <span className="text-muted-foreground ml-2 opacity-60">
+                      ({priorityTasks.length})
+                    </span>
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-primary"
+                  >
+                    View Backlog <ArrowRight className="ml-1 w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {priorityTasks.length > 0 ? (
+                    priorityTasks.map((task: any, i: number) => (
+                      <Card
+                        key={i}
+                        className="group hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                      >
+                        <CardContent className="p-5 flex items-center gap-5">
+                          <div className="flex-none p-3 rounded-full bg-secondary text-secondary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                            <Activity className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-medium group-hover:text-primary transition-colors">
+                              {task.title || "Untitled Task"}
+                            </h4>
+                            <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
+                              <span className="inline-block w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_currentColor] text-red-500" />
+                              High Priority
+                            </div>
+                          </div>
+                          <div className="hidden md:block text-right">
+                            <div className="text-sm font-medium text-foreground">
+                              Due Today
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              In 2 hours
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="p-12 text-center border-2 border-dashed border-border/30 rounded-3xl">
+                      <CheckCircle2 className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
+                      <p className="text-lg text-muted-foreground font-light">
+                        All priority items cleared.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-4 space-y-10">
+              <Card className="rounded-3xl bg-secondary/10 border-border/20">
+                <CardContent className="p-8">
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="p-2.5 bg-background rounded-xl shadow-sm">
+                      <CalendarIcon className="w-5 h-5 text-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium">Daily Agenda</h3>
+                  </div>
+
+                  <div className="relative border-l-2 border-border/40 ml-3.5 space-y-8 py-2">
+                    {upcomingEvents.length > 0 ? (
+                      upcomingEvents.map((event: any, i: number) => (
+                        <div key={i} className="relative pl-8">
+                          <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-4 border-background bg-foreground" />
+                          <div className="space-y-1">
+                            <div className="text-sm font-mono text-muted-foreground">
+                              {new Date(
+                                event.start_time || Date.now()
+                              ).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </div>
+                            <div className="font-medium text-base">
+                              {event.title}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {event.type || "Event"}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="relative pl-8 pb-1">
+                          <div className="absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                          <div className="text-sm font-mono text-emerald-500 mb-1">
+                            Now • 14:30
+                          </div>
+                          <div className="font-medium text-foreground">
+                            Deep Work Block
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Focus Mode Auto-Enabled
+                          </div>
+                        </div>
+                        <div className="relative pl-8 pt-2 opacity-60">
+                          <div className="absolute -left-[5px] top-3 w-2.5 h-2.5 rounded-full bg-border" />
+                          <div className="text-sm font-mono text-muted-foreground mb-1">
+                            16:00
+                          </div>
+                          <div className="font-medium text-foreground">
+                            Team Sync
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Weekly Engineering Align...
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <Button className="w-full mt-8" variant="outline">
+                    View Full Calendar
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+function StatCard({ label, value, unit, icon: Icon, trend, color, bg }: any) {
+  return (
+    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className={cn("p-2.5 rounded-xl transition-colors", bg)}>
+            <Icon className={cn("w-5 h-5", color)} />
+          </div>
+          {trend && (
+            <span
+              className={cn(
+                "text-xs font-medium px-2 py-1 rounded-full bg-background border border-border/50",
+                color
+              )}
+            >
+              {trend}
+            </span>
+          )}
+        </div>
+        <div className="space-y-1 relative z-10">
+          <h4 className="text-3xl font-light tracking-tight text-foreground">
+            {value}{" "}
+            <span className="text-base text-muted-foreground font-normal ml-0.5">
+              {unit}
+            </span>
+          </h4>
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        </div>
+        <div
+          className={cn(
+            "absolute -bottom-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-10 group-hover:opacity-20 transition-opacity",
+            color.replace("text-", "bg-")
+          )}
+        />
+      </CardContent>
+    </Card>
   );
 }
