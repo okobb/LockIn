@@ -86,91 +86,28 @@ export default function FocusMode() {
 
   const togglePause = () => setIsPaused(!isPaused);
 
-  const handleLockIn = async () => {
-    setIsSaving(true);
-    console.log("Starting Lock In...");
+  const handleLockIn = () => {
+    const payloadSessionId = session?.id || (activeState as any)?.sessionId;
 
-    try {
-      const payloadSessionId = session?.id || (activeState as any)?.sessionId;
-
-      if (!payloadSessionId) {
-        console.error("No Session ID found!", { session, activeState });
-        open({
-          type: "error",
-          title: "Save Failed",
-          message:
-            "Could not find an active session ID. Please try restarting your session from the dashboard.",
-        });
-        setIsSaving(false);
-        return;
-      }
-
-      const mockBrowserTabs = [
-        { title: "Laravel Docs", url: "https://laravel.com/docs" },
-        { title: "React Router", url: "https://reactrouter.com/" },
-        {
-          title: "Stack Overflow - Context API",
-          url: "https://stackoverflow.com/questions/...",
-        },
-      ];
-
-      const mockGitState = {
-        branch: "feature/login",
-        diff: "diff --git a/file.ts b/file.ts...",
-        files_changed: ["file.ts"],
-        repo: "LockIn",
-      };
-
-      console.log("Sending payload to /context/save...", {
-        id: payloadSessionId,
-        note,
-        browser: mockBrowserTabs,
-      });
-
-      const response = await saveContextSnapshot({
-        focus_session_id: payloadSessionId,
-        note,
-        browser_state: mockBrowserTabs,
-        git_state: mockGitState,
-      });
-
-      console.log("Response:", response);
-
-      localStorage.removeItem("current_focus_session");
-
-      open({
-        type: "info",
-        title: "Context Locked In!",
-        message: "Your session context has been saved successfully.",
-        confirmText: "Back to Dashboard",
-      }).then(() => {
-        navigate("/dashboard");
-      });
-    } catch (error: any) {
-      console.error("Lock In failed", error);
-      console.error("Error Response:", error.response?.data);
-
-      const status = error.response?.status
-        ? ` (Status: ${error.response.status})`
-        : "";
-      let errorMessage =
-        error.response?.data?.message || "Could not save your session context.";
-
-      if (error.response?.data?.errors) {
-        const details = Object.values(error.response.data.errors)
-          .flat()
-          .join(", ");
-        errorMessage += `\nDetails: ${details}`;
-      }
-
+    if (!payloadSessionId) {
+      console.error("No Session ID found!", { session, activeState });
       open({
         type: "error",
-        title: "Save Failed" + status,
-        message: `${errorMessage}`,
+        title: "Navigation Failed",
+        message:
+          "Could not find an active session ID. Please try restarting your session from the dashboard.",
       });
-    } finally {
-      setIsSaving(false);
+      return;
     }
+
+    // Navigate to context save page with session data
+    navigate("/context-save", {
+      state: {
+        sessionId: payloadSessionId,
+        title: activeState?.title,
+        note: note,
+      },
+    });
   };
 
   if (!activeState) {
