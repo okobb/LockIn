@@ -27,9 +27,6 @@ const CalendarBlock = memo(
     const style = { ...defaultStyle, ...propStyle };
 
     const startTime = new Date(block.start_time);
-    const endTime = new Date(block.end_time);
-    const durationHours =
-      (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
 
     const handleDelete = (e: React.MouseEvent) => {
       e.stopPropagation();

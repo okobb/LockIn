@@ -25,7 +25,12 @@ export const saveContextSnapshot = async (
 
   const response = await api.post<SaveContextResponse>(
     "/context/save",
-    formData
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
   );
 
   return response.data;

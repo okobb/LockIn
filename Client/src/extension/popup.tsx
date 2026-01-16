@@ -22,8 +22,42 @@ const Popup = () => {
   }, []);
 
   const handleSaveContext = () => {
-    console.log("Saving context:", tabs);
-    // TODO: Connect to backend API
+
+    const targetUrl = "http://localhost:5173/context-save?mode=start";
+
+    chrome.tabs.create({ url: targetUrl }, (tab) => {
+      if (tab.id) {
+        const tabId = tab.id;
+        const tabsData = tabs;
+
+        const listener = (tid: number, changeInfo: any) => {
+          if (tid === tabId && changeInfo.status === "complete") {
+            chrome.tabs.onUpdated.removeListener(listener);
+
+            chrome.scripting.executeScript({
+              target: { tabId },
+              world: "MAIN",
+              func: (data) => {
+                // @ts-ignore
+                window.lockInExtensionTabs = data;
+
+                window.postMessage({ type: "LOCKIN_TABS", tabs: data }, "*");
+
+                let retries = 0;
+                const interval = setInterval(() => {
+                  window.postMessage({ type: "LOCKIN_TABS", tabs: data }, "*");
+                  retries++;
+                  if (retries > 5) clearInterval(interval);
+                }, 500);
+              },
+              args: [tabsData],
+            });
+          }
+        };
+
+        chrome.tabs.onUpdated.addListener(listener);
+      }
+    });
   };
 
   const removeTab = (tabId: number) => {
@@ -31,7 +65,7 @@ const Popup = () => {
   };
 
   return (
-    <div className="w-[350px] min-h-[400px] p-4 bg-app text-primary">
+    <div className="w-full h-full p-4 bg-app text-primary flex flex-col">
       <header className="flex items-center justify-between mb-4 border-b border-border-default pb-2">
         <h1 className="text-lg font-semibold flex items-center gap-2">
           <Save className="w-5 h-5 text-primary" />
@@ -81,7 +115,7 @@ const Popup = () => {
         className="w-full btn btn-primary flex items-center justify-center gap-2 py-2"
       >
         <Save className="w-4 h-4" />
-        Save Context
+        Start Context
       </button>
     </div>
   );

@@ -17,8 +17,8 @@ import {
   Terminal,
 } from "lucide-react";
 import { useModal } from "../../../shared/context/ModalContext";
-import { saveContextSnapshot } from "../../context/api/saveContext";
 import { useFocusSession } from "../hooks/useFocusSession";
+import { getGitStatus, type GitStatusResponse } from "../api/focusApi";
 import Sidebar from "../../../shared/components/Sidebar/Sidebar";
 import { cn } from "../../../shared/lib/utils";
 import { Button } from "../../../shared/components/UI/Button";
@@ -51,7 +51,6 @@ export default function FocusMode() {
   const [isPaused, setIsPaused] = useState(false);
 
   const [note, setNote] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     // Try to restore from localStorage if no location state
@@ -86,6 +85,41 @@ export default function FocusMode() {
 
   const togglePause = () => setIsPaused(!isPaused);
 
+  const [restoredTabs, setRestoredTabs] = useState<
+    Array<{ title: string; url: string }>
+  >([]);
+
+  useEffect(() => {
+    if (session?.context_snapshot?.browser_state) {
+      setRestoredTabs(session.context_snapshot.browser_state);
+    }
+  }, [session]);
+
+  const [activeGitState, setActiveGitState] =
+    useState<GitStatusResponse | null>(null);
+
+  useEffect(() => {
+    const fetchGitData = async () => {
+      if (session?.id) {
+        try {
+          const data = await getGitStatus(session.id);
+          setActiveGitState(data);
+        } catch (error) {
+          console.error("Failed to fetch git status", error);
+        }
+      } else if (activeState?.sessionId) {
+        // Fallback if session object isn't fully loaded yet but we have ID
+        try {
+          const data = await getGitStatus(activeState.sessionId);
+          setActiveGitState(data);
+        } catch (error) {
+          console.error("Failed to fetch git status", error);
+        }
+      }
+    };
+    fetchGitData();
+  }, [session?.id, activeState?.sessionId]);
+
   const handleLockIn = () => {
     const payloadSessionId = session?.id || (activeState as any)?.sessionId;
 
@@ -106,6 +140,8 @@ export default function FocusMode() {
         sessionId: payloadSessionId,
         title: activeState?.title,
         note: note,
+        gitState: activeGitState,
+        initialTabs: restoredTabs,
       },
     });
   };
@@ -286,18 +322,8 @@ export default function FocusMode() {
                   size="lg"
                   className="h-12 rounded-full px-8 shadow-lg shadow-primary/20 hover:shadow-primary/40 text-sm font-semibold bg-primary hover:bg-primary/90 transition-all active:scale-95"
                   onClick={handleLockIn}
-                  disabled={isSaving}
                 >
-                  {isSaving ? (
-                    <span className="flex items-center gap-2">
-                      <span className="h-4 w-4 bg-primary-foreground/30 animate-spin rounded-full border-2 border-t-transparent" />
-                      Saving...
-                    </span>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" /> Lock In Context
-                    </>
-                  )}
+                  <Save className="w-4 h-4 mr-2" /> Lock In Context
                 </Button>
               </div>
             </div>
@@ -313,7 +339,7 @@ export default function FocusMode() {
           )}
         >
           <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-8">
-            {!activeState.isFreestyle && (
+            {activeGitState && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -332,24 +358,24 @@ export default function FocusMode() {
                       variant="outline"
                       className="border-purple-500/30 text-purple-400 font-mono bg-purple-500/10"
                     >
-                      feature/oauth-refactor
+                      {activeGitState.branch}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">File</span>
                     <span className="font-mono text-foreground/80">
-                      auth.ts
+                      {activeGitState.files_changed[0]}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-4 text-xs font-mono border-t border-purple-500/20 pt-3">
                     <div className="flex items-center gap-1.5 text-emerald-500">
                       <Plus className="w-3 h-3" />
-                      <span>24 additions</span>
+                      <span>{activeGitState.additions} additions</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-red-500">
                       <div className="w-3 h-px bg-current" />
-                      <span>12 deletions</span>
+                      <span>{activeGitState.deletions} deletions</span>
                     </div>
                   </div>
                 </div>
@@ -361,11 +387,7 @@ export default function FocusMode() {
                 <Monitor className="w-3.5 h-3.5" /> Restored Tabs
               </h3>
               <div className="space-y-2">
-                {[
-                  { title: "Laravel Documentation", url: "laravel.com/docs" },
-                  { title: "React Router - Hooks", url: "reactrouter.com" },
-                  { title: "Stack Overflow", url: "stackoverflow.com" },
-                ].map((tab, i) => (
+                {restoredTabs.map((tab, i) => (
                   <div
                     key={i}
                     className="flex items-center gap-3 p-3 rounded-lg bg-card/20 border border-border/30 hover:bg-card/40 transition-colors cursor-pointer group"

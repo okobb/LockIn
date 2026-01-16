@@ -22,7 +22,6 @@ import {
   CardContent,
   CardDescription,
 } from "../../../../shared/components/UI/Card";
-import { Label } from "../../../../shared/components/UI/Label";
 
 const TIMEZONE_OPTIONS = [
   {
@@ -218,7 +217,7 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-            <Card>
+          <Card>
             <CardHeader>
               <CardTitle>Preferences</CardTitle>
             </CardHeader>

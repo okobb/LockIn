@@ -71,6 +71,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Focus Sessions
     Route::post('focus-sessions', [FocusSessionController::class, 'store'])->name('focus-sessions.store');
+    Route::get('focus-sessions/{session}/git-status', [\App\Http\Controllers\GitController::class, 'show'])->name('focus-sessions.git-status');
     
     // Context Snapshots
     Route::post('context/save', [ContextSnapshotController::class, 'store'])->name('context.save');
