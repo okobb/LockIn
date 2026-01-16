@@ -3,7 +3,9 @@
 
 body {
   width: 350px;
-  height: 500px;
+  width: 350px;
+  min-height: 200px;
+  /* height: auto; Default */
   overflow: hidden;
   margin: 0;
   padding: 0;

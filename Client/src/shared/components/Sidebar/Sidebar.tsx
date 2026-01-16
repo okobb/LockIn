@@ -103,7 +103,7 @@ export default function Sidebar({
   };
 
   const handleLockIn = () => {
-    navigate("/context-save");
+    navigate("/context-save?mode=start");
   };
 
   const handleLogout = () => {

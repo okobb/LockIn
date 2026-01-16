@@ -28,6 +28,7 @@ final class FocusSessionController extends BaseController
         $result = $this->focusSessionService->handleSessionStart($user->id, $validated);
 
         if ($result['status'] === 'resumed') {
+            $result['session']->load('contextSnapshot');
             return $this->successResponse(
                 [
                     'session' => $result['session'],
@@ -37,6 +38,8 @@ final class FocusSessionController extends BaseController
                 200
             );
         }
+
+        $result['session']->load('contextSnapshot');
 
         return $this->createdResponse([
             'session' => $result['session'],
