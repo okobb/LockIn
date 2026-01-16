@@ -23,8 +23,6 @@ export const saveContextSnapshot = async (
     formData.append("voice_file", request.voice_file);
   }
 
-  // NOTE: do NOT set Content-Type header manually for multipart/form-data
-  // Axios/Browser will set it with the correct boundary
   const response = await api.post<SaveContextResponse>(
     "/context/save",
     formData

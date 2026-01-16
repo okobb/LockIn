@@ -2,6 +2,10 @@ import type { CalendarBlock } from "../types/calendar";
 
 export const WORK_START_HOUR = 9; // 9:00 AM
 export const WORK_END_HOUR = 17; // 5:00 PM
+export const CALENDAR_END_HOUR = 21; // 9:00 PM
+
+export const SLOT_HEIGHT = 160;
+export const HEADER_HEIGHT = 50;
 
 /**
  * Checks if an end hour extends into overtime (past work hours)
@@ -23,9 +27,7 @@ export function roundToNearest15Minutes(date: Date): Date {
   return newDate;
 }
 
-export const TIME_SLOTS = [
-  8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-];
+export const TIME_SLOTS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
 export function formatTime(hour: number): string {
   const absoluteHour = Math.floor(hour);
@@ -59,10 +61,11 @@ export function calculateBlockStyle(
   // Only offset by minutes within the hour (blocks are already placed in their hour's slot)
   const startMinutes = start.getMinutes();
 
-  // 1 minute = 1 pixel (based on SLOT_HEIGHT = 60px/hour)
+  // SLOT_HEIGHT = 120px/hour => 2px per minute
+  const pxPerMinute = 2;
   return {
-    height: `${durationMinutes}px`,
-    top: `${startMinutes}px`,
+    height: `${durationMinutes * pxPerMinute}px`,
+    top: `${startMinutes * pxPerMinute}px`,
   };
 }
 

@@ -1,6 +1,5 @@
 import api from "../../../shared/lib/axios";
 
-// Types
 export interface DashboardStats {
   flowTime: string;
   contextsSaved: number;
@@ -36,7 +35,6 @@ export interface Communication {
   isUrgent: boolean;
 }
 
-// API functions
 export const dashboard = {
   getStats: async (): Promise<{ data: DashboardStats }> => {
     const response = await api.get<{ data: DashboardStats }>(

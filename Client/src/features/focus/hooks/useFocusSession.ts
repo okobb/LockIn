@@ -33,10 +33,6 @@ export const useFocusSession = (activeState: FocusState | null) => {
           setSession(newSession);
           console.log("Started new session:", newSession);
 
-          // Persist to localStorage
-          // Note: This logic was in the component. We can keep it here or let the component handle persistence side-effects using the session object.
-          // For cleaner hooks, we'll let the component handle the specific localStorage logic if it's UI specific,
-          // but "current_focus_session" seems generic enough.
           const stateToSave = {
             title: activeState.title,
             taskId: activeState.taskId,
@@ -58,9 +54,7 @@ export const useFocusSession = (activeState: FocusState | null) => {
     if (activeState) {
       initSession();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeState?.title, activeState?.sessionId]);
-  // We used deep dependencies based on activeState properties to avoid infinite loops if object ref changes
 
   return { session, loading, setSession };
 };

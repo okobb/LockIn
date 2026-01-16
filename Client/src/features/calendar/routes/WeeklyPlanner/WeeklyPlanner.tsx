@@ -1,592 +1,557 @@
+import { useState } from "react";
+import { isSameDay } from "date-fns";
 import {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  type DragEvent,
-} from "react";
-import { Link } from "react-router-dom";
-import {
-  CalendarRange,
-  Plus,
-  Upload,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  AlertCircle,
-  Inbox,
-  ChevronRight as ChevronRightIcon,
+  Plus,
+  Calendar as CalendarIcon,
   GripVertical,
-  Settings,
+  Clock,
 } from "lucide-react";
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
-import { useWeeklyPlanner } from "../../hooks/useWeeklyPlanner";
-import type { BacklogTask, CalendarBlock } from "../../types/calendar";
-import { useIntegrations } from "../../../settings/hooks/useIntegrations";
-import "./WeeklyPlanner.css";
-import DayColumn from "../../components/DayColumn";
+import { DayColumn } from "../../components/DayColumn";
 import { CreateBlockModal } from "../../components/modals/CreateBlockModal";
-import { ConnectModal } from "../../../settings/components/ConnectModal";
-import { EditTaskModal } from "../../../tasks/components/EditTaskModal";
 import { EditBlockModal } from "../../components/modals/EditBlockModal";
+import { MoveOvertimeModal } from "../../components/modals/MoveOvertimeModal";
+import { ConnectModal } from "../../../settings/components/ConnectModal";
+import { TaskInput } from "../../../../shared/components/TaskInput";
+import { useWeeklyPlanner } from "../../hooks/useWeeklyPlanner";
+import { useIntegrations } from "../../../settings/hooks/useIntegrations";
 import {
   TIME_SLOTS,
   formatTime,
-  formatMinutesToHours,
-  WORK_END_HOUR,
+  SLOT_HEIGHT,
+  HEADER_HEIGHT,
+  CALENDAR_END_HOUR,
 } from "../../utils/domain";
-import { TaskInput } from "../../../../shared/components/TaskInput";
-import { MoveOvertimeModal } from "../../components/modals/MoveOvertimeModal";
+import { cn } from "../../../../shared/lib/utils";
+import { Button } from "../../../../shared/components/UI/Button";
+import type { CalendarBlock } from "../../types/calendar";
 
 export default function WeeklyPlanner() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
-  const [editingTask, setEditingTask] = useState<BacklogTask | null>(null);
-  const [editingBlock, setEditingBlock] = useState<CalendarBlock | null>(null);
+  const [connectService, setConnectService] = useState("");
+
+  const [editBlockModalState, setEditBlockModalState] = useState<{
+    isOpen: boolean;
+    block: CalendarBlock | null;
+  }>({
+    isOpen: false,
+    block: null,
+  });
+
+  const {
+    weekLabel,
+    weekDays,
+    goToNextWeek,
+    goToPreviousWeek,
+    goToToday,
+
+    events,
+    backlogTasks,
+    addBacklogTask,
+    capacityStats,
+
+    createBlockState,
+    confirmCreateBlock,
+    closeCreateBlockModal,
+    setCreateBlockState,
+
+    pendingMoveState,
+    confirmPendingMove,
+    cancelPendingMove,
+
+    updateCalendarBlock,
+    removeBlock,
+    moveBlock,
+    handleTaskDrop,
+    isBacklogCollapsed,
+    toggleBacklog,
+    returnToBacklog,
+  } = useWeeklyPlanner();
+
+  const { isConnected, connect } = useIntegrations();
+
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean;
+    type: "task" | "block" | null;
+    id: string | null;
+    duration: number; // in minutes
+  }>({
+    isDragging: false,
+    type: null,
+    id: null,
+    duration: 60,
+  });
+
   const [dropTarget, setDropTarget] = useState<{
     day: number;
     hour: number;
   } | null>(null);
 
-  const {
-    weekLabel,
-    weekDays,
-    isLoading,
-    isFetching,
-    events,
-    getEventsForDay,
-    capacityStats,
-    backlogTasks,
-    isBacklogCollapsed,
-    toggleBacklog,
-    handleTaskDrop,
-    handleAddBlock,
-    handleGlobalAddBlock,
-    moveBlock,
-    removeBlock,
-    returnToBacklog,
-    addBacklogTask,
-    updateBacklogTask,
-    updateCalendarBlock,
-    //isCreatingBlock,
-    createBlockState,
-    setCreateBlockState,
-    confirmCreateBlock,
-    closeCreateBlockModal,
-    pendingMoveState,
-    confirmPendingMove,
-    cancelPendingMove,
-    goToPreviousWeek,
-    goToNextWeek,
-    goToToday,
-    syncCalendar,
-    isSyncing,
-  } = useWeeklyPlanner();
+  const openEditModal = (block: CalendarBlock) => {
+    setEditBlockModalState({ isOpen: true, block });
+  };
 
-  // Handler for adding tasks with overtime awareness
-  const handleAddTask = useCallback(
-    (data: { title: string; scheduled_date: string; is_overtime: boolean }) => {
-      const newTask: BacklogTask = {
-        id: `task-${Date.now()}`,
-        title: data.title,
-        estimatedMinutes: 30,
-        priority: data.is_overtime ? "urgent" : "medium",
-      };
-      addBacklogTask(newTask);
-      // TODO: In future, can use data.scheduled_date and data.is_overtime
-      // to schedule task directly to calendar if needed
-    },
-    [addBacklogTask]
-  );
+  const closeEditModal = () => {
+    setEditBlockModalState({ isOpen: false, block: null });
+  };
 
-  const { connect, isConnected, connectingKey } = useIntegrations();
+  const onUpdateBlock = (id: string, updates: any) => {
+    updateCalendarBlock(id, updates);
+    closeEditModal();
+  };
 
-  // Calculate the duration of whatever is being dragged
-  const draggedDuration = useMemo(() => {
-    if (draggedTaskId) {
-      const task = backlogTasks.find((t) => t.id === draggedTaskId);
-      return task ? task.estimatedMinutes : 30; // Default to 30 for tasks
-    }
-    if (draggedBlockId) {
-      const block = events.find((b) => b.id === draggedBlockId);
-      if (block) {
-        const start = new Date(block.start_time);
-        const end = new Date(block.end_time);
-        return (end.getTime() - start.getTime()) / (1000 * 60); // duration in minutes
-      }
-    }
-    return 60; // Fallback
-  }, [draggedTaskId, draggedBlockId, backlogTasks, events]);
+  const onDeleteBlock = (id: string) => {
+    removeBlock(id);
+    closeEditModal();
+  };
 
-  // Keyboard shortcut for backlog toggle
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
-      ) {
-        return;
-      }
-
-      if (e.code === "KeyB") {
-        e.preventDefault();
-        toggleBacklog();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [toggleBacklog]);
-
-  // Drag handlers
-  const handleDragStart = useCallback(
-    (e: DragEvent<HTMLDivElement>, task: BacklogTask) => {
-      setDraggedTaskId(task.id);
-      e.dataTransfer.setData(
-        "application/json",
-        JSON.stringify({ type: "task", id: task.id })
-      );
-      e.dataTransfer.effectAllowed = "move";
-    },
-    []
-  );
-
-  const handleBlockDragStart = useCallback(
-    (e: DragEvent<HTMLDivElement>, block: CalendarBlock) => {
-      setDraggedBlockId(block.id);
-      e.dataTransfer.setData(
-        "application/json",
-        JSON.stringify({ type: "block", id: block.id })
-      );
-      e.dataTransfer.effectAllowed = "move";
-    },
-    []
-  );
-
-  const handleDragEnd = useCallback(() => {
-    setDraggedTaskId(null);
-    setDraggedBlockId(null);
-    setDropTarget(null);
-  }, []);
-
-  const handleDragOver = useCallback(
-    (e: DragEvent<HTMLDivElement>, dayIndex: number, hour: number) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      setDropTarget({ day: dayIndex, hour });
-    },
-    []
-  );
-
-  const handleDragLeave = useCallback(() => {
-    setDropTarget(null);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>, dayIndex: number, hour: number) => {
-      e.preventDefault();
-
-      const targetDate = weekDays[dayIndex]?.date;
-      if (!targetDate) return;
-
-      try {
-        const data = JSON.parse(e.dataTransfer.getData("application/json"));
-
-        if (data.type === "block") {
-          moveBlock(data.id, targetDate, hour);
-        } else if (data.type === "task") {
-          handleTaskDrop(data.id, targetDate, hour);
-        }
-      } catch (err) {
-        // Fallback for interactions where data might be just text (legacy/fallback)
-        const taskId = e.dataTransfer.getData("text/plain");
-        if (taskId) {
-          handleTaskDrop(taskId, targetDate, hour);
-        }
-      }
-
-      setDraggedTaskId(null);
-      setDraggedBlockId(null);
-      setDropTarget(null);
-    },
-    [weekDays, handleTaskDrop, moveBlock]
-  );
-
-  const handleBacklogDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      try {
-        const data = JSON.parse(e.dataTransfer.getData("application/json"));
-        if (data.type === "block") {
-          returnToBacklog(data.id);
-        }
-      } catch (err) {
-        // Ignore invalid data
-      }
-      setDraggedTaskId(null);
-      setDraggedBlockId(null);
-    },
-    [returnToBacklog]
-  );
-
-  const handleBacklogDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
-
-  const handleImportCalendar = () => {
-    console.log(
-      "Import Calendar Clicked. Connected:",
-      isGoogleCalendarConnected
-    );
-    if (isGoogleCalendarConnected) {
-      console.log("Already connected, syncing...");
-      syncCalendar();
-    } else {
-      console.log("Not connected, opening modal...");
+  const handleConnect = (service: string) => {
+    if (!isConnected("google", "calendar")) {
+      setConnectService(service);
       setIsConnectModalOpen(true);
     }
   };
 
-  const handleConnectConfirm = () => {
-    setIsConnectModalOpen(false);
+  const confirmConnect = () => {
     connect("google", "calendar");
+    setIsConnectModalOpen(false);
   };
 
-  const handleTimeSlotClick = useCallback(
-    (dayIndex: number, hour: number) => {
-      if (weekDays[dayIndex]) {
-        handleAddBlock(weekDays[dayIndex].date, hour);
-      }
-    },
-    [weekDays, handleAddBlock]
+  const handleTaskDragStart = (
+    e: React.DragEvent<HTMLDivElement>,
+    task: any
+  ) => {
+    e.dataTransfer.setData("type", "task");
+    e.dataTransfer.setData("id", task.id);
+    e.dataTransfer.effectAllowed = "move";
+
+    setDragState({
+      isDragging: true,
+      type: "task",
+      id: task.id,
+      duration: task.estimatedMinutes || 60,
+    });
+  };
+
+  const handleBlockDragStart = (
+    e: React.DragEvent<HTMLDivElement>,
+    block: CalendarBlock
+  ) => {
+    e.dataTransfer.setData("type", "block");
+    e.dataTransfer.setData("id", block.id);
+    e.dataTransfer.effectAllowed = "move";
+
+    const start = new Date(block.start_time);
+    const end = new Date(block.end_time);
+    const duration = Math.round(
+      (end.getTime() - start.getTime()) / (1000 * 60)
+    );
+
+    setDragState({
+      isDragging: true,
+      type: "block",
+      id: block.id,
+      duration,
+    });
+  };
+
+  const handleDragOver = (
+    e: React.DragEvent<HTMLDivElement>,
+    dayIndex: number,
+    hour: number
+  ) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+
+    // Only update if changed to avoid renders
+    if (dropTarget?.day !== dayIndex || dropTarget?.hour !== hour) {
+      setDropTarget({ day: dayIndex, hour });
+    }
+  };
+
+  const handleDayDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    dayIndex: number,
+    hour: number
+  ) => {
+    e.preventDefault();
+
+    // Reset visual state
+    setDragState({ isDragging: false, type: null, id: null, duration: 60 });
+    setDropTarget(null);
+
+    const type = e.dataTransfer.getData("type");
+    const id = e.dataTransfer.getData("id");
+
+    const date = weekDays[dayIndex].date;
+
+    // Enforce 9 PM Limit
+    if (hour >= CALENDAR_END_HOUR) {
+      alert("Cannot schedule tasks past 9 PM.");
+      return;
+    }
+
+    if (type === "task") {
+      handleTaskDrop(id, date, hour);
+    } else if (type === "block") {
+      moveBlock(id, date, hour);
+    }
+  };
+
+  const handleBacklogDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragState({ isDragging: false, type: null, id: null, duration: 60 });
+
+    const type = e.dataTransfer.getData("type");
+    const id = e.dataTransfer.getData("id");
+
+    if (type === "block" && id) {
+      returnToBacklog(id);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDragState({ isDragging: false, type: null, id: null, duration: 60 });
+    setDropTarget(null);
+  };
+
+  const LegendItem = ({
+    color,
+    label,
+    hours,
+  }: {
+    color: string;
+    label: string;
+    hours: string;
+  }) => (
+    <div className="flex items-center gap-2 text-xs">
+      <div className={`w-3 h-3 rounded-sm ${color}`} />
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{hours}</span>
+    </div>
   );
 
-  const handleRangeSelect = useCallback(
-    (date: Date, startHour: number, durationMinutes: number) => {
-      setCreateBlockState({
-        isOpen: true,
-        date: date,
-        hour: startHour,
-        duration: durationMinutes,
-      } as any);
-    },
-    [setCreateBlockState]
-  );
-
-  const handleBlockClick = useCallback((block: CalendarBlock) => {
-    setEditingBlock(block);
-  }, []);
-
-  const isGoogleCalendarConnected = isConnected("google", "calendar");
+  const handleAddTask = (data: {
+    title: string;
+    scheduled_date: string;
+    is_overtime: boolean;
+  }) => {
+    addBacklogTask({
+      id: `task-${Date.now()}`,
+      title: data.title,
+      priority: "medium",
+      estimatedMinutes: 60,
+    });
+  };
 
   return (
-    <div className="planner-layout">
+    <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300 font-sans selection:bg-primary/20">
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       <main
-        className={`planner-content ${
-          isSidebarCollapsed ? "sidebar-collapsed" : ""
-        }`}
+        className={cn(
+          "flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300",
+          isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]"
+        )}
+        onDragEnd={handleDragEnd}
       >
-        <header className="planner-header">
-          <div>
-            <h1 className="planner-title">
-              Weekly Planner
-              {isFetching && (
-                <span className="fetching-indicator">
-                  <CalendarRange size={16} />
-                </span>
-              )}
-            </h1>
-            <p className="planner-subtitle">
-              Reserve Deep Work blocks and plan your week for maximum focus
-            </p>
-          </div>
-          <div className="header-actions">
-            <button className="btn btn-primary" onClick={handleGlobalAddBlock}>
-              <Plus size={16} />
-              <span>Add Block</span>
-            </button>
-            <button
-              className="btn btn-ghost"
-              onClick={handleImportCalendar}
-              disabled={isSyncing || connectingKey === "google-calendar"}
-            >
-              <Upload size={16} />
-              <span>
-                {isSyncing
-                  ? "Syncing..."
-                  : connectingKey === "google-calendar"
-                  ? "Connecting..."
-                  : isGoogleCalendarConnected
-                  ? "Sync Calendar"
-                  : "Import Calendar"}
-              </span>
-            </button>
-            <Link to="/dashboard" className="btn btn-ghost">
-              <ArrowRight size={16} />
-              <span>View Today's Map</span>
-            </Link>
-          </div>
-        </header>
-
-        <div className="week-nav">
-          <button
-            className="week-nav-btn"
-            onClick={goToPreviousWeek}
-            aria-label="Previous week"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="week-label">
-            {weekLabel}
-            {isFetching && <span className="fetching-indicator"> •</span>}
-          </span>
-          <button
-            className="week-nav-btn"
-            onClick={goToNextWeek}
-            aria-label="Next week"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <button className="btn btn-ghost" onClick={goToToday}>
-            Today
-          </button>
-        </div>
-
-        <div className="capacity-bar">
-          <div className="capacity-item">
-            <div className="capacity-icon deep-work" />
-            <span className="capacity-label">Deep Work</span>
-            <span className="capacity-value">
-              {formatMinutesToHours(capacityStats.deepWorkMinutes)}
-            </span>
-          </div>
-          <div className="capacity-item">
-            <div className="capacity-icon meeting" />
-            <span className="capacity-label">Meetings</span>
-            <span className="capacity-value">
-              {formatMinutesToHours(capacityStats.meetingMinutes)}
-            </span>
-          </div>
-          <div className="capacity-item">
-            <div className="capacity-icon external" />
-            <span className="capacity-label">External</span>
-            <span className="capacity-value">
-              {formatMinutesToHours(capacityStats.externalMinutes)}
-            </span>
-          </div>
-          <div className="capacity-item">
-            <div className="capacity-icon available" />
-            <span className="capacity-label">Available</span>
-            <span className="capacity-value">
-              {formatMinutesToHours(capacityStats.availableMinutes)}
-            </span>
-          </div>
-          <div
-            className={`capacity-target ${
-              !capacityStats.targetMet ? "not-met" : ""
-            }`}
-          >
-            {capacityStats.targetMet ? (
-              <CheckCircle size={14} />
-            ) : (
-              <AlertCircle size={14} />
-            )}
-            <span>Target: 10h+ Deep Work</span>
-          </div>
-        </div>
-
-        {/* Planner Wrapper */}
-        <div className="planner-wrapper">
-          <div
-            className="planner-main card"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-              padding: 0,
-              overflow: "hidden",
-            }}
-          >
-            {isLoading ? (
-              <div className="loading-overlay">Loading calendar...</div>
-            ) : (
-              <div
-                className="flex flex-1 overflow-hidden h-full"
-                style={{ display: "flex", flex: 1, overflow: "hidden" }}
+        <div className="flex-none flex flex-col z-10 border-b border-border bg-background">
+          <div className="px-6 py-5 flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight mb-1">
+                Weekly Planner
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Reserve Deep Work blocks and plan your week for maximum focus
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => {
+                  const now = new Date();
+                  setCreateBlockState({
+                    isOpen: true,
+                    date: now,
+                    hour: now.getHours() + 1,
+                  });
+                }}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
               >
-                <div className="time-col-wrapper">
-                  <div className="time-col-header-spacer" />
-
-                  <div
-                    className="flex-1 overflow-hidden"
-                    style={{ flex: 1, overflow: "hidden" }}
-                  >
-                    {TIME_SLOTS.map((hour) => (
-                      <div key={hour} className="time-slot-label">
-                        {formatTime(hour).split(" ")[0]}
-                        <span>{formatTime(hour).split(" ")[1]}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="day-columns-container">
-                  {weekDays.map((day, index) => (
-                    <DayColumn
-                      key={day.name}
-                      day={day}
-                      dayIndex={index}
-                      events={getEventsForDay(day.date)}
-                      isDragging={!!(draggedTaskId || draggedBlockId)}
-                      dropTarget={dropTarget}
-                      draggedDuration={draggedDuration}
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onTimeSlotClick={handleTimeSlotClick}
-                      onBlockDragStart={handleBlockDragStart}
-                      onBlockClick={handleBlockClick}
-                      onBlockDelete={removeBlock}
-                      onRangeSelect={handleRangeSelect}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+                <Plus className="mr-2 h-4 w-4" /> Add Block
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleConnect("Google Calendar")}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" /> Import Calendar
+              </Button>
+              <Button variant="ghost" onClick={goToToday}>
+                View Today's Map
+              </Button>
+            </div>
           </div>
 
-          <aside
-            className={`backlog-panel ${
-              isBacklogCollapsed ? "collapsed" : ""
-            } ${draggedBlockId ? "ring-2 ring-primary ring-opacity-50" : ""}`}
-            onDrop={handleBacklogDrop}
-            onDragOver={handleBacklogDragOver}
-          >
-            <div className="backlog-panel-header">
-              <div className="backlog-panel-title">
-                <Inbox size={16} />
-                <span>Backlog</span>
-                <span className="backlog-panel-count">
-                  {backlogTasks.length}
+          <div className="px-6 pb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center bg-transparent rounded-lg border border-border/40 p-0.5 overflow-hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-sm hover:bg-muted/50 rounded-r-none border-r border-border/40"
+                  onClick={goToPreviousWeek}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-3 text-sm font-medium min-w-[150px] text-center bg-secondary/20 h-7 flex items-center justify-center">
+                  {weekLabel}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-sm hover:bg-muted/50 rounded-l-none border-l border-border/40"
+                  onClick={goToNextWeek}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-              <button
-                className="backlog-toggle"
-                onClick={toggleBacklog}
-                title="Toggle backlog (B)"
-                aria-label={
-                  isBacklogCollapsed ? "Expand backlog" : "Collapse backlog"
-                }
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={goToToday}
               >
-                <ChevronRightIcon size={14} />
-              </button>
+                Today
+              </Button>
             </div>
 
-            <div className="backlog-panel-content">
-              <p className="backlog-hint">
-                <GripVertical size={12} />
-                Drag tasks to schedule them
-              </p>
-
-              {backlogTasks.length === 0 ? (
-                <div className="backlog-empty">
-                  <p>All tasks scheduled! 🎉</p>
-                </div>
-              ) : (
-                backlogTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`backlog-task group relative ${
-                      draggedTaskId === task.id ? "dragging" : ""
-                    }`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task)}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <div className="backlog-task-header">
-                      <div className="backlog-task-title">{task.title}</div>
-                      <GripVertical size={14} className="drag-handle" />
-                    </div>
-                    <div className="backlog-task-meta">
-                      {task.priority && (
-                        <span className={`priority-tag ${task.priority}`}>
-                          {task.priority}
-                        </span>
-                      )}
-                      <span>
-                        ~{formatMinutesToHours(task.estimatedMinutes)}
-                      </span>
-                    </div>
-                    <button
-                      className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 bg-transparent hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-all duration-150"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingTask(task);
-                      }}
-                      title="Edit task"
-                    >
-                      <Settings size={14} />
-                    </button>
-                  </div>
-                ))
-              )}
-
-              <TaskInput
-                workEndTime={`${WORK_END_HOUR}:00`}
-                onAddTask={handleAddTask}
-                placeholder="Add a new task..."
+            <div className="flex items-center gap-6 bg-card/50 px-4 py-2 rounded-lg border border-border/50">
+              <LegendItem
+                color="bg-primary"
+                label="Deep Work"
+                hours={`${Math.round(capacityStats.deepWorkMinutes / 60)}h`}
+              />
+              <LegendItem
+                color="bg-purple-500"
+                label="Meetings"
+                hours={`${Math.round(capacityStats.meetingMinutes / 60)}h`}
+              />
+              <LegendItem
+                color="bg-yellow-500"
+                label="External"
+                hours={`${Math.round(capacityStats.externalMinutes / 60)}h`}
+              />
+              <LegendItem
+                color="bg-green-500"
+                label="Available"
+                hours={`${Math.round(capacityStats.availableMinutes / 60)}h`}
               />
             </div>
-          </aside>
+
+            <div className="hidden xl:flex items-center px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-md text-xs font-medium">
+              Target: 10h+ Deep Work
+            </div>
+          </div>
         </div>
-      </main>
 
-      <CreateBlockModal
-        isOpen={createBlockState.isOpen}
-        onClose={closeCreateBlockModal}
-        onConfirm={confirmCreateBlock}
-        weekDays={weekDays}
-        initialDate={createBlockState.date}
-        initialHour={createBlockState.hour}
-        initialDuration={createBlockState.duration}
-      />
+        <div className="flex-1 flex overflow-hidden p-4 gap-4 bg-muted/5">
+          <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+            <div className="flex-1 overflow-y-auto overflow-x-auto relative">
+              <div className="flex min-w-[1000px] min-h-full">
+                <div
+                  className="sticky left-0 z-40 w-14 flex flex-col border-r border-border/40 bg-background/95 backdrop-blur-sm"
+                  style={{ paddingTop: `${HEADER_HEIGHT}px` }}
+                >
+                  {TIME_SLOTS.map((hour) => (
+                    <div
+                      key={hour}
+                      className="text-[10px] font-mono text-foreground/80 font-medium text-right pr-3 relative border-b border-transparent"
+                      style={{ height: `${SLOT_HEIGHT}px` }}
+                    >
+                      <span className="absolute top-0 right-3 -translate-y-1/2 bg-background px-1 z-10">
+                        {formatTime(hour)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-      <EditTaskModal
-        isOpen={!!editingTask}
-        task={editingTask}
-        onClose={() => setEditingTask(null)}
-        onConfirm={updateBacklogTask}
-      />
+                {weekDays.map((day, index) => (
+                  <DayColumn
+                    key={day.date.toISOString()}
+                    day={day}
+                    dayIndex={index}
+                    events={events.filter((e) =>
+                      isSameDay(new Date(e.start_time), day.date)
+                    )}
+                    isDragging={dragState.isDragging}
+                    dropTarget={dropTarget}
+                    draggedDuration={dragState.duration}
+                    onDrop={handleDayDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={() => setDropTarget(null)}
+                    onTimeSlotClick={(_, h) =>
+                      setCreateBlockState({
+                        isOpen: true,
+                        date: day.date,
+                        hour: h,
+                      })
+                    }
+                    onRangeSelect={(date, startHour, duration) => {
+                      setCreateBlockState({
+                        isOpen: true,
+                        date,
+                        hour: startHour,
+                        duration,
+                      });
+                    }}
+                    onBlockDragStart={handleBlockDragStart}
+                    onBlockClick={openEditModal}
+                    onBlockDelete={onDeleteBlock}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
 
-      <EditBlockModal
-        isOpen={!!editingBlock}
-        block={editingBlock}
-        onClose={() => setEditingBlock(null)}
-        onConfirm={updateCalendarBlock}
-        onDelete={removeBlock}
-      />
+          <div
+            className={cn(
+              "flex-none flex flex-col transition-all duration-300 z-20",
+              "rounded-xl border border-border bg-card shadow-sm",
+              isBacklogCollapsed
+                ? "w-[60px] h-14 self-start"
+                : "w-[320px] h-full"
+            )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+            }}
+            onDrop={handleBacklogDrop}
+          >
+            <div
+              className={cn(
+                "flex-none h-14 flex items-center justify-between px-4",
+                !isBacklogCollapsed && "border-b border-border"
+              )}
+            >
+              {!isBacklogCollapsed && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold tracking-tight">
+                    Backlog
+                  </span>
+                  <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-[10px] font-bold">
+                    {backlogTasks.length}
+                  </span>
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 text-muted-foreground hover:text-foreground",
+                  isBacklogCollapsed && "mx-auto"
+                )}
+                onClick={toggleBacklog}
+              >
+                {isBacklogCollapsed ? (
+                  <ChevronLeft size={16} />
+                ) : (
+                  <ChevronRight size={16} />
+                )}
+              </Button>
+            </div>
 
-      {pendingMoveState && (
-        <MoveOvertimeModal
-          pendingMove={pendingMoveState}
-          onConfirm={confirmPendingMove}
-          onCancel={cancelPendingMove}
+            {!isBacklogCollapsed && (
+              <>
+                <div className="flex-none p-4 text-xs text-muted-foreground border-b border-border/50">
+                  Drag tasks to schedule them
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {backlogTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      draggable
+                      onDragStart={(e) => handleTaskDragStart(e, task)}
+                      onDragEnd={handleDragEnd}
+                      className="group flex flex-col gap-2 p-3 bg-card border border-border rounded-lg shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-all hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-sm font-medium line-clamp-2 leading-snug">
+                          {task.title}
+                        </span>
+                        <GripVertical className="text-muted-foreground w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 shrink-0" />
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-1">
+                        {task.priority === "urgent" && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded border border-red-500/20">
+                            Urgent
+                          </span>
+                        )}
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> ~
+                          {Math.round(task.estimatedMinutes / 60)}h
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {backlogTasks.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-10 text-muted-foreground bg-secondary/20 rounded-lg border border-dashed border-border/50">
+                      <p className="text-xs">Your backlog is simple.</p>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <TaskInput
+                      onAddTask={handleAddTask}
+                      placeholder="+ Add Task"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <CreateBlockModal
+          isOpen={createBlockState.isOpen}
+          onClose={closeCreateBlockModal}
+          onConfirm={confirmCreateBlock}
+          weekDays={weekDays}
+          initialDate={createBlockState.date}
+          initialHour={createBlockState.hour}
+          initialDuration={createBlockState.duration}
         />
-      )}
-      <ConnectModal
-        isOpen={isConnectModalOpen}
-        onClose={() => setIsConnectModalOpen(false)}
-        onConfirm={handleConnectConfirm}
-        serviceName="Google Calendar"
-      />
+
+        <EditBlockModal
+          isOpen={editBlockModalState.isOpen}
+          onClose={closeEditModal}
+          onConfirm={onUpdateBlock}
+          onDelete={onDeleteBlock}
+          block={editBlockModalState.block}
+        />
+
+        {pendingMoveState && (
+          <MoveOvertimeModal
+            pendingMove={pendingMoveState}
+            onConfirm={confirmPendingMove}
+            onCancel={cancelPendingMove}
+          />
+        )}
+
+        <ConnectModal
+          isOpen={isConnectModalOpen}
+          onClose={() => setIsConnectModalOpen(false)}
+          onConfirm={confirmConnect}
+          serviceName={connectService}
+        />
+      </main>
     </div>
   );
 }

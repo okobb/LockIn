@@ -6,6 +6,10 @@ import {
   formatMinutesToHours,
   WORK_END_HOUR,
 } from "../../utils/domain";
+import { cn } from "../../../../shared/lib/utils";
+import { Button } from "../../../../shared/components/UI/Button";
+import { Input } from "../../../../shared/components/UI/Input";
+import { Label } from "../../../../shared/components/UI/Label";
 
 // Default work end time from domain constants
 const WORK_END_TIME = WORK_END_HOUR;
@@ -28,9 +32,6 @@ interface CreateBlockModalProps {
   workEndHour?: number;
 }
 
-/**
- * Checks if a block extends past work hours
- */
 function blockExtendsToOvertime(
   startHour: number,
   durationMinutes: number,
@@ -40,9 +41,6 @@ function blockExtendsToOvertime(
   return endHour > workEndHour;
 }
 
-/**
- * Formats the end time for display
- */
 function getEndTime(startHour: number, durationMinutes: number): string {
   const endHour = startHour + durationMinutes / 60;
   const hours = Math.floor(endHour);
@@ -131,32 +129,43 @@ export const CreateBlockModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h3>Create New Block</h3>
-          <button className="btn-close" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-1000 animate-in fade-in duration-150">
+      <div className="bg-card border border-border rounded-lg w-full max-w-[400px] shadow-2xl animate-in slide-in-from-bottom-2 duration-150">
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b border-border">
+          <h3 className="text-lg font-semibold text-foreground">
+            Create New Block
+          </h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={onClose}
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
-        {/* Overtime Confirmation View */}
         {showOvertimeConfirm ? (
-          <div className="modal-body">
-            <div className="overtime-confirm-banner">
-              <div className="overtime-confirm-icon">
+          <div className="p-4">
+            <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
+              <div className="text-amber-500">
                 <AlertTriangle size={24} />
               </div>
-              <div className="overtime-confirm-content">
-                <h4 className="overtime-confirm-title">
+              <div>
+                <h4 className="font-semibold text-amber-500 text-sm">
                   Block extends past work hours
                 </h4>
-                <p className="overtime-confirm-text">
-                  This block ends at <strong>{endTimeDisplay}</strong>, which is
-                  after your work end time of{" "}
-                  <strong>{formatTime(workEndHour)}</strong>.
+                <p className="text-muted-foreground text-sm mt-1">
+                  This block ends at{" "}
+                  <strong className="text-foreground">{endTimeDisplay}</strong>,
+                  which is after your work end time of{" "}
+                  <strong className="text-foreground">
+                    {formatTime(workEndHour)}
+                  </strong>
+                  .
                 </p>
-                <div className="overtime-confirm-block-preview">
+                <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground bg-background/50 px-3 py-2 rounded">
                   <Clock size={14} />
                   <span>
                     {title} • {formatTime(selectedHour)} - {endTimeDisplay}
@@ -165,41 +174,40 @@ export const CreateBlockModal = ({
               </div>
             </div>
 
-            <div className="overtime-confirm-actions">
-              <button className="btn btn-ghost" onClick={handleAdjustTimes}>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleAdjustTimes}
+                className="flex-1"
+              >
                 Adjust Times
-              </button>
-              <button
-                className="btn overtime-btn-lockin"
+              </Button>
+              <Button
                 onClick={handleConfirmOvertime}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
               >
                 Lock In Overtime
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
-          /* Regular Form View */
           <>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Title</label>
-                <input
+            <div className="p-4 space-y-4">
+              <div className="space-y-2">
+                <Label>Title</Label>
+                <Input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="form-control"
                   autoFocus
                 />
               </div>
 
-              <div
-                className="form-row"
-                style={{ display: "flex", gap: "var(--space-3)" }}
-              >
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Day</label>
+              <div className="flex gap-3">
+                <div className="flex-1 space-y-2">
+                  <Label>Day</Label>
                   <select
-                    className="form-control"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={selectedDateStr}
                     onChange={(e) => setSelectedDateStr(e.target.value)}
                   >
@@ -210,10 +218,10 @@ export const CreateBlockModal = ({
                     ))}
                   </select>
                 </div>
-                <div className="form-group" style={{ width: "100px" }}>
-                  <label>Start Time</label>
+                <div className="w-[120px] space-y-2">
+                  <Label>Start Time</Label>
                   <select
-                    className="form-control"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={selectedHour}
                     onChange={(e) => setSelectedHour(Number(e.target.value))}
                   >
@@ -226,41 +234,53 @@ export const CreateBlockModal = ({
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Type</label>
-                <div className="type-options">
-                  <button
-                    className={`type-option ${
-                      type === "deep_work" ? "active" : ""
-                    }`}
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={type === "deep_work" ? "default" : "outline"}
+                    className={cn(
+                      "w-full",
+                      type === "deep_work" &&
+                        "bg-primary text-primary-foreground"
+                    )}
                     onClick={() => setType("deep_work")}
                   >
                     Deep Work
-                  </button>
-                  <button
-                    className={`type-option ${
-                      type === "meeting" ? "active" : ""
-                    }`}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={type === "meeting" ? "default" : "outline"}
+                    className={cn(
+                      "w-full",
+                      type === "meeting" && "bg-primary text-primary-foreground"
+                    )}
                     onClick={() => setType("meeting")}
                   >
                     Meeting
-                  </button>
-                  <button
-                    className={`type-option ${
-                      type === "external" ? "active" : ""
-                    }`}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={type === "external" ? "default" : "outline"}
+                    className={cn(
+                      "w-full",
+                      type === "external" &&
+                        "bg-primary text-primary-foreground"
+                    )}
                     onClick={() => setType("external")}
                   >
                     External
-                  </button>
+                  </Button>
                 </div>
               </div>
-              <div className="form-group">
-                <label>Duration</label>
+
+              <div className="space-y-2">
+                <Label>Duration</Label>
                 <select
                   value={duration}
                   onChange={(e) => setDuration(Number(e.target.value))}
-                  className="form-control"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value={30}>30 min</option>
                   <option value={60}>1 hour</option>
@@ -283,9 +303,8 @@ export const CreateBlockModal = ({
                 </select>
               </div>
 
-              {/* Overtime Warning Banner */}
               {isOvertimeBlock && (
-                <div className="overtime-warning-banner">
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-500 text-sm">
                   <Clock size={14} />
                   <span>
                     Ends at {endTimeDisplay} (after {formatTime(workEndHour)})
@@ -293,13 +312,14 @@ export const CreateBlockModal = ({
                 </div>
               )}
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={onClose}>
+
+            <div className="flex justify-end gap-3 p-4 border-t border-border">
+              <Button variant="ghost" onClick={onClose}>
                 Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleSubmit}>
+              </Button>
+              <Button onClick={handleSubmit}>
                 {isOvertimeBlock ? "Continue" : "Create Block"}
-              </button>
+              </Button>
             </div>
           </>
         )}

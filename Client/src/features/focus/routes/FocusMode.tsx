@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  Zap,
-  CheckCircle,
-  Clock,
+  CheckCircle2,
   LayoutDashboard,
-  Search,
-  Settings,
-  Wrench,
   Pause,
   Plus,
   Bell,
@@ -16,11 +11,20 @@ import {
   GitBranch,
   Mic,
   Save,
+  Play,
+  ArrowRight,
+  Monitor,
+  Terminal,
 } from "lucide-react";
 import { useModal } from "../../../shared/context/ModalContext";
 import { saveContextSnapshot } from "../../context/api/saveContext";
-import "./FocusMode.css";
 import { useFocusSession } from "../hooks/useFocusSession";
+import Sidebar from "../../../shared/components/Sidebar/Sidebar";
+import { cn } from "../../../shared/lib/utils";
+import { Button } from "../../../shared/components/UI/Button";
+import { Card } from "../../../shared/components/UI/Card";
+import { Badge } from "../../../shared/components/UI/Badge";
+import { Textarea } from "../../../shared/components/UI/Textarea";
 
 interface FocusState {
   taskId?: number;
@@ -41,6 +45,7 @@ export default function FocusMode() {
 
   const { session } = useFocusSession(activeState);
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
   const [timer, setTimer] = useState(25 * 60); // 25 minutes in seconds
   const [isPaused, setIsPaused] = useState(false);
@@ -57,7 +62,6 @@ export default function FocusMode() {
           const parsed = JSON.parse(stored);
           console.log("Restoring session from storage:", parsed);
           setRestoredState(parsed);
-          // Note: useFocusSession handles the session init based on this state now
         } catch (e) {
           console.error("Failed to parse stored session", e);
         }
@@ -82,19 +86,15 @@ export default function FocusMode() {
 
   const togglePause = () => setIsPaused(!isPaused);
 
-  // Handle Lock In (Save Context)
   const handleLockIn = async () => {
     setIsSaving(true);
     console.log("Starting Lock In...");
 
     try {
-      // Fallback: use state.taskId relative to tasks if session ID is missing (though backend needs session_id)
-      // Ideally session.id should be present if startSession worked.
       const payloadSessionId = session?.id || (activeState as any)?.sessionId;
 
       if (!payloadSessionId) {
         console.error("No Session ID found!", { session, activeState });
-        // If the session didn't start correctly, we can't save context to it.
         open({
           type: "error",
           title: "Save Failed",
@@ -105,7 +105,6 @@ export default function FocusMode() {
         return;
       }
 
-      // MOCK Browser State
       const mockBrowserTabs = [
         { title: "Laravel Docs", url: "https://laravel.com/docs" },
         { title: "React Router", url: "https://reactrouter.com/" },
@@ -115,12 +114,11 @@ export default function FocusMode() {
         },
       ];
 
-      // MOCK Git State
       const mockGitState = {
         branch: "feature/login",
         diff: "diff --git a/file.ts b/file.ts...",
         files_changed: ["file.ts"],
-        repo: "LockIn", // Added generic repo name
+        repo: "LockIn",
       };
 
       console.log("Sending payload to /context/save...", {
@@ -129,7 +127,6 @@ export default function FocusMode() {
         browser: mockBrowserTabs,
       });
 
-      // Use the refactored API service
       const response = await saveContextSnapshot({
         focus_session_id: payloadSessionId,
         note,
@@ -139,7 +136,6 @@ export default function FocusMode() {
 
       console.log("Response:", response);
 
-      // Clear persistence on success
       localStorage.removeItem("current_focus_session");
 
       open({
@@ -160,7 +156,6 @@ export default function FocusMode() {
       let errorMessage =
         error.response?.data?.message || "Could not save your session context.";
 
-      // Append detailed validation errors if available
       if (error.response?.data?.errors) {
         const details = Object.values(error.response.data.errors)
           .flat()
@@ -180,372 +175,317 @@ export default function FocusMode() {
 
   if (!activeState) {
     return (
-      <div
-        className="focus-container"
-        style={{ justifyContent: "center", alignItems: "center" }}
-      >
-        <div className="mission-panel">
-          <h2>No active mission</h2>
-          <button className="btn" onClick={() => navigate("/dashboard")}>
-            Return to Dashboard
-          </button>
-        </div>
+      <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
+        <main
+          className={cn(
+            "flex-1 flex flex-col items-center justify-center h-screen w-full transition-all duration-300",
+            isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]"
+          )}
+        >
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-light text-muted-foreground">
+              No active mission
+            </h2>
+            <Button onClick={() => navigate("/dashboard")}>
+              Return to Dashboard
+            </Button>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="focus-container">
-      {/* Compact Sidebar */}
-      <aside className="focus-sidebar">
-        <a href="/" className="focus-sidebar-logo">
-          <img
-            src="/Project logo.png"
-            alt="Lock In"
-            style={{ width: 32, height: 32 }}
-          />
-        </a>
+    <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-hidden">
+      <Sidebar
+        isCollapsed={true}
+        onToggleCollapse={() => {}}
+        hideToggle={true}
+      />
 
-        <button
-          className="sidebar-icon-btn"
-          onClick={() => navigate("/dashboard")}
-        >
-          <LayoutDashboard size={20} className="icon" />
-          <span className="tooltip">Dashboard</span>
-        </button>
-
-        <button className="sidebar-icon-btn active">
-          <Zap size={20} className="icon" />
-          <span className="tooltip">Focus Mode</span>
-        </button>
-
-        <button className="sidebar-icon-btn">
-          <Search size={20} className="icon" />
-          <span className="tooltip">Search</span>
-        </button>
-
-        <div style={{ flex: 1 }}></div>
-
-        <button className="sidebar-icon-btn">
-          <Settings size={20} className="icon" />
-          <span className="tooltip">Settings</span>
-        </button>
-      </aside>
-
-      {/* Progress Bar */}
-      <div className="progress-line">
-        <div className="progress-fill" style={{ width: "100%" }}></div>
-      </div>
-
-      {/* Main Content */}
-      <main className="focus-main">
-        {/* Mission Panel */}
-        <section className="mission-panel">
-          <header className="mission-header">
-            <div className="mission-meta">
-              <span
-                className="tag tag-amber"
-                style={{
-                  color: "var(--accent-amber)",
-                  background: "rgba(245, 158, 11, 0.1)",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                }}
-              >
-                High Priority
-              </span>
-              <span className="mission-source">
-                {activeState.isFreestyle
-                  ? "Freestyle Session"
-                  : "Started manually"}
-              </span>
-              <span
-                style={{
-                  marginLeft: "auto",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--font-size-base)",
-                  fontWeight: 500,
-                  color: "var(--text-muted)",
-                }}
-              >
-                {formatTime(timer)}
-              </span>
-            </div>
-            <h1 className="mission-title">
-              <Wrench size={32} className="icon icon-xl" />
-              {activeState.title}
-            </h1>
-          </header>
-
-          <div className="keyboard-hints">
-            <div className="keyboard-hint">
-              <kbd
-                className="kbd"
-                style={{
-                  background: "var(--bg-elevated)",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-default)",
-                }}
-              >
-                Space
-              </kbd>
-              <span>Toggle pause</span>
-            </div>
-            <div className="keyboard-hint">
-              <kbd
-                className="kbd"
-                style={{
-                  background: "var(--bg-elevated)",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-default)",
-                }}
-              >
-                ↑↓
-              </kbd>
-              <span>Navigate tasks</span>
-            </div>
-            <div className="keyboard-hint">
-              <kbd
-                className="kbd"
-                style={{
-                  background: "var(--bg-elevated)",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-default)",
-                }}
-              >
-                C
-              </kbd>
-              <span>Toggle context</span>
-            </div>
+      <main
+        className={cn(
+          "flex-1 transition-all duration-300 flex relative",
+          "pl-[64px]"
+        )}
+      >
+        <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
+          <div className="w-full h-1 bg-border/20">
+            <div className="h-full bg-linear-to-r from-primary to-blue-400 w-full animate-pulse" />
           </div>
 
-          {/* Checklist */}
-          <div className="checklist-header">
-            <span className="checklist-title">Mission Checklist</span>
-            <button
-              className="btn"
-              style={{
-                marginLeft: "auto",
-                marginRight: "var(--space-3)",
-                padding: "4px 8px",
-                fontSize: "13px",
-              }}
-            >
-              <Plus size={14} className="icon icon-sm" />
-              Add Step
-            </button>
-            <span className="checklist-progress">0 of 4 complete</span>
-          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="w-full max-w-5xl mx-auto p-8 md:p-12 space-y-12 min-h-full flex flex-col">
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-3 animate-fade-in">
+                  <Badge
+                    variant="warning"
+                    className="rounded-full px-3 py-1 bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20"
+                  >
+                    HIGH PRIORITY
+                  </Badge>
+                  <span className="text-sm font-mono text-muted-foreground uppercase tracking-widest text-[10px]">
+                    {activeState.isFreestyle
+                      ? "FREESTYLE_MODE"
+                      : "PLANNED_SESSION"}
+                  </span>
+                </div>
 
-          <div className="checklist-container">
-            {/* Hardcoded items for design parity with mockup */}
-            <label className="check-item">
-              <input type="checkbox" />
-              <div className="check-content">
-                <span className="check-text">
-                  Check session.php configuration
-                </span>
-                <div className="check-meta">
-                  config/session.php • You changed cookie lifetime
+                <div className="space-y-2 animate-slide-in-from-bottom">
+                  <h1 className="text-4xl md:text-5xl font-light tracking-tight text-foreground flex items-center gap-4">
+                    <span className="p-3 bg-primary/10 rounded-xl text-primary">
+                      <Terminal size={32} strokeWidth={1.5} />
+                    </span>
+                    {activeState.title}
+                  </h1>
+                  <p className="text-muted-foreground text-lg font-light pl-1">
+                    Focus mode engaged. Eliminate distractions.
+                  </p>
                 </div>
               </div>
-            </label>
 
-            <label className="check-item">
-              <input type="checkbox" />
-              <div className="check-content">
-                <span className="check-text">
-                  Verify refresh token database writes
-                </span>
-                <div className="check-meta">
-                  Reasoning: "Values were null in last test"
+              <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] space-y-8 py-8">
+                <div className="relative group cursor-default select-none transition-all">
+                  <div
+                    className={cn(
+                      "text-7xl md:text-9xl leading-none font-mono font-bold tracking-tighter tabular-nums text-foreground transition-all duration-300",
+                      isPaused && "opacity-50"
+                    )}
+                  >
+                    {formatTime(timer)}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 z-10">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-14 w-14 rounded-full border-2 border-border hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-300"
+                    onClick={togglePause}
+                  >
+                    {isPaused ? (
+                      <Play className="w-6 h-6 fill-current translate-x-0.5" />
+                    ) : (
+                      <Pause className="w-6 h-6 fill-current" />
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="h-14 px-6 rounded-full border-2 border-border hover:border-primary/50 hover:bg-primary/5 gap-2 transition-all duration-300 text-sm font-medium"
+                    onClick={() => setTimer((t) => t + 300)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>5m</span>
+                  </Button>
                 </div>
               </div>
-            </label>
 
-            <label className="check-item">
-              <input type="checkbox" />
-              <div className="check-content">
-                <span className="check-text">
-                  Test OAuth flow with logging enabled
-                </span>
-                <div className="check-meta">
-                  Use Log::info() on callback route
+              <div className="w-full space-y-4 animate-fade-in delay-75">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <LayoutDashboard className="w-3.5 h-3.5" /> Session Checklist
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    {
+                      text: "Check session.php config",
+                      sub: "config/session.php",
+                    },
+                    { text: "Verify refresh tokens", sub: "DB check required" },
+                    { text: "Test OAuth flow", sub: "Enable verbose logging" },
+                    { text: "Commit Fixes", sub: "feature/oauth-refactor" },
+                  ].map((item, i) => (
+                    <Card
+                      key={i}
+                      className="bg-card/40 border-border/40 hover:bg-card/60 hover:border-primary/30 transition-all cursor-pointer group"
+                    >
+                      <div className="p-3 flex items-start gap-3">
+                        <div className="mt-0.5 h-4 w-4 rounded-sm border border-muted-foreground/40 group-hover:border-primary transition-colors" />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium leading-none group-hover:text-primary transition-colors text-foreground/90">
+                            {item.text}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1.5 font-mono">
+                            {item.sub}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               </div>
-            </label>
 
-            <label className="check-item">
-              <input type="checkbox" />
-              <div className="check-content">
-                <span className="check-text">Commit Fixes</span>
-                <div className="check-meta">Branch: feature/oauth-refactor</div>
+              <div className="w-full space-y-4 animate-fade-in delay-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Mic className="w-4 h-4" /> Session Log
+                  </label>
+                  <span className="text-xs text-muted-foreground/50 font-mono">
+                    markdown supported
+                  </span>
+                </div>
+                <Textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Record your progress, barriers, and breakthroughs..."
+                  className="min-h-[140px] bg-card/30 border-muted rounded-xl p-6 text-base focus:ring-primary/20 focus:border-primary transition-all resize-none font-sans"
+                />
               </div>
-            </label>
+
+              <div className="pt-8 flex items-center justify-between border-t border-border/20">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/dashboard")}
+                  className="text-muted-foreground hover:text-foreground hover:bg-transparent px-0 hover:underline underline-offset-4"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+                </Button>
+
+                <Button
+                  size="lg"
+                  className="h-12 rounded-full px-8 shadow-lg shadow-primary/20 hover:shadow-primary/40 text-sm font-semibold bg-primary hover:bg-primary/90 transition-all active:scale-95"
+                  onClick={handleLockIn}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 bg-primary-foreground/30 animate-spin rounded-full border-2 border-t-transparent" />
+                      Saving...
+                    </span>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" /> Lock In Context
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Note Input */}
-          <div
-            className="session-note-container"
-            style={{ marginTop: "1.5rem" }}
-          >
-            <label
-              style={{
-                display: "block",
-                marginBottom: "0.5rem",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "var(--text-secondary)",
-              }}
-            >
-              Session Notes
-            </label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Jot down what you accomplished..."
-              style={{
-                width: "100%",
-                minHeight: "100px",
-                padding: "0.75rem",
-                borderRadius: "0.5rem",
-                border: "1px solid var(--border-default)",
-                background: "var(--bg-elevated)",
-                color: "var(--text-primary)",
-                fontSize: "0.875rem",
-                resize: "vertical",
-                fontFamily: "inherit",
-              }}
-            />
-          </div>
-
-          <div className="actions-row">
-            <button
-              className="btn"
-              onClick={togglePause}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <Pause size={18} className="icon" />
-              <span>{isPaused ? "Resume Session" : "Pause Session"}</span>
-            </button>
-            <button
-              className="btn"
-              onClick={() => setTimer((t) => t + 300)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <Clock size={18} className="icon" />
-              +5 Minutes
-            </button>
-            <div style={{ flex: 1 }}></div>
-
-            <button
-              className="btn"
-              style={{
-                color: "white",
-                background: "var(--accent-primary)",
-                border: "1px solid var(--accent-primary)",
-                opacity: isSaving ? 0.7 : 1,
-              }}
-              onClick={handleLockIn}
-              disabled={isSaving}
-            >
-              <Save size={18} className="icon" />
-              {isSaving ? "Saving..." : "Lock In Session"}
-            </button>
-          </div>
-        </section>
-
-        {/* Context Sidebar */}
         <aside
-          className={`context-sidebar ${isContextCollapsed ? "collapsed" : ""}`}
+          className={cn(
+            "border-l border-border bg-card/10 backdrop-blur-xl transition-all duration-300 relative flex flex-col z-20",
+            isContextCollapsed
+              ? "w-0 border-l-0 opacity-0 overflow-hidden"
+              : "w-[380px] opacity-100"
+          )}
         >
-          {/* Toggle Bar */}
-          <div className="sidebar-toggle-bar">
-            <div className="sidebar-toggle-label">
-              <span>Context & Resources</span>
-            </div>
-            <button
-              className="sidebar-toggle"
-              onClick={() => setIsContextCollapsed(!isContextCollapsed)}
-            >
-              {isContextCollapsed ? (
-                <ChevronLeft size={16} />
-              ) : (
-                <ChevronRight size={16} />
-              )}
-            </button>
-          </div>
-
-          {!isContextCollapsed && (
-            <>
-              {/* Notifications */}
-              <div className="context-card">
-                <div className="context-card-header">
-                  <Bell size={16} className="icon" />
-                  <span className="context-card-title">Notifications</span>
+          <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-8">
+            {!activeState.isFreestyle && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <GitBranch className="w-3.5 h-3.5 text-purple-400" /> Active
+                    Context
+                  </h3>
+                  <ChevronRight
+                    className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                    onClick={() => setIsContextCollapsed(true)}
+                  />
                 </div>
-                <div className="notif-status">
-                  <CheckCircle size={16} className="icon" />
-                  <div className="notif-status-text">
-                    <div className="notif-status-title">Optimized for Flow</div>
-                    <div className="notif-status-detail">
-                      Only urgent alerts
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Version Control - Only for linked tasks */}
-              {!activeState.isFreestyle && (
-                <div className="context-card">
-                  <div className="context-card-header">
-                    <GitBranch size={16} className="icon" />
-                    <span className="context-card-title">Version Control</span>
-                  </div>
-                  <div className="git-branch">
-                    <GitBranch size={16} className="icon" />
-                    <span className="git-branch-name">
+                <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-4">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Branch</span>
+                    <Badge
+                      variant="outline"
+                      className="border-purple-500/30 text-purple-400 font-mono bg-purple-500/10"
+                    >
                       feature/oauth-refactor
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">File</span>
+                    <span className="font-mono text-foreground/80">
+                      auth.ts
                     </span>
                   </div>
-                  <div className="git-file">
-                    <span className="git-file-name">auth.ts</span>
-                    <div className="git-file-stats">
-                      <span className="git-add">+24</span>
-                      <span className="git-del">-12</span>
+
+                  <div className="flex items-center gap-4 text-xs font-mono border-t border-purple-500/20 pt-3">
+                    <div className="flex items-center gap-1.5 text-emerald-500">
+                      <Plus className="w-3 h-3" />
+                      <span>24 additions</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-red-500">
+                      <div className="w-3 h-px bg-current" />
+                      <span>12 deletions</span>
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Voice Note */}
-              <div className="context-card">
-                <div className="context-card-header">
-                  <Mic size={16} className="icon" />
-                  <span className="context-card-title">Recent Voice Memo</span>
-                </div>
-                <div className="voice-transcript">
-                  "Remember to check the session timeout setting in config files
-                  before deploying..."
-                </div>
-                <div className="voice-time">2 mins ago</div>
               </div>
-            </>
-          )}
+            )}
+
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Monitor className="w-3.5 h-3.5" /> Restored Tabs
+              </h3>
+              <div className="space-y-2">
+                {[
+                  { title: "Laravel Documentation", url: "laravel.com/docs" },
+                  { title: "React Router - Hooks", url: "reactrouter.com" },
+                  { title: "Stack Overflow", url: "stackoverflow.com" },
+                ].map((tab, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card/20 border border-border/30 hover:bg-card/40 transition-colors cursor-pointer group"
+                  >
+                    <div className="h-6 w-6 rounded bg-background/50 flex items-center justify-center text-[10px] uppercase font-bold text-muted-foreground border border-border/30">
+                      {tab.title.substring(0, 2)}
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <div className="text-xs font-medium truncate group-hover:text-primary transition-colors">
+                        {tab.title}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate font-mono opacity-70">
+                        {tab.url}
+                      </div>
+                    </div>
+                    <ArrowRight className="w-3 h-3 text-muted-foreground/0 group-hover:text-muted-foreground/50 transition-all -translate-x-2 group-hover:translate-x-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Bell className="w-3.5 h-3.5 text-amber-500" /> Notifications
+              </h3>
+              <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+                <div>
+                  <div className="text-sm font-medium text-emerald-500">
+                    Optimized for Flow
+                  </div>
+                  <div className="text-xs text-emerald-500/60 mt-0.5">
+                    Only urgent alerts allowed
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </aside>
+
+        <div
+          className={cn(
+            "absolute top-6 right-6 z-50 transition-all duration-300",
+            isContextCollapsed
+              ? "opacity-100 translate-x-0"
+              : "opacity-0 translate-x-10 pointer-events-none"
+          )}
+        >
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full border border-border bg-background shadow-lg"
+            onClick={() => setIsContextCollapsed(false)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </div>
       </main>
     </div>
   );

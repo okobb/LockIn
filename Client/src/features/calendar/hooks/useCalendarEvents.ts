@@ -7,12 +7,18 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import type { CalendarBlock, CapacityStats } from "../types/calendar";
-import {calendar} from "../api/calendar";
-import type  { CreateBlockData, UpdateBlockData, CalendarEventsResponse, CalendarEvent } from "../types/calendar";
+import { calendar } from "../api/calendar";
+import type {
+  CreateBlockData,
+  UpdateBlockData,
+  CalendarEventsResponse,
+  CalendarEvent,
+} from "../types/calendar";
 import {
   checkBlocksOverlap,
   isOvertime,
   formatDateWithOffset,
+  CALENDAR_END_HOUR,
 } from "../utils/domain";
 
 export interface PendingMoveState {
@@ -164,7 +170,9 @@ export function useCalendarEvents({
           if (!old) return old;
           return {
             ...old,
-            data: old.data.filter((event : CalendarEvent) => String(event.id) !== id),
+            data: old.data.filter(
+              (event: CalendarEvent) => String(event.id) !== id
+            ),
           };
         }
       );
@@ -292,7 +300,7 @@ export function useCalendarEvents({
           if (!old) return old;
           return {
             ...old,
-            data: old.data.map((event : CalendarEvent) =>
+            data: old.data.map((event: CalendarEvent) =>
               String(event.id) === blockId
                 ? { ...event, ...updates, id: event.id } // Preserve ID
                 : event
@@ -341,7 +349,7 @@ export function useCalendarEvents({
           if (!old) return old;
           return {
             ...old,
-            data: old.data.map((event : CalendarEvent) =>
+            data: old.data.map((event: CalendarEvent) =>
               String(event.id) === blockId
                 ? {
                     ...event,
@@ -371,8 +379,20 @@ export function useCalendarEvents({
         }
       }
 
-      // Check if the block ends after work hours
+      // Check if the block ends after work hours or calendar limit
       const endHour = newEnd.getHours() + newEnd.getMinutes() / 60;
+
+      if (endHour > CALENDAR_END_HOUR) {
+        await modal.open({
+          type: "error",
+          title: "Schedule Conflict",
+          message: "Cannot move blocks past 9 PM.",
+        });
+        // Revert UI by invalidating
+        await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
+        if (previousData) queryClient.setQueryData(queryKey, previousData);
+        return;
+      }
 
       if (isOvertime(endHour)) {
         setPendingMoveState({

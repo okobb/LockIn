@@ -8,7 +8,6 @@ import {
   type UpdateTaskData,
   type TasksResponse,
 } from "../api/tasks";
-// UPDATED IMPORT: Pointing to calendar types
 import type { BacklogTask } from "../../calendar/types/calendar";
 
 const PRIORITY_TO_LABEL: Record<

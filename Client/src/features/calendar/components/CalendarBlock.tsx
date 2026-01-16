@@ -1,6 +1,8 @@
 import React, { memo } from "react";
 import type { CalendarBlock as CalendarBlockType } from "../types/calendar";
 import { calculateBlockStyle } from "../utils/domain";
+import { cn } from "../../../shared/lib/utils";
+import { Trash2 } from "lucide-react";
 
 interface CalendarBlockProps {
   block: CalendarBlockType;
@@ -10,11 +12,19 @@ interface CalendarBlockProps {
   ) => void;
   onClick: (block: CalendarBlockType) => void;
   onDelete?: (blockId: string) => void;
+  style?: React.CSSProperties;
 }
 
 const CalendarBlock = memo(
-  ({ block, onDragStart, onClick, onDelete }: CalendarBlockProps) => {
-    const style = calculateBlockStyle(block.start_time, block.end_time);
+  ({
+    block,
+    onDragStart,
+    onClick,
+    onDelete,
+    style: propStyle,
+  }: CalendarBlockProps) => {
+    const defaultStyle = calculateBlockStyle(block.start_time, block.end_time);
+    const style = { ...defaultStyle, ...propStyle };
 
     const startTime = new Date(block.start_time);
     const endTime = new Date(block.end_time);
@@ -28,68 +38,53 @@ const CalendarBlock = memo(
       }
     };
 
+    const blockType = (block.type ?? "deep_work").replace("_", "-");
+
     return (
       <div
-        className={`calendar-block ${(block.type ?? "deep_work").replace(
-          "_",
-          "-"
-        )}`}
+        className={cn(
+          "calendar-block group absolute inset-x-1 rounded-md px-2 py-1.5 cursor-grab overflow-hidden z-10 transition-all duration-200",
+          "hover:z-50! hover:scale-[1.02] hover:shadow-xl hover:ring-1 hover:ring-white/10",
+
+          "backdrop-blur-md shadow-sm",
+
+          blockType === "deep-work" &&
+            "bg-primary/50 border-primary/50 hover:bg-primary/30",
+          blockType === "meeting" &&
+            "bg-pink-500/50 border-pink-500/50 hover:bg-pink-500/30",
+          blockType === "external" &&
+            "bg-amber-500/50 border-amber-500/50 hover:bg-amber-500/30"
+        )}
         style={style}
         draggable
         onDragStart={(e) => onDragStart(e, block)}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
           onClick(block);
         }}
       >
-        <div className="block-title">{block.title}</div>
-        <div className="block-time">
+        <div className="flex justify-between items-start gap-1">
+          <div className="font-medium text-xs leading-tight truncate tracking-tight text-foreground">
+            {block.title}
+          </div>
+
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-white/10 rounded transition-opacity"
+            >
+              <Trash2 size={10} className="text-white/70" />
+            </button>
+          )}
+        </div>
+
+        <div className="mt-0.5 text-[10px] font-mono text-muted-foreground leading-tight">
           {startTime.toLocaleTimeString("en-US", {
             hour: "numeric",
             minute: "2-digit",
-            hour12: true,
-          })}{" "}
-          -{" "}
-          {endTime.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
           })}
         </div>
-        {durationHours >= 1 && (
-          <span className="block-badge">
-            {Number.isInteger(durationHours)
-              ? durationHours
-              : durationHours.toFixed(1)}
-            h
-          </span>
-        )}
-        {onDelete && (
-          <button
-            onClick={handleDelete}
-            className="block-delete-btn"
-            title="Delete Block"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              width="12"
-              height="12"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-              />
-            </svg>
-          </button>
-        )}
       </div>
     );
   }

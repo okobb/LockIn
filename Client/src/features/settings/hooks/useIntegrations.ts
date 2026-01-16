@@ -86,7 +86,6 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
     provider: string,
     service: IntegrationService
   ): boolean => {
-    // Find integration for provider
     const integration = userIntegrations.find(
       (i) => i.provider === provider && i.is_active
     );
@@ -95,14 +94,11 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
       return false;
     }
 
-    // Check if the integration has the required scope for the service
     const requiredScopeId = getRequiredScopeIdentifier(service);
     if (!requiredScopeId) {
-      // For services without specific scope requirements (e.g., 'auth'), just check provider
       return true;
     }
 
-    // Check if any scope contains the required identifier
     return (
       integration.scopes?.some((scope) =>
         scope.toLowerCase().includes(requiredScopeId)
@@ -110,12 +106,10 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
     );
   };
 
-  // Get integration by provider (logical helper)
   const getIntegration = (provider: string): Integration | undefined => {
     return userIntegrations.find((i) => i.provider === provider && i.is_active);
   };
 
-  // Connect mutation - redirects to OAuth
   const connectMutation = useMutation({
     mutationFn: async ({
       provider,
@@ -125,7 +119,6 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
       service: string;
     }) => {
       const result = await integrations.getConnectUrl(provider, service);
-      // Redirect to OAuth
       window.location.href = result.data.redirect_url;
       return result;
     },
@@ -139,7 +132,6 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
     },
   });
 
-  // Disconnect mutation
   const disconnectMutation = useMutation({
     mutationFn: (integrationId: number) =>
       integrations.disconnect(integrationId),
