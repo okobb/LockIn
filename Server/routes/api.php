@@ -11,6 +11,7 @@ use App\Http\Controllers\N8nController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\FocusSessionController;
+use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\N8nAuthMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +82,13 @@ Route::middleware('auth:api')->group(function () {
     Route::get('dashboard/priority-tasks', [DashboardController::class, 'priorityTasks'])->name('dashboard.priority-tasks');
     Route::get('dashboard/upcoming', [DashboardController::class, 'upcoming'])->name('dashboard.upcoming');
     Route::get('dashboard/communications', [DashboardController::class, 'communications'])->name('dashboard.communications');
+
+    // Knowledge Resources (RAG)
+    Route::get('knowledge', [KnowledgeController::class, 'index'])->name('knowledge.index');
+    Route::post('knowledge', [KnowledgeController::class, 'store'])->name('knowledge.store');
+    Route::post('knowledge/ask', [KnowledgeController::class, 'ask'])->name('knowledge.ask');
+    Route::get('knowledge/search', [KnowledgeController::class, 'search'])->name('knowledge.search');
+    Route::delete('knowledge/{knowledge}', [KnowledgeController::class, 'destroy'])->name('knowledge.destroy');
 });
 
 // n8n API Routes (authenticated via secret header)

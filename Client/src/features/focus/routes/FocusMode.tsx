@@ -15,16 +15,20 @@ import {
   ArrowRight,
   Monitor,
   Terminal,
+  Sparkles,
+  Loader2,
+  Bot,
 } from "lucide-react";
 import { useModal } from "../../../shared/context/ModalContext";
 import { useFocusSession } from "../hooks/useFocusSession";
-import { getGitStatus, type GitStatusResponse } from "../api/focusApi";
+import { getGitStatus, type GitStatusResponse, askAI } from "../api/focusApi";
 import Sidebar from "../../../shared/components/Sidebar/Sidebar";
 import { cn } from "../../../shared/lib/utils";
 import { Button } from "../../../shared/components/UI/Button";
 import { Card } from "../../../shared/components/UI/Card";
 import { Badge } from "../../../shared/components/UI/Badge";
 import { Textarea } from "../../../shared/components/UI/Textarea";
+import { Input } from "../../../shared/components/UI/Input";
 
 interface FocusState {
   taskId?: number;
@@ -51,6 +55,14 @@ export default function FocusMode() {
   const [isPaused, setIsPaused] = useState(false);
 
   const [note, setNote] = useState("");
+
+  // AI State
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState<{
+    text: string;
+    sources: any[];
+  } | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     // Try to restore from localStorage if no location state
@@ -144,6 +156,24 @@ export default function FocusMode() {
         initialTabs: restoredTabs,
       },
     });
+  };
+
+  const handleAskAI = async () => {
+    if (!aiQuestion.trim()) return;
+    setIsAiLoading(true);
+    try {
+      const response = await askAI(aiQuestion);
+      setAiAnswer({ text: response.answer, sources: response.sources });
+    } catch (err) {
+      console.error(err);
+      open({
+        type: "error",
+        title: "AI Error",
+        message: "Failed to get an answer from the AI.",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   if (!activeState) {
@@ -256,6 +286,53 @@ export default function FocusMode() {
                     <span>5m</span>
                   </Button>
                 </div>
+              </div>
+
+              <div className="w-full space-y-4 animate-fade-in delay-75">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Bot className="w-3.5 h-3.5 " /> AI Assistant
+                </h3>
+                <Card className="bg-card/40 border-border/40 p-4 space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Ask about your knowledge base..."
+                      value={aiQuestion}
+                      onChange={(e) => setAiQuestion(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && !e.shiftKey && handleAskAI()
+                      }
+                      className="bg-background/50 border-muted-foreground/20 focus-visible:ring-blue-500/30"
+                    />
+                    <Button
+                      size="icon"
+                      onClick={handleAskAI}
+                      disabled={isAiLoading || !aiQuestion.trim()}
+                      className="bg-purple-600 hover:bg-purple-700 w-10 shrink-0"
+                    >
+                      {isAiLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  {aiAnswer && (
+                    <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 animate-in fade-in slide-in-from-top-1">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+                        {aiAnswer.text}
+                      </p>
+                      {aiAnswer.sources.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-blue-500/20 text-xs text-muted-foreground">
+                          <span className="font-semibold text-blue-400">
+                            Sources:
+                          </span>{" "}
+                          {aiAnswer.sources.length} reosurces used
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
               </div>
 
               <div className="w-full space-y-4 animate-fade-in delay-75">

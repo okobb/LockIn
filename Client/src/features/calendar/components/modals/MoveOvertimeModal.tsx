@@ -28,7 +28,7 @@ export const MoveOvertimeModal = ({
   const endTime = formatTimeFromDate(pendingMove.newEnd);
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] animate-in fade-in duration-150">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-1000 animate-in fade-in duration-150">
       <div className="bg-card border border-border rounded-lg w-full max-w-[420px] shadow-2xl animate-in slide-in-from-bottom-2 duration-150">
         <div className="flex justify-between items-center p-4 border-b border-border">
           <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">

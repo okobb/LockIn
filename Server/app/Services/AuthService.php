@@ -93,7 +93,7 @@ final class AuthService
      */
     public function loginOrRegisterFromOAuth(string $email, string $name, ?string $avatar = null): array
     {
-        $user = User::where('email', $email)->first();
+        $user = User::query()->where('email', $email)->first();
         $isNew = false;
 
         if (!$user) {

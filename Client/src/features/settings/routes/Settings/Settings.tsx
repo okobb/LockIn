@@ -183,7 +183,7 @@ export default function Settings() {
           <div className="text-sm text-muted-foreground">{description}</div>
         )}
       </div>
-      <div className="flex-shrink-0">{children}</div>
+      <div className="shrink-0">{children}</div>
     </div>
   );
 
