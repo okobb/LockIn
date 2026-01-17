@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
-import { startFocusSession, type FocusSession } from "../api/focusApi";
+import {
+  startFocusSession,
+  getSession,
+  type FocusSession,
+} from "../api/focusApi";
 
 interface FocusState {
   taskId?: number;
   title: string;
   isFreestyle?: boolean;
   sessionId?: number;
+  isNewSession?: boolean; 
 }
 
 export const useFocusSession = (activeState: FocusState | null) => {
@@ -15,10 +20,19 @@ export const useFocusSession = (activeState: FocusState | null) => {
   useEffect(() => {
     const initSession = async () => {
       if (activeState?.sessionId) {
-        setSession({
-          id: activeState.sessionId,
-          title: activeState.title,
-        } as FocusSession);
+        setLoading(true);
+        try {
+          const fullSession = await getSession(activeState.sessionId);
+          setSession(fullSession);
+        } catch (err) {
+          console.error("Failed to restore session", err);
+          setSession({
+            id: activeState.sessionId,
+            title: activeState.title,
+          } as FocusSession);
+        } finally {
+          setLoading(false);
+        }
         return;
       }
 
@@ -39,9 +53,19 @@ export const useFocusSession = (activeState: FocusState | null) => {
             sessionId: newSession.id,
             isFreestyle: activeState.isFreestyle,
           };
+          const existingStored = localStorage.getItem("current_focus_session");
+          let existingData = {};
+          try {
+            if (existingStored) {
+              existingData = JSON.parse(existingStored);
+            }
+          } catch (e) {
+            console.error("Failed to parse existing session for merge", e);
+          }
+
           localStorage.setItem(
             "current_focus_session",
-            JSON.stringify(stateToSave)
+            JSON.stringify({ ...existingData, ...stateToSave })
           );
         } catch (error) {
           console.error("Failed to start session", error);

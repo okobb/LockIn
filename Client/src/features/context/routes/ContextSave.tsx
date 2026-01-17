@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Save,
+  Play,
   Globe,
   FileCode,
   GitBranch,
@@ -15,6 +16,7 @@ import {
   X,
   Plus,
   Link as LinkIcon,
+  ListTodo,
 } from "lucide-react";
 import { saveContextSnapshot } from "../api/saveContext";
 import { startFocusSession } from "../../focus/api/focusApi";
@@ -33,7 +35,7 @@ import {
 import { Badge } from "../../../shared/components/UI/Badge";
 import type { BrowserTab } from "../types";
 
-type Tab = "voice" | "text" | "auto";
+type Tab = "voice" | "text" | "checklist";
 
 export const ContextSave = () => {
   const navigate = useNavigate();
@@ -60,7 +62,12 @@ export const ContextSave = () => {
   // Browser Tabs State
   const [extensionTabs, setExtensionTabs] = useState<BrowserTab[] | null>(null);
   const [manualUrls, setManualUrls] = useState<BrowserTab[]>([]);
+
   const [newUrlInput, setNewUrlInput] = useState("");
+
+  // Checklist State
+  const [manualChecklist, setManualChecklist] = useState<string[]>([]);
+  const [newChecklistItem, setNewChecklistItem] = useState("");
 
   // Voice Recording State
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -79,6 +86,7 @@ export const ContextSave = () => {
         note?: string;
         gitState?: any;
         initialTabs?: BrowserTab[];
+        initialChecklist?: string[];
       };
       if (state.note) setContextText(state.note);
       if (state.title) setTaskName(state.title);
@@ -90,6 +98,14 @@ export const ContextSave = () => {
             (t) => !prev.some((p) => p.url === t.url)
           );
           return [...prev, ...newTabs];
+        });
+      }
+      if (state.initialChecklist) {
+        setManualChecklist((prev) => {
+          const newItems = state.initialChecklist!.filter(
+            (item) => !prev.includes(item)
+          );
+          return [...prev, ...newItems];
         });
       }
     }
@@ -194,6 +210,16 @@ export const ContextSave = () => {
     setManualUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const addChecklistItem = () => {
+    if (!newChecklistItem.trim()) return;
+    setManualChecklist((prev) => [...prev, newChecklistItem.trim()]);
+    setNewChecklistItem("");
+  };
+
+  const removeChecklistItem = (index: number) => {
+    setManualChecklist((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const stopRecordingAndGetBlob = (): Promise<Blob | null> => {
     return new Promise((resolve) => {
       if (
@@ -293,18 +319,25 @@ export const ContextSave = () => {
         browser_state: allTabs.length > 0 ? allTabs : undefined,
         git_state: gitState || undefined,
         voice_file: voiceFile,
+        checklist: manualChecklist,
       });
 
       setIsSuccess(true);
       setTimeout(() => {
-        // If we started a new session, go to focus mode
-        navigate("/focus", {
-          state: {
-            sessionId: sessionId,
-            title: taskName || locationState?.title,
-            taskId: undefined, // check if we have it from response
-          },
-        });
+        if (isStartMode) {
+          localStorage.removeItem("current_focus_session");
+          navigate("/focus", {
+            state: {
+              sessionId: sessionId,
+              title: taskName || locationState?.title,
+              taskId: undefined,
+              isNewSession: true, // Flag to ensure timer is reset
+            },
+          });
+        } else {
+          localStorage.removeItem("current_focus_session");
+          navigate("/dashboard");
+        }
       }, 1500);
     } catch (error: any) {
       console.error("Failed to save/start context", error);
@@ -585,6 +618,63 @@ export const ContextSave = () => {
                   />
                 </div>
 
+                {isStartMode && (
+                  <div className="space-y-4 rounded-xl border border-border/40 bg-background/30 p-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Session Checklist
+                      </label>
+                      <Badge variant="outline" className="text-[10px] h-5">
+                        Manual
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Add a specific next step..."
+                        value={newChecklistItem}
+                        onChange={(e) => setNewChecklistItem(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addChecklistItem()
+                        }
+                        className="flex-1 bg-background/50 h-9 text-sm"
+                      />
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={addChecklistItem}
+                        disabled={!newChecklistItem.trim()}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                      {manualChecklist.length === 0 && (
+                        <div className="text-center text-muted-foreground text-xs py-2 italic opacity-60">
+                          No manual items added yet.
+                        </div>
+                      )}
+                      {manualChecklist.map((item, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between p-2 rounded bg-background/50 border border-border/30 text-xs group hover:border-primary/20 transition-colors"
+                        >
+                          <span className="flex-1 truncate mr-2 font-medium">
+                            {item}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 hover:text-red-400 rounded-full"
+                            onClick={() => removeChecklistItem(i)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {!isStartMode && (
                   <Tabs
                     defaultValue="voice"
@@ -599,8 +689,8 @@ export const ContextSave = () => {
                       <TabsTrigger value="text" className="gap-2">
                         <Type className="w-4 h-4" /> Text Note
                       </TabsTrigger>
-                      <TabsTrigger value="auto" className="gap-2">
-                        <Cpu className="w-4 h-4" /> Auto-Generate
+                      <TabsTrigger value="checklist" className="gap-2">
+                        <ListTodo className="w-4 h-4" /> Checklist
                       </TabsTrigger>
                     </TabsList>
 
@@ -658,8 +748,8 @@ export const ContextSave = () => {
                           {isRecording
                             ? "Recording your thought process..."
                             : audioUrl
-                            ? "Recording saved! Tap mic to re-record."
-                            : "Tap to start recording"}
+                              ? "Recording saved! Tap mic to re-record."
+                              : "Tap to start recording"}
                         </p>
 
                         {audioUrl && !isRecording && (
@@ -687,27 +777,78 @@ export const ContextSave = () => {
                     </TabsContent>
 
                     <TabsContent
-                      value="auto"
+                      value="checklist"
                       className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
                     >
-                      <div className="rounded-xl border border-border/50 bg-background/30 p-8 text-center space-y-4">
-                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                          <Cpu className="w-8 h-8 text-primary" />
+                      <div className="grid gap-4">
+                        <div className="rounded-xl border border-border/50 bg-background/30 p-4 flex gap-4 items-start">
+                          <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                            <Cpu className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-sm">
+                              AI Checklist Generation
+                            </h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                              Lock In will analyze your voice note, tabs, and
+                              code changes to automatically generate actionable
+                              next steps when you save.
+                            </p>
+                          </div>
                         </div>
-                        <h4 className="text-lg font-medium">
-                          AI Context Generation
-                        </h4>
-                        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                          Lock In will analyze your code changes, open tabs, and
-                          recent terminal output to generate a summary
-                          automatically.
-                        </p>
-                        <Badge
-                          variant="secondary"
-                          className="bg-primary/5 text-primary border-primary/20"
-                        >
-                          Takes ~5-10 seconds
-                        </Badge>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+                            Manual Additions
+                          </label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Add a specific next step..."
+                              value={newChecklistItem}
+                              onChange={(e) =>
+                                setNewChecklistItem(e.target.value)
+                              }
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && addChecklistItem()
+                              }
+                              className="flex-1 bg-background/50 h-9 text-sm"
+                            />
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={addChecklistItem}
+                              disabled={!newChecklistItem.trim()}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                          <div className="space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                            {manualChecklist.length === 0 && (
+                              <div className="text-center text-muted-foreground text-xs py-2 italic opacity-60">
+                                No manual items derived yet.
+                              </div>
+                            )}
+                            {manualChecklist.map((item, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center justify-between p-2 rounded bg-background/50 border border-border/30 text-xs group hover:border-primary/20 transition-colors"
+                              >
+                                <span className="flex-1 truncate mr-2 font-medium">
+                                  {item}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 hover:text-red-400 rounded-full"
+                                  onClick={() => removeChecklistItem(i)}
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </TabsContent>
                   </Tabs>
@@ -738,7 +879,9 @@ export const ContextSave = () => {
                         </>
                       ) : (
                         <>
-                          {activeTab === "voice" ? (
+                          {isStartMode ? (
+                            <Play className="w-4 h-4 mr-2" />
+                          ) : activeTab === "voice" ? (
                             <Mic className="w-4 h-4 mr-2" />
                           ) : (
                             <Save className="w-4 h-4 mr-2" />

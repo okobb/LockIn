@@ -29,6 +29,8 @@ class StoreContextSnapshotRequest extends FormRequest
             'browser_state' => ['nullable'],
             'git_state' => ['nullable'],
             'voice_file' => ['nullable', 'file', 'mimes:mp3,mpga,wav,m4a,webm,weba', 'max:10240'],
+            'checklist' => ['nullable', 'array'],
+            'checklist.*' => ['string'],
         ];
     }
 }

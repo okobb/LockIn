@@ -60,6 +60,7 @@ export default function MissionBar() {
 
   const handleNavigation = (value: string) => {
     if (!value.trim()) return;
+    localStorage.removeItem("current_focus_session");
 
     const selectedTask = suggestions.find(
       (s) => s.title.toLowerCase() === value.toLowerCase()
@@ -67,11 +68,15 @@ export default function MissionBar() {
 
     if (selectedTask) {
       navigate("/focus", {
-        state: { taskId: selectedTask.id, title: selectedTask.title },
+        state: {
+          taskId: selectedTask.id,
+          title: selectedTask.title,
+          isNewSession: true,
+        },
       });
     } else {
       navigate("/focus", {
-        state: { title: value, isFreestyle: true },
+        state: { title: value, isFreestyle: true, isNewSession: true },
       });
     }
     setIsFocused(false);

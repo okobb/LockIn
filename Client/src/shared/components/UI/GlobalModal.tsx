@@ -1,7 +1,8 @@
 import React, { useEffect, useCallback } from "react";
 import { AlertTriangle, Info, AlertCircle, HelpCircle, X } from "lucide-react";
 import type { ModalType } from "../../context/ModalContext";
-import "./GlobalModal.css";
+import { cn } from "../../lib/utils";
+import { Button } from "./Button";
 
 interface GlobalModalProps {
   isOpen: boolean;
@@ -19,13 +20,6 @@ const iconMap: Record<ModalType, React.ReactNode> = {
   warning: <AlertTriangle size={24} />,
   error: <AlertCircle size={24} />,
   confirm: <HelpCircle size={24} />,
-};
-
-const typeClasses: Record<ModalType, string> = {
-  info: "modal-info",
-  warning: "modal-warning",
-  error: "modal-error",
-  confirm: "modal-confirm",
 };
 
 export function GlobalModal({
@@ -75,37 +69,59 @@ export function GlobalModal({
 
   return (
     <div
-      className={`global-modal-backdrop ${isOpen ? "modal-open" : ""}`}
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-in fade-in duration-200 backdrop-blur-sm"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className={`global-modal ${typeClasses[type]}`}>
-        <button
-          className="modal-close-btn"
+      <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl p-6 relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-200">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground h-8 w-8"
           onClick={onClose}
           aria-label="Close modal"
         >
           <X size={18} />
-        </button>
+        </Button>
 
-        <div className={`modal-icon ${typeClasses[type]}`}>{iconMap[type]}</div>
+        <div className="flex flex-col items-center text-center space-y-4 pt-2">
+          <div
+            className={cn("p-3 rounded-full mb-2", {
+              "bg-blue-500/10 text-blue-500": type === "info",
+              "bg-amber-500/10 text-amber-500": type === "warning",
+              "bg-red-500/10 text-red-500": type === "error",
+              "bg-purple-500/10 text-purple-500": type === "confirm",
+            })}
+          >
+            {iconMap[type]}
+          </div>
 
-        <h2 id="modal-title" className="modal-title">
-          {title}
-        </h2>
-        <p className="modal-message">{message}</p>
+          <h2
+            id="modal-title"
+            className="text-xl font-semibold tracking-tight text-foreground"
+          >
+            {title}
+          </h2>
+          <p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">
+            {message}
+          </p>
+        </div>
 
-        <div className="modal-actions">
+        <div className="flex items-center gap-3 mt-8">
           {showCancelButton && (
-            <button className="modal-btn modal-btn-cancel" onClick={onClose}>
+            <Button variant="ghost" className="flex-1" onClick={onClose}>
               {cancelText}
-            </button>
+            </Button>
           )}
-          <button className="modal-btn modal-btn-confirm" onClick={onConfirm}>
+          <Button
+            className="flex-1"
+            onClick={onConfirm}
+            variant={type === "error" ? "destructive" : "default"}
+          >
             {confirmText}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

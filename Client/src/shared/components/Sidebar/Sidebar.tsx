@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarRange,
   Map,
-  Target,
   History,
   BarChart2,
   BookOpen,
@@ -51,7 +50,6 @@ const navSections: NavSection[] = [
     label: "Main",
     items: [
       { to: "/dashboard", icon: Map, label: "Daily Map" },
-      { to: "/focus", icon: Target, label: "Focus Mode" },
       {
         to: "/context-history",
         icon: History,
@@ -75,7 +73,6 @@ export default function Sidebar({
   const [isDarkTheme, setIsDarkTheme] = React.useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("theme");
-      // Default to dark if no preference
       return saved ? saved === "dark" : true;
     }
     return true;
@@ -100,10 +97,6 @@ export default function Sidebar({
 
   const toggleTheme = () => {
     setIsDarkTheme((prev) => !prev);
-  };
-
-  const handleLockIn = () => {
-    navigate("/context-save?mode=start");
   };
 
   const handleLogout = () => {
@@ -156,37 +149,6 @@ export default function Sidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8 scrollbar-hide">
-        {!isCollapsed && (
-          <button
-            onClick={handleLockIn}
-            className="w-full group relative overflow-hidden rounded-xl bg-linear-to-br from-primary via-primary/90 to-primary/80 p-4 text-left transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 border border-primary/20 mb-6"
-          >
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="font-semibold text-white">Lock In Now</span>
-              <img
-                src="/Project logo.png"
-                alt=""
-                className="h-5 w-5 brightness-0 invert opacity-90 group-hover:scale-110 transition-transform"
-              />
-            </div>
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity" />
-          </button>
-        )}
-
-        {isCollapsed && (
-          <button
-            onClick={handleLockIn}
-            className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors mb-6 shadow-md shadow-primary/20"
-            title="Lock In"
-          >
-            <img
-              src="/Project logo.png"
-              alt=""
-              className="h-5 w-5 brightness-0 invert"
-            />
-          </button>
-        )}
-
         {navSections.map((section) => (
           <div key={section.label} className="space-y-2">
             {!isCollapsed && (

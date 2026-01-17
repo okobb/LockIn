@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -9,7 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GitBranch,
-  Mic,
+  FileText,
   Save,
   Play,
   ArrowRight,
@@ -18,23 +18,33 @@ import {
   Sparkles,
   Loader2,
   Bot,
+  Check,
 } from "lucide-react";
 import { useModal } from "../../../shared/context/ModalContext";
 import { useFocusSession } from "../hooks/useFocusSession";
-import { getGitStatus, type GitStatusResponse, askAI } from "../api/focusApi";
-import Sidebar from "../../../shared/components/Sidebar/Sidebar";
+import {
+  getGitStatus,
+  type GitStatusResponse,
+  askAI,
+  addToChecklist,
+  generateAIChecklist,
+  toggleChecklistItem,
+} from "../api/focusApi";
+
 import { cn } from "../../../shared/lib/utils";
 import { Button } from "../../../shared/components/UI/Button";
 import { Card } from "../../../shared/components/UI/Card";
 import { Badge } from "../../../shared/components/UI/Badge";
 import { Textarea } from "../../../shared/components/UI/Textarea";
 import { Input } from "../../../shared/components/UI/Input";
+import { QualityScoreBadge } from "../../../shared/components/QualityScoreBadge/QualityScoreBadge";
 
 interface FocusState {
   taskId?: number;
   title: string;
   isFreestyle?: boolean;
   sessionId?: number;
+  isNewSession?: boolean; 
 }
 
 export default function FocusMode() {
@@ -47,14 +57,43 @@ export default function FocusMode() {
 
   const activeState = locationState || restoredState;
 
-  const { session } = useFocusSession(activeState);
+  const { session, setSession } = useFocusSession(activeState);
 
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
+
+  // Track which session we've initialized for to detect navigation changes
+  const lastInitializedSession = useRef<string | null>(null);
+
+  const getSessionKey = (state: FocusState | null): string | null => {
+    if (!state) return null;
+    if (state.sessionId) return `session:${state.sessionId}`;
+    if (state.taskId) return `task:${state.taskId}`;
+    return `title:${state.title}`;
+  };
+
   const [timer, setTimer] = useState(25 * 60); // 25 minutes in seconds
   const [isPaused, setIsPaused] = useState(false);
 
   const [note, setNote] = useState("");
+
+  const [isDarkTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("theme");
+      return saved ? saved === "dark" : true;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkTheme) {
+      root.classList.add("dark");
+      root.setAttribute("data-theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      root.setAttribute("data-theme", "light");
+    }
+  }, [isDarkTheme]);
 
   // AI State
   const [aiQuestion, setAiQuestion] = useState("");
@@ -63,22 +102,95 @@ export default function FocusMode() {
     sources: any[];
   } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [newChecklistItem, setNewChecklistItem] = useState("");
+  const [isGeneratingChecklist, setIsGeneratingChecklist] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Try to restore from localStorage if no location state
-    if (!locationState) {
-      const stored = localStorage.getItem("current_focus_session");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          console.log("Restoring session from storage:", parsed);
-          setRestoredState(parsed);
-        } catch (e) {
-          console.error("Failed to parse stored session", e);
+    const currentSessionKey = getSessionKey(locationState);
+    const stored = localStorage.getItem("current_focus_session");
+    let parsed: any = null;
+    try {
+      if (stored) parsed = JSON.parse(stored);
+    } catch (e) {
+      console.error("Failed to parse stored session", e);
+    }
+
+    if (activeState) {
+      if (activeState.isNewSession) {
+        console.log(
+          "New session flag detected - Resetting timer for fresh start"
+        );
+        localStorage.removeItem("current_focus_session");
+        setTimer(25 * 60);
+        setIsPaused(false);
+        lastInitializedSession.current = currentSessionKey;
+        setIsInitialized(true);
+
+        // Consume the flag so it doesn't trigger on reload
+        const newState = { ...activeState };
+        delete newState.isNewSession;
+        navigate(location.pathname, { replace: true, state: newState });
+        return; // Exit early
+      }
+
+      let isSameAsStoredSession = false;
+
+      if (parsed) {
+        const sameSessionId =
+          activeState.sessionId &&
+          parsed.sessionId &&
+          Number(activeState.sessionId) === Number(parsed.sessionId);
+
+        const sameTaskId =
+          activeState.taskId &&
+          parsed.taskId &&
+          Number(activeState.taskId) === Number(parsed.taskId);
+
+        const sameFreestyle =
+          !activeState.sessionId &&
+          !activeState.taskId &&
+          !parsed.sessionId &&
+          !parsed.taskId &&
+          activeState.title === parsed.title;
+
+        if (sameSessionId || sameTaskId || sameFreestyle) {
+          isSameAsStoredSession = true;
         }
       }
+
+      if (parsed && !isSameAsStoredSession) {
+        console.log("Session mismatch - Resetting timer for new task", {
+          active: activeState,
+          stored: parsed,
+        });
+        localStorage.removeItem("current_focus_session");
+        setTimer(25 * 60);
+        setIsPaused(false);
+      } else if (isSameAsStoredSession) {
+        console.log("Restoring session state from storage");
+        if (typeof parsed.timer === "number") setTimer(parsed.timer);
+        if (typeof parsed.isPaused === "boolean") setIsPaused(parsed.isPaused);
+      } else if (!parsed) {
+        console.log("No stored session - Starting fresh");
+        // Ensure defaults just in case
+        setTimer(25 * 60); 
+        setIsPaused(false);
+      }
+
+      lastInitializedSession.current = currentSessionKey;
+    } else {
+      if (parsed) {
+        console.log("Restoring full session from storage (no active state)");
+        setRestoredState(parsed);
+        if (typeof parsed.timer === "number") setTimer(parsed.timer);
+        if (typeof parsed.isPaused === "boolean") setIsPaused(parsed.isPaused);
+        lastInitializedSession.current = getSessionKey(parsed);
+      }
     }
-  }, [locationState]);
+
+    setIsInitialized(true);
+  }, [locationState]); 
 
   // Timer logic
   useEffect(() => {
@@ -88,6 +200,46 @@ export default function FocusMode() {
     }, 1000);
     return () => clearInterval(interval);
   }, [isPaused]);
+
+  // Persistence logic for Timer & Pause state
+  useEffect(() => {
+    if (!activeState || !isInitialized) return;
+
+    const stored = localStorage.getItem("current_focus_session");
+    let shouldSave = true;
+
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const currentKey = getSessionKey({
+          ...activeState,
+          sessionId: session?.id || activeState.sessionId,
+        });
+        const storedKey = getSessionKey(parsed);
+
+        if (storedKey && currentKey !== storedKey) {
+          shouldSave = false;
+        }
+      } catch (e) {
+      }
+    }
+
+    if (shouldSave) {
+      const stateToSave = {
+        title: activeState.title,
+        taskId: activeState.taskId,
+        sessionId: session?.id || activeState.sessionId, // Prefer real ID
+        isFreestyle: activeState.isFreestyle,
+        timer: timer,
+        isPaused: isPaused,
+        lastUpdated: Date.now(),
+      };
+      localStorage.setItem(
+        "current_focus_session",
+        JSON.stringify(stateToSave)
+      );
+    }
+  }, [timer, isPaused, activeState, isInitialized, session?.id]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -147,6 +299,10 @@ export default function FocusMode() {
     }
 
     // Navigate to context save page with session data
+    // Extract checklist items if available
+    const initialChecklist =
+      session?.context_snapshot?.ai_resume_checklist?.map((i) => i.text) || [];
+
     navigate("/context-save", {
       state: {
         sessionId: payloadSessionId,
@@ -154,6 +310,7 @@ export default function FocusMode() {
         note: note,
         gitState: activeGitState,
         initialTabs: restoredTabs,
+        initialChecklist: initialChecklist,
       },
     });
   };
@@ -176,19 +333,81 @@ export default function FocusMode() {
     }
   };
 
+  const handleAddChecklistItem = async () => {
+    if (!newChecklistItem.trim() || !session?.id) return;
+    try {
+      const response = await addToChecklist(session.id, newChecklistItem);
+      if (response.success && session) {
+        setSession({
+          ...session,
+          context_snapshot: response.data.snapshot,
+        });
+        setNewChecklistItem("");
+      }
+    } catch (err) {
+      console.error("Failed to add checklist item", err);
+      open({
+        type: "error",
+        title: "Error",
+        message: "Failed to add checklist item.",
+      });
+    }
+  };
+
+  const handleGenerateAIChecklist = async () => {
+    if (!session?.id) return;
+    setIsGeneratingChecklist(true);
+    try {
+      const response = await generateAIChecklist(session.id);
+      if (response.success && session) {
+        setSession({
+          ...session,
+          context_snapshot: response.data.snapshot,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to generate checklist", err);
+      open({
+        type: "error",
+        title: "AI Error",
+        message: "Failed to generate checklist.",
+      });
+    } finally {
+      setIsGeneratingChecklist(false);
+    }
+  };
+
+  const handleToggleChecklist = async (index: number) => {
+    if (!session?.id) return;
+
+    // Optimistic toggle
+    const currentList = session.context_snapshot?.ai_resume_checklist || [];
+    const newList = [...currentList];
+    const item = { ...newList[index] } as any;
+    item.is_completed = !item.is_completed;
+    newList[index] = item;
+
+    if (session.context_snapshot) {
+      setSession({
+        ...session,
+        context_snapshot: {
+          ...session.context_snapshot,
+          ai_resume_checklist: newList,
+        },
+      });
+    }
+
+    try {
+      await toggleChecklistItem(session.id, index);
+    } catch (err) {
+      console.error("Failed to toggle checklist item", err);
+    }
+  };
+
   if (!activeState) {
     return (
       <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
-        <Sidebar
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        />
-        <main
-          className={cn(
-            "flex-1 flex flex-col items-center justify-center h-screen w-full transition-all duration-300",
-            isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]"
-          )}
-        >
+        <main className="flex-1 flex flex-col items-center justify-center h-screen w-full transition-all duration-300">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-light text-muted-foreground">
               No active mission
@@ -204,18 +423,7 @@ export default function FocusMode() {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-hidden">
-      <Sidebar
-        isCollapsed={true}
-        onToggleCollapse={() => {}}
-        hideToggle={true}
-      />
-
-      <main
-        className={cn(
-          "flex-1 transition-all duration-300 flex relative",
-          "pl-[64px]"
-        )}
-      >
+      <main className="flex-1 transition-all duration-300 flex relative">
         <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
           <div className="w-full h-1 bg-border/20">
             <div className="h-full bg-linear-to-r from-primary to-blue-400 w-full animate-pulse" />
@@ -336,43 +544,113 @@ export default function FocusMode() {
               </div>
 
               <div className="w-full space-y-4 animate-fade-in delay-75">
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <LayoutDashboard className="w-3.5 h-3.5" /> Session Checklist
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <LayoutDashboard className="w-3.5 h-3.5" /> Session
+                    Checklist
+                  </h3>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                    onClick={handleGenerateAIChecklist}
+                    disabled={isGeneratingChecklist}
+                  >
+                    {isGeneratingChecklist ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3 h-3 mr-1" />
+                    )}
+                    AI Generate
+                  </Button>
+                </div>
+
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    value={newChecklistItem}
+                    onChange={(e) => setNewChecklistItem(e.target.value)}
+                    placeholder="Add a new item..."
+                    className="h-9 bg-card/40 border-border/40 text-sm"
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleAddChecklistItem()
+                    }
+                  />
+                  <Button
+                    size="sm"
+                    className="h-9 w-9 p-0 shrink-0"
+                    onClick={handleAddChecklistItem}
+                    disabled={!newChecklistItem.trim()}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[
-                    {
-                      text: "Check session.php config",
-                      sub: "config/session.php",
-                    },
-                    { text: "Verify refresh tokens", sub: "DB check required" },
-                    { text: "Test OAuth flow", sub: "Enable verbose logging" },
-                    { text: "Commit Fixes", sub: "feature/oauth-refactor" },
-                  ].map((item, i) => (
-                    <Card
-                      key={i}
-                      className="bg-card/40 border-border/40 hover:bg-card/60 hover:border-primary/30 transition-all cursor-pointer group"
-                    >
-                      <div className="p-3 flex items-start gap-3">
-                        <div className="mt-0.5 h-4 w-4 rounded-sm border border-muted-foreground/40 group-hover:border-primary transition-colors" />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium leading-none group-hover:text-primary transition-colors text-foreground/90">
-                            {item.text}
+                  {[...(session?.context_snapshot?.ai_resume_checklist || [])]
+                    .length > 0 ? (
+                    session?.context_snapshot?.ai_resume_checklist?.map(
+                      (item, i) => (
+                        <Card
+                          key={i}
+                          onClick={() => handleToggleChecklist(i)}
+                          className={cn(
+                            "transition-all cursor-pointer group select-none relative overflow-hidden border",
+                            (item as any).is_completed
+                              ? "bg-primary/5 border-primary/20 hover:bg-primary/10 shadow-sm"
+                              : "bg-card/40 border-border/40 hover:bg-card/60 hover:border-primary/20 hover:shadow-sm"
+                          )}
+                        >
+                          <div className="p-3 flex items-start gap-3">
+                            <div
+                              className={cn(
+                                "mt-0.5 h-4 w-4 shrink-0 rounded-md border transition-all duration-300 flex items-center justify-center shadow-sm",
+                                (item as any).is_completed
+                                  ? "bg-primary border-primary text-primary-foreground scale-100"
+                                  : "border-muted-foreground/30 group-hover:border-primary/50 bg-background/50"
+                              )}
+                            >
+                              {(item as any).is_completed && (
+                                <Check className="w-2.5 h-2.5 stroke-[3px]" />
+                              )}
+                            </div>
+                            <div className="flex-1 space-y-1.5">
+                              <div
+                                className={cn(
+                                  "text-sm font-medium leading-relaxed transition-all duration-300",
+                                  (item as any).is_completed
+                                    ? "text-muted-foreground line-through decoration-primary/30"
+                                    : "text-foreground/90 group-hover:text-foreground"
+                                )}
+                              >
+                                {item.text}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-wider flex items-center gap-1">
+                                <span
+                                  className={cn(
+                                    "w-1 h-1 rounded-full",
+                                    item.source === "ai"
+                                      ? "bg-purple-500/50"
+                                      : "bg-blue-500/50"
+                                  )}
+                                />
+                                {item.source}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1.5 font-mono">
-                            {item.sub}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                        </Card>
+                      )
+                    )
+                  ) : (
+                    <div className="col-span-2 text-center text-muted-foreground text-sm italic py-4">
+                      No checklist items available.
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="w-full space-y-4 animate-fade-in delay-100">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Mic className="w-4 h-4" /> Session Log
+                    <FileText className="w-4 h-4" /> Session Log
                   </label>
                   <span className="text-xs text-muted-foreground/50 font-mono">
                     markdown supported
@@ -416,18 +694,45 @@ export default function FocusMode() {
           )}
         >
           <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-8">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <GitBranch className="w-3.5 h-3.5 text-purple-400" /> Active
+                Context
+              </h3>
+              <div className="flex items-center gap-2">
+                {session?.context_snapshot?.quality_score !== undefined && (
+                  <div
+                    className="px-1 cursor-pointer hover:scale-105 transition-transform pb-1"
+                    title="View Scoring Criteria"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      open({
+                        type: "info",
+                        title: "Context Quality Score",
+                        message:
+                          "Your score reflects the richness of your captured context:\n\n• Browser Tabs (Documentation, PRs)\n• Git Activity (Changes, Branches)\n• Checklist Items (Progress)\n\nA higher score helps the AI understand your work better.",
+                      });
+                    }}
+                  >
+                    <QualityScoreBadge
+                      score={session.context_snapshot.quality_score}
+                      className="h-5"
+                      showLabel={false}
+                    />
+                  </div>
+                )}
+                <div
+                  className="cursor-pointer hover:opacity-80 pb-1 p-1 rounded-md hover:bg-muted/50 transition-colors"
+                  onClick={() => setIsContextCollapsed(true)}
+                  title="Collapse Sidebar"
+                >
+                  <ChevronRight className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                </div>
+              </div>
+            </div>
+
             {activeGitState && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <GitBranch className="w-3.5 h-3.5 text-purple-400" /> Active
-                    Context
-                  </h3>
-                  <ChevronRight
-                    className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                    onClick={() => setIsContextCollapsed(true)}
-                  />
-                </div>
                 <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-4">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Branch</span>
@@ -467,6 +772,7 @@ export default function FocusMode() {
                 {restoredTabs.map((tab, i) => (
                   <div
                     key={i}
+                    onClick={() => window.open(tab.url, "_blank")}
                     className="flex items-center gap-3 p-3 rounded-lg bg-card/20 border border-border/30 hover:bg-card/40 transition-colors cursor-pointer group"
                   >
                     <div className="h-6 w-6 rounded bg-background/50 flex items-center justify-center text-[10px] uppercase font-bold text-muted-foreground border border-border/30">
