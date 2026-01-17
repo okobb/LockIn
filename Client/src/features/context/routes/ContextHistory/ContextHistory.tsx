@@ -408,8 +408,8 @@ export default function ContextHistory() {
 
                             <div className="flex items-center justify-between pt-2 border-t border-border/20">
                               <div className="flex items-center gap-2">
-                                {session.context_snapshot?.quality_score !==
-                                  undefined && (
+                                {session.context_snapshot?.quality_score !=
+                                  null && (
                                   <QualityScoreBadge
                                     score={
                                       session.context_snapshot.quality_score

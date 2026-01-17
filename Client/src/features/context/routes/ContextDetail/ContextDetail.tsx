@@ -210,10 +210,9 @@ export default function ContextDetail() {
               >
                 {isAbandoned ? "Abandoned" : "Completed"}
               </Badge>
-              {snapshot?.quality_score !== undefined && (
+              {snapshot?.quality_score != null && (
                 <QualityScoreBadge
                   score={snapshot.quality_score}
-                  showLabel={false}
                   className="h-6"
                 />
               )}
