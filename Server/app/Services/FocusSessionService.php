@@ -86,4 +86,45 @@ final class FocusSessionService extends BaseService
             'restored_context' => (bool) $prevSession,
         ];
     }
+    /**
+     * Get history of focus sessions with filtering.
+     */
+    public function getHistory(int $userId, array $filters): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        $query = FocusSession::query()->where('user_id', $userId)
+            ->where('status', '!=', 'active')
+            ->with('contextSnapshot')
+            ->orderBy('ended_at', 'desc');
+            
+        if (!empty($filters['search'])) {
+            $query->where('title', 'ILIKE', "%{$filters['search']}%");
+        }
+        
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+            $query->where('status', $filters['status']);
+        }
+        
+        return $query->paginate(20);
+    }
+
+    /**
+     * Calculate stats for focus history.
+     */
+    public function getStats(int $userId): array
+    {
+        return [
+            'total_contexts' => FocusSession::query()->where('user_id', $userId)
+                ->where('status', '!=', 'active')
+                ->count(),
+                
+            'this_week' => FocusSession::query()->where('user_id', $userId)
+                ->where('status', '!=', 'active')
+                ->where('ended_at', '>=', now()->startOfWeek())
+                ->count(),
+                
+            'time_saved_minutes' => (int) FocusSession::query()->where('user_id', $userId)
+                ->where('status', 'completed')
+                ->sum('actual_duration_min'),
+        ];
+    }
 }

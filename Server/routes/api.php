@@ -71,8 +71,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('tasks/suggestions/list', [TaskController::class, 'suggestions'])->name('tasks.suggestions');
 
     // Focus Sessions
+    Route::get('focus-sessions', [FocusSessionController::class, 'index'])->name('focus-sessions.index');
     Route::post('focus-sessions', [FocusSessionController::class, 'store'])->name('focus-sessions.store');
     Route::get('focus-sessions/{session}', [FocusSessionController::class, 'show'])->name('focus-sessions.show');
+    Route::patch('focus-sessions/{session}/complete', [FocusSessionController::class, 'complete'])->name('focus-sessions.complete');
+    Route::delete('focus-sessions/{session}', [FocusSessionController::class, 'destroy'])->name('focus-sessions.destroy');
     Route::get('focus-sessions/{session}/git-status', [\App\Http\Controllers\GitController::class, 'show'])->name('focus-sessions.git-status');
     Route::post('focus-sessions/{session}/checklist', [FocusSessionController::class, 'addToChecklist'])->name('focus-sessions.checklist.add');
     Route::post('focus-sessions/{session}/checklist/generate', [FocusSessionController::class, 'generateAIChecklist'])->name('focus-sessions.checklist.generate');

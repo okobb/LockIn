@@ -44,7 +44,7 @@ interface FocusState {
   title: string;
   isFreestyle?: boolean;
   sessionId?: number;
-  isNewSession?: boolean; 
+  isNewSession?: boolean;
 }
 
 export default function FocusMode() {
@@ -104,7 +104,9 @@ export default function FocusMode() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [isGeneratingChecklist, setIsGeneratingChecklist] = useState(false);
+
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isNoteHydrated, setIsNoteHydrated] = useState(false);
 
   useEffect(() => {
     const currentSessionKey = getSessionKey(locationState);
@@ -119,7 +121,7 @@ export default function FocusMode() {
     if (activeState) {
       if (activeState.isNewSession) {
         console.log(
-          "New session flag detected - Resetting timer for fresh start"
+          "New session flag detected - Resetting timer for fresh start",
         );
         localStorage.removeItem("current_focus_session");
         setTimer(25 * 60);
@@ -131,7 +133,7 @@ export default function FocusMode() {
         const newState = { ...activeState };
         delete newState.isNewSession;
         navigate(location.pathname, { replace: true, state: newState });
-        return; // Exit early
+        return;
       }
 
       let isSameAsStoredSession = false;
@@ -174,7 +176,7 @@ export default function FocusMode() {
       } else if (!parsed) {
         console.log("No stored session - Starting fresh");
         // Ensure defaults just in case
-        setTimer(25 * 60); 
+        setTimer(25 * 60);
         setIsPaused(false);
       }
 
@@ -190,7 +192,7 @@ export default function FocusMode() {
     }
 
     setIsInitialized(true);
-  }, [locationState]); 
+  }, [locationState]);
 
   // Timer logic
   useEffect(() => {
@@ -220,8 +222,7 @@ export default function FocusMode() {
         if (storedKey && currentKey !== storedKey) {
           shouldSave = false;
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     }
 
     if (shouldSave) {
@@ -236,7 +237,7 @@ export default function FocusMode() {
       };
       localStorage.setItem(
         "current_focus_session",
-        JSON.stringify(stateToSave)
+        JSON.stringify(stateToSave),
       );
     }
   }, [timer, isPaused, activeState, isInitialized, session?.id]);
@@ -283,6 +284,14 @@ export default function FocusMode() {
     };
     fetchGitData();
   }, [session?.id, activeState?.sessionId]);
+
+  // Restore note from session snapshot
+  useEffect(() => {
+    if (session?.context_snapshot?.text_note && !isNoteHydrated) {
+      setNote(session.context_snapshot.text_note);
+      setIsNoteHydrated(true);
+    }
+  }, [session, isNoteHydrated]);
 
   const handleLockIn = () => {
     const payloadSessionId = session?.id || (activeState as any)?.sessionId;
@@ -464,7 +473,7 @@ export default function FocusMode() {
                   <div
                     className={cn(
                       "text-7xl md:text-9xl leading-none font-mono font-bold tracking-tighter tabular-nums text-foreground transition-all duration-300",
-                      isPaused && "opacity-50"
+                      isPaused && "opacity-50",
                     )}
                   >
                     {formatTime(timer)}
@@ -596,7 +605,7 @@ export default function FocusMode() {
                             "transition-all cursor-pointer group select-none relative overflow-hidden border",
                             (item as any).is_completed
                               ? "bg-primary/5 border-primary/20 hover:bg-primary/10 shadow-sm"
-                              : "bg-card/40 border-border/40 hover:bg-card/60 hover:border-primary/20 hover:shadow-sm"
+                              : "bg-card/40 border-border/40 hover:bg-card/60 hover:border-primary/20 hover:shadow-sm",
                           )}
                         >
                           <div className="p-3 flex items-start gap-3">
@@ -605,7 +614,7 @@ export default function FocusMode() {
                                 "mt-0.5 h-4 w-4 shrink-0 rounded-md border transition-all duration-300 flex items-center justify-center shadow-sm",
                                 (item as any).is_completed
                                   ? "bg-primary border-primary text-primary-foreground scale-100"
-                                  : "border-muted-foreground/30 group-hover:border-primary/50 bg-background/50"
+                                  : "border-muted-foreground/30 group-hover:border-primary/50 bg-background/50",
                               )}
                             >
                               {(item as any).is_completed && (
@@ -618,7 +627,7 @@ export default function FocusMode() {
                                   "text-sm font-medium leading-relaxed transition-all duration-300",
                                   (item as any).is_completed
                                     ? "text-muted-foreground line-through decoration-primary/30"
-                                    : "text-foreground/90 group-hover:text-foreground"
+                                    : "text-foreground/90 group-hover:text-foreground",
                                 )}
                               >
                                 {item.text}
@@ -629,7 +638,7 @@ export default function FocusMode() {
                                     "w-1 h-1 rounded-full",
                                     item.source === "ai"
                                       ? "bg-purple-500/50"
-                                      : "bg-blue-500/50"
+                                      : "bg-blue-500/50",
                                   )}
                                 />
                                 {item.source}
@@ -637,7 +646,7 @@ export default function FocusMode() {
                             </div>
                           </div>
                         </Card>
-                      )
+                      ),
                     )
                   ) : (
                     <div className="col-span-2 text-center text-muted-foreground text-sm italic py-4">
@@ -690,7 +699,7 @@ export default function FocusMode() {
             "border-l border-border bg-card/10 backdrop-blur-xl transition-all duration-300 relative flex flex-col z-20",
             isContextCollapsed
               ? "w-0 border-l-0 opacity-0 overflow-hidden"
-              : "w-[380px] opacity-100"
+              : "w-[380px] opacity-100",
           )}
         >
           <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-8">
@@ -816,7 +825,7 @@ export default function FocusMode() {
             "absolute top-6 right-6 z-50 transition-all duration-300",
             isContextCollapsed
               ? "opacity-100 translate-x-0"
-              : "opacity-0 translate-x-10 pointer-events-none"
+              : "opacity-0 translate-x-10 pointer-events-none",
           )}
         >
           <Button

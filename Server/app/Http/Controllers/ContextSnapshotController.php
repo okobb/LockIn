@@ -28,36 +28,11 @@ class ContextSnapshotController extends BaseController
             return $this->errorResponse('Unauthorized', 403);
         }
 
-        $browserState = $validated['browser_state'] ?? null;
-        if (is_string($browserState)) {
-            $browserState = json_decode($browserState, true);
-        }
-
-        $gitState = $validated['git_state'] ?? null;
-        if (is_string($gitState)) {
-            $gitState = json_decode($gitState, true);
-        }
-
-        $data = [
-            'note' => $validated['note'] ?? null,
-            'browser_state' => $browserState,
-            'git_state' => $gitState,
-            'checklist' => $validated['checklist'] ?? [],
-        ];
-
-        if ($session->contextSnapshot) {
-            $snapshot = $this->service->updateSnapshot(
-                $session->contextSnapshot,
-                $data,
-                $request->file('voice_file')
-            );
-        } else {
-            $snapshot = $this->service->createSnapshot(
-                $session,
-                $data,
-                $request->file('voice_file')
-            );
-        }
+        $snapshot = $this->service->processSnapshot(
+            $session,
+            $validated,
+            $request->file('voice_file')
+        );
 
         return $this->createdResponse([
             'id' => $snapshot->id,
