@@ -16,6 +16,7 @@ export interface SaveContextRequest {
   browser_state?: BrowserTab[];
   git_state?: GitState;
   voice_file?: File;
+  checklist?: string[];
 }
 
 export interface SaveContextResponse {

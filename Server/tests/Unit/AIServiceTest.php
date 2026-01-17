@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\AIService;
+use App\AI\PromptService;
 use OpenAI\Contracts\ClientContract;
 use OpenAI\Contracts\Resources\ChatContract;
 use OpenAI\Responses\Chat\CreateResponse;
@@ -48,8 +49,11 @@ class AIServiceTest extends TestCase
         $mockClient = Mockery::mock(ClientContract::class);
         $mockClient->shouldReceive('chat')->andReturn($mockChat);
 
+        // Mock PromptService
+        $mockPromptService = Mockery::mock(PromptService::class);
+
         // Inject the mock client via constructor
-        $aiService = new AIService($mockClient);
+        $aiService = new AIService($mockPromptService, $mockClient);
 
         $result = $aiService->chat([
             ['role' => 'user', 'content' => 'Hi']
@@ -86,7 +90,8 @@ class AIServiceTest extends TestCase
         $mockClient = Mockery::mock(ClientContract::class);
         $mockClient->shouldReceive('chat')->andReturn($mockChat);
 
-        $aiService = new AIService($mockClient);
+        $mockPromptService = Mockery::mock(PromptService::class);
+        $aiService = new AIService($mockPromptService, $mockClient);
 
         $result = $aiService->chat(
             [['role' => 'user', 'content' => 'Test']],
@@ -119,7 +124,8 @@ class AIServiceTest extends TestCase
         $mockClient = Mockery::mock(ClientContract::class);
         $mockClient->shouldReceive('chat')->andReturn($mockChat);
 
-        $aiService = new AIService($mockClient);
+        $mockPromptService = Mockery::mock(PromptService::class);
+        $aiService = new AIService($mockPromptService, $mockClient);
 
         $result = $aiService->chat([
             ['role' => 'user', 'content' => 'Test']

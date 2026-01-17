@@ -27,6 +27,13 @@ class PromptService
         6. Be concise and direct.
     EOT;
 
+    private const CHECKLIST_SYSTEM_INSTRUCTIONS = <<<'EOT'
+        You are a senior engineer's assistant helping a user resume a task.
+        Based on the provided context (notes, voice transcript, code changes, tabs), generate a strict JSON array of 3-5 concrete, actionable next steps.
+        Do not include any explanation, markdown formatting, or code blocks. Just the raw JSON array of strings.
+        Example: ["Review AuthController.php changes", "Fix the failing test in UserTest.php", "Deploy to staging"]
+    EOT;
+
     /** @var array<string> */
     private array $blockedPatterns;
     private int $maxLength;
@@ -48,8 +55,34 @@ class PromptService
     {
         return match ($key) {
             'rag_qa' => $this->buildRagQa($variables),
+            'checklist' => $this->buildChecklist($variables),
             default => throw new InvalidArgumentException("Prompt template [{$key}] not found."),
         };
+    }
+
+    /**
+     * Build the context checklist prompt.
+     */
+    private function buildChecklist(array $variables): array
+    {
+        $context = "Task: " . ($variables['title'] ?? 'Untitled') . "\n";
+        if (!empty($variables['note'])) {
+            $context .= "User Note: " . $variables['note'] . "\n";
+        }
+        if (!empty($variables['transcript'])) {
+            $context .= "Voice Transcript: " . $variables['transcript'] . "\n";
+        }
+        if (!empty($variables['git_summary'])) {
+            $context .= "Code Changes: " . $variables['git_summary'] . "\n";
+        }
+        if (!empty($variables['tabs'])) {
+            $context .= "Open Tabs: " . $variables['tabs'] . "\n";
+        }
+
+        return [
+            ['role' => 'system', 'content' => self::CHECKLIST_SYSTEM_INSTRUCTIONS],
+            ['role' => 'user', 'content' => $context],
+        ];
     }
 
     /**

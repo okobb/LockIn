@@ -12,6 +12,8 @@ export interface FocusSession {
   task_id?: number;
   context_snapshot?: {
     browser_state: Array<{ title: string; url: string }>;
+    quality_score?: number;
+    ai_resume_checklist?: Array<{ text: string; source: string }>;
   };
 }
 
@@ -19,6 +21,11 @@ export const startFocusSession = async (
   params: StartSessionParams
 ): Promise<FocusSession> => {
   const response = await api.post("/focus-sessions", params);
+  return response.data.data.session;
+};
+
+export const getSession = async (sessionId: number): Promise<FocusSession> => {
+  const response = await api.get(`/focus-sessions/${sessionId}`);
   return response.data.data.session;
 };
 
@@ -48,5 +55,26 @@ export interface AskAIResponse {
 
 export const askAI = async (question: string): Promise<AskAIResponse> => {
   const response = await api.post("/knowledge/ask", { question });
+  return response.data;
+};
+
+export const toggleChecklistItem = async (sessionId: number, index: number) => {
+  const response = await api.patch(
+    `/focus-sessions/${sessionId}/checklist/${index}`
+  );
+  return response.data;
+};
+
+export const addToChecklist = async (sessionId: number, text: string) => {
+  const response = await api.post(`/focus-sessions/${sessionId}/checklist`, {
+    text,
+  });
+  return response.data;
+};
+
+export const generateAIChecklist = async (sessionId: number) => {
+  const response = await api.post(
+    `/focus-sessions/${sessionId}/checklist/generate`
+  );
   return response.data;
 };

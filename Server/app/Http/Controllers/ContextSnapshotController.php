@@ -42,13 +42,22 @@ class ContextSnapshotController extends BaseController
             'note' => $validated['note'] ?? null,
             'browser_state' => $browserState,
             'git_state' => $gitState,
+            'checklist' => $validated['checklist'] ?? [],
         ];
 
-        $snapshot = $this->service->createSnapshot(
-            $session,
-            $data,
-            $request->file('voice_file')
-        );
+        if ($session->contextSnapshot) {
+            $snapshot = $this->service->updateSnapshot(
+                $session->contextSnapshot,
+                $data,
+                $request->file('voice_file')
+            );
+        } else {
+            $snapshot = $this->service->createSnapshot(
+                $session,
+                $data,
+                $request->file('voice_file')
+            );
+        }
 
         return $this->createdResponse([
             'id' => $snapshot->id,

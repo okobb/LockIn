@@ -23,6 +23,12 @@ export const saveContextSnapshot = async (
     formData.append("voice_file", request.voice_file);
   }
 
+  if (request.checklist && request.checklist.length > 0) {
+    request.checklist.forEach((item, index) => {
+      formData.append(`checklist[${index}]`, item);
+    });
+  }
+
   const response = await api.post<SaveContextResponse>(
     "/context/save",
     formData,

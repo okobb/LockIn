@@ -13,7 +13,7 @@ class TranscriptionService
 {
     public function transcribe(string $path): ?string
     {
-        $apiKey = config('services.openai.api_key');
+        $apiKey = config('services.openai.key');
 
         if (! $apiKey) {
             Log::warning('OpenAI API key not configured.');

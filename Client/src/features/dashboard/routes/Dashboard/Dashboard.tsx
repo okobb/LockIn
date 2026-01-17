@@ -116,50 +116,48 @@ export default function NewDashboard() {
                 </div>
               </div>
 
-              <div className="group relative rounded-3xl border border-primary/20 bg-card/40 hover:bg-card/60 transition-all duration-500 overflow-hidden">
-                <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              {lastSession && (
+                <div className="group relative rounded-3xl border border-primary/20 bg-card/40 hover:bg-card/60 transition-all duration-500 overflow-hidden">
+                  <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                <div className="relative p-8 md:p-10 space-y-8">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-3 w-3 rounded-full bg-primary animate-pulse shadow-[0_0_10px_currentColor] text-primary" />
-                    <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
-                      {lastSession ? "Active Session" : "No Active Session"}
-                    </span>
-                  </div>
+                  <div className="relative p-8 md:p-10 space-y-8">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-3 w-3 rounded-full bg-primary animate-pulse shadow-[0_0_10px_currentColor] text-primary" />
+                      <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
+                        Active Session
+                      </span>
+                    </div>
 
-                  <div>
-                    <h2 className="text-3xl md:text-4xl font-light leading-tight text-foreground">
-                      {lastSession
-                        ? lastSession.title
-                        : "Ready to start focusing?"}
-                    </h2>
-                    <p className="mt-4 text-lg text-muted-foreground font-light max-w-2xl">
-                      {lastSession
-                        ? "Resume your last session where you left off."
-                        : "Select a task from the mission bar above or start a freestyle session."}
-                    </p>
-                  </div>
+                    <div>
+                      <h2 className="text-3xl md:text-4xl font-light leading-tight text-foreground">
+                        {lastSession.title}
+                      </h2>
+                      <p className="mt-4 text-lg text-muted-foreground font-light max-w-2xl">
+                        Resume your last session where you left off.
+                      </p>
+                    </div>
 
-                  <div className="flex flex-wrap gap-4">
-                    <Button
-                      size="lg"
-                      className="h-12 px-8 rounded-full! text-base text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
-                      onClick={handleResumeSession}
-                    >
-                      <Play className="w-5 h-5 mr-2 fill-current" />
-                      {lastSession ? "Resume Work" : "Start Focus"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      className="h-12 px-8 rounded-full! text-base hover:bg-primary/5 text-foreground/80 hover:text-foreground"
-                      onClick={() => navigate("/calendar")}
-                    >
-                      <CalendarIcon className="w-5 h-5 mr-2" /> View Timeline
-                    </Button>
+                    <div className="flex flex-wrap gap-4">
+                      <Button
+                        size="lg"
+                        className="h-12 px-8 rounded-full! text-base text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
+                        onClick={handleResumeSession}
+                      >
+                        <Play className="w-5 h-5 mr-2 fill-current" />
+                        Resume Work
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        className="h-12 px-8 rounded-full! text-base hover:bg-primary/5 text-foreground/80 hover:text-foreground"
+                        onClick={() => navigate("/calendar")}
+                      >
+                        <CalendarIcon className="w-5 h-5 mr-2" /> View Timeline
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <div className="flex items-center justify-between mb-6">
