@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
+use OpenAI;
 use OpenAI\Client;
-use OpenAI\Factory;
 
 class EmbeddingService
 {
     private Client $client;
     private string $model;
+    private bool $cacheEnabled;
+    private int $cacheTtl;
 
     public function __construct()
     {
@@ -19,16 +22,34 @@ class EmbeddingService
             $apiKey = env('OPENAI_API_KEY');
         }
 
-        $this->client = \OpenAI::client($apiKey);
+        $this->client = OpenAI::client($apiKey);
         $this->model = config('services.openai.embedding_model', 'text-embedding-3-small');
+        $this->cacheEnabled = config('rag.cache_embeddings', true);
+        $this->cacheTtl = config('rag.cache_ttl_seconds', 3600);
     }
 
     /**
-     * Generate embedding for a single string.
+     * Generate embedding for a single string with optional caching.
      *
      * @return array<float>
      */
     public function embed(string $text): array
+    {
+        if ($this->cacheEnabled) {
+            $cacheKey = $this->getCacheKey($text);
+            
+            return Cache::remember($cacheKey, $this->cacheTtl, fn() => $this->fetchEmbedding($text));
+        }
+
+        return $this->fetchEmbedding($text);
+    }
+
+    /**
+     * Fetch embedding from OpenAI API.
+     *
+     * @return array<float>
+     */
+    private function fetchEmbedding(string $text): array
     {
         $response = $this->client->embeddings()->create([
             'model' => $this->model,
@@ -72,5 +93,21 @@ class EmbeddingService
     public function getModelName(): string
     {
         return $this->model;
+    }
+
+    /**
+     * Generate cache key for embedding.
+     */
+    private function getCacheKey(string $text): string
+    {
+        return 'embedding:' . md5($text . ':' . $this->model);
+    }
+
+    /**
+     * Clear embedding cache for a specific text.
+     */
+    public function clearCache(string $text): void
+    {
+        Cache::forget($this->getCacheKey($text));
     }
 }

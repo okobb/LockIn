@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use OpenAI;
 use OpenAI\Client;
 
 class AIService
@@ -13,7 +14,7 @@ class AIService
     public function __construct()
     {
         $apiKey = config('services.openai.key');
-        $this->client = \OpenAI::client($apiKey);
+        $this->client = OpenAI::client($apiKey);
     }
 
     /**

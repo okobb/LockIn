@@ -36,3 +36,17 @@ export const getGitStatus = async (
   const response = await api.get(`/focus-sessions/${sessionId}/git-status`);
   return response.data.data;
 };
+
+export interface AskAIResponse {
+  answer: string;
+  sources: Array<{
+    score: number;
+    content: string;
+    resource_id: number;
+  }>;
+}
+
+export const askAI = async (question: string): Promise<AskAIResponse> => {
+  const response = await api.post("/knowledge/ask", { question });
+  return response.data;
+};

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\AI\Prompts\PromptRegistry;
+use App\AI\PromptService;
 use App\Models\KnowledgeChunk;
 use App\Models\KnowledgeResource;
 use Illuminate\Support\Str;
@@ -16,10 +16,8 @@ class RAGService
         private EmbeddingService $embedder,
         private QdrantService $qdrant,
         private AIService $aiService,
-        private PromptRegistry $prompts
-    ) {
-
-    }
+        private PromptService $prompts
+    ) {}
 
     public function createResource(array $data, int $userId): KnowledgeResource
     {
@@ -50,7 +48,6 @@ class RAGService
         }
 
         $textsToEmbed = array_column($chunksData, 'content');
-        
         $embeddings = $this->embedder->embedBatch($textsToEmbed);
 
         $points = [];
@@ -96,20 +93,30 @@ class RAGService
     }
 
     /**
-     * Semantic search for a user.
+     * Semantic search for a user with re-ranking.
      */
     public function search(int $userId, string $query, int $limit = 5): array
     {
         $queryVector = $this->embedder->embed($query);
+        $minScore = config('rag.min_relevance_score', 0.5);
 
-        $results = $this->qdrant->search($queryVector, ['user_id' => $userId], $limit);
+        $fetchLimit = min($limit * 2, config('rag.max_context_chunks', 10));
+        $results = $this->qdrant->search($queryVector, ['user_id' => $userId], $fetchLimit);
+        
+        $rankedResults = collect($results)
+            ->filter(fn($item) => ($item['score'] ?? 0) >= $minScore)
+            ->sortByDesc('score')
+            ->take($limit)
+            ->values()
+            ->all();
+
         return array_map(function ($item) {
             return [
                 'score' => $item['score'],
                 'content' => $item['payload']['content_preview'] . '...',
                 'resource_id' => $item['payload']['resource_id'],
             ];
-        }, $results);
+        }, $rankedResults);
     }
 
     public function deleteResource(KnowledgeResource $resource): void
@@ -122,17 +129,30 @@ class RAGService
     }
 
     /**
-     * Ask a question using the RAG pipeline.
+     * Ask a question using the RAG pipeline with security checks.
      *
-     * @return array{answer: string, sources: array}
+     * @return array{answer: string, sources: array, blocked?: bool}
      */
     public function ask(int $userId, string $question): array
     {
-        $chunks = $this->search($userId, $question, limit: 5);
+        // Security: Process through PromptService
+        $processed = $this->prompts->process($question);
         
-        $contextString = collect($chunks)
-            ->pluck('content')
-            ->implode("\n---\n");
+        if ($processed['blocked']) {
+            return [
+                'answer' => "I'm sorry, but I can't process that request. Please rephrase your question.",
+                'sources' => [],
+                'blocked' => true,
+            ];
+        }
+
+        $sanitizedQuestion = $processed['sanitized'];
+
+        // Retrieve relevant chunks
+        $maxChunks = config('rag.max_chunks', 5);
+        $chunks = $this->search($userId, $sanitizedQuestion, limit: $maxChunks);
+        
+        $contextString = collect($chunks)->pluck('content')->implode("\n---\n");
 
         if (empty($contextString)) {
             return [
@@ -143,7 +163,7 @@ class RAGService
 
         $messages = $this->prompts->build('rag_qa', [
             'context' => $contextString,
-            'question' => $question,
+            'question' => $sanitizedQuestion,
         ]);
         $answer = $this->aiService->chat($messages);
 
