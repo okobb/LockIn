@@ -3,7 +3,11 @@ import { Login, Signup, ProtectedRoute, AuthCallback } from "../features/auth";
 import { WeeklyPlanner } from "../features/calendar";
 import { Dashboard } from "../features/dashboard";
 import FocusMode from "../features/focus/routes/FocusMode";
-import { ContextSave } from "../features/context/routes/ContextSave";
+import {
+  ContextSave,
+  ContextHistory,
+  ContextDetail,
+} from "../features/context";
 import { Settings } from "../features/settings";
 import { ModalProvider } from "../shared/context/ModalContext";
 import "../shared/styles/global.css";
@@ -22,6 +26,8 @@ function App() {
             <Route path="/weekly-planner" element={<WeeklyPlanner />} />
             <Route path="/focus" element={<FocusMode />} />
             <Route path="/context-save" element={<ContextSave />} />
+            <Route path="/context-history" element={<ContextHistory />} />
+            <Route path="/context-history/:sessionId" element={<ContextDetail />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>

@@ -10,13 +10,72 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 use App\Http\Requests\FocusSession\StoreFocusSessionRequest;
+use App\Services\ContextSnapshotService;
+use App\Services\FocusSessionService;
 
 final class FocusSessionController extends BaseController
 {
     public function __construct(
-        private readonly \App\Services\FocusSessionService $focusSessionService,
-        private readonly \App\Services\ContextSnapshotService $contextSnapshotService
+        private readonly FocusSessionService $focusSessionService,
+        private readonly ContextSnapshotService $contextSnapshotService
     ) {}
+
+    /**
+     * List all focus sessions for history (excludes active sessions).
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $sessions = $this->focusSessionService->getHistory(
+            $request->user()->id,
+            [
+                'search' => $request->input('search'),
+                'status' => $request->input('status'),
+            ]
+        );
+
+        $stats = $this->focusSessionService->getStats($request->user()->id);
+
+        return $this->successResponse([
+            'sessions' => $sessions,
+            'stats' => $stats,
+        ], 'Focus sessions retrieved');
+    }
+
+    /**
+     * Mark a focus session as completed.
+     */
+    public function complete(FocusSession $session): JsonResponse
+    {
+        if ($session->user_id !== request()->user()->id) {
+            return $this->forbiddenResponse();
+        }
+
+        $session->update([
+            'status' => 'completed',
+            'ended_at' => $session->ended_at ?? now(),
+        ]);
+
+        return $this->successResponse(['session' => $session], 'Session marked as completed');
+    }
+
+    /**
+     * Delete a focus session and its associated snapshot.
+     */
+    public function destroy(FocusSession $session): JsonResponse
+    {
+        if ($session->user_id !== request()->user()->id) {
+            return $this->forbiddenResponse();
+        }
+
+        // Delete associated context snapshot if exists
+        if ($session->contextSnapshot) {
+            $session->contextSnapshot->delete();
+        }
+
+        $session->delete();
+
+        return $this->successResponse(null, 'Session deleted successfully');
+    }
 
     /**
      * Store a new focus session.

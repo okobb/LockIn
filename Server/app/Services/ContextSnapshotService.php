@@ -28,6 +28,51 @@ final class ContextSnapshotService extends BaseService
     }
 
     /**
+     * Process a context snapshot request
+     */
+    public function processSnapshot(FocusSession $session, array $validatedData, ?UploadedFile $voiceFile): ContextSnapshot
+    {
+        // Normalize JSON fields if they came as strings (multipart/form-data quirks)
+        $browserState = $validatedData['browser_state'] ?? null;
+        if (is_string($browserState)) {
+            $browserState = json_decode($browserState, true);
+        }
+
+        $gitState = $validatedData['git_state'] ?? null;
+        if (is_string($gitState)) {
+            $gitState = json_decode($gitState, true);
+        }
+
+        $data = [
+            'note' => $validatedData['note'] ?? null,
+            'browser_state' => $browserState,
+            'git_state' => $gitState,
+            'checklist' => $validatedData['checklist'] ?? [],
+        ];
+
+        if ($session->contextSnapshot) {
+            $snapshot = $this->updateSnapshot(
+                $session->contextSnapshot,
+                $data,
+                $voiceFile
+            );
+        } else {
+            $snapshot = $this->createSnapshot(
+                $session,
+                $data,
+                $voiceFile
+            );
+        }
+
+        $session->update([
+            'status' => 'completed',
+            'ended_at' => $session->ended_at ?? now(),
+        ]);
+
+        return $snapshot;
+    }
+
+    /**
      * Create a snapshot and link it to the session.
      *
      * @param FocusSession $session
