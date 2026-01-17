@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace App\Services;
 
 use OpenAI;
-use OpenAI\Client;
+use OpenAI\Contracts\ClientContract;
 
 class AIService
 {
-    private Client $client;
+    private ClientContract $client;
 
-    public function __construct()
+    public function __construct(?ClientContract $client = null)
     {
-        $apiKey = config('services.openai.key');
-        $this->client = OpenAI::client($apiKey);
+        if ($client) {
+            $this->client = $client;
+        } else {
+            $apiKey = config('services.openai.key');
+            $this->client = OpenAI::client($apiKey);
+        }
     }
 
     /**

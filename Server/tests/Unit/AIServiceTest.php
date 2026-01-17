@@ -3,8 +3,9 @@
 namespace Tests\Unit;
 
 use App\Services\AIService;
-use OpenAI\Client;
-use OpenAI\Resources\Chat;
+use OpenAI\Contracts\ClientContract;
+use OpenAI\Contracts\Resources\ChatContract;
+use OpenAI\Responses\Chat\CreateResponse;
 use PHPUnit\Framework\TestCase;
 use Mockery;
 
@@ -18,35 +19,112 @@ class AIServiceTest extends TestCase
 
     public function test_chat_returns_content(): void
     {
-        // Mock OpenAI Client structure
-        $mockResponse = (object) [
+        // Use the SDK's fake() method to create a test response with overrides
+        $mockResponse = CreateResponse::fake([
+            'model' => 'gpt-4o-mini',
             'choices' => [
-                (object) [
-                    'message' => (object) [
-                        'content' => 'Hello world'
-                    ]
-                ]
-            ]
-        ];
+                [
+                    'index' => 0,
+                    'message' => [
+                        'role' => 'assistant',
+                        'content' => 'Hello world',
+                    ],
+                    'finish_reason' => 'stop',
+                ],
+            ],
+        ]);
 
-        $mockChat = Mockery::mock(Chat::class);
+        // Mock the ChatContract interface (not the final Chat class)
+        $mockChat = Mockery::mock(ChatContract::class);
         $mockChat->shouldReceive('create')
             ->once()
             ->withArgs(function ($args) {
-                return $args['model'] === 'gpt-4o-mini' 
+                return $args['model'] === 'gpt-4o-mini'
                     && $args['messages'][0]['content'] === 'Hi';
             })
             ->andReturn($mockResponse);
 
-        $mockClient = Mockery::mock(Client::class);
+        // Mock the ClientContract interface (not the final Client class)
+        $mockClient = Mockery::mock(ClientContract::class);
         $mockClient->shouldReceive('chat')->andReturn($mockChat);
 
-        // Inject mock via reflection or simpler dependency injection if possible
-        // Since constructor creates new client from static facade, we might need to mock the facade behavior
-        // or refactor AIService to accept client in constructor.
-        
-        // For testing purposes now, let's verify the PromptRegistry logic 
-        // as mocking static Facades in Unit tests can be tricky without full Laravel app boot
-        $this->assertTrue(true); 
+        // Inject the mock client via constructor
+        $aiService = new AIService($mockClient);
+
+        $result = $aiService->chat([
+            ['role' => 'user', 'content' => 'Hi']
+        ]);
+
+        $this->assertEquals('Hello world', $result);
+    }
+
+    public function test_chat_uses_custom_model_and_temperature(): void
+    {
+        $mockResponse = CreateResponse::fake([
+            'model' => 'gpt-4',
+            'choices' => [
+                [
+                    'index' => 0,
+                    'message' => [
+                        'role' => 'assistant',
+                        'content' => 'Custom model response',
+                    ],
+                    'finish_reason' => 'stop',
+                ],
+            ],
+        ]);
+
+        $mockChat = Mockery::mock(ChatContract::class);
+        $mockChat->shouldReceive('create')
+            ->once()
+            ->withArgs(function ($args) {
+                return $args['model'] === 'gpt-4'
+                    && $args['temperature'] === 0.5;
+            })
+            ->andReturn($mockResponse);
+
+        $mockClient = Mockery::mock(ClientContract::class);
+        $mockClient->shouldReceive('chat')->andReturn($mockChat);
+
+        $aiService = new AIService($mockClient);
+
+        $result = $aiService->chat(
+            [['role' => 'user', 'content' => 'Test']],
+            ['model' => 'gpt-4', 'temperature' => 0.5]
+        );
+
+        $this->assertEquals('Custom model response', $result);
+    }
+
+    public function test_chat_returns_empty_string_when_no_content(): void
+    {
+        $mockResponse = CreateResponse::fake([
+            'choices' => [
+                [
+                    'index' => 0,
+                    'message' => [
+                        'role' => 'assistant',
+                        'content' => null,
+                    ],
+                    'finish_reason' => 'stop',
+                ],
+            ],
+        ]);
+
+        $mockChat = Mockery::mock(ChatContract::class);
+        $mockChat->shouldReceive('create')
+            ->once()
+            ->andReturn($mockResponse);
+
+        $mockClient = Mockery::mock(ClientContract::class);
+        $mockClient->shouldReceive('chat')->andReturn($mockChat);
+
+        $aiService = new AIService($mockClient);
+
+        $result = $aiService->chat([
+            ['role' => 'user', 'content' => 'Test']
+        ]);
+
+        $this->assertEquals('', $result);
     }
 }
