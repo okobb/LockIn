@@ -5,7 +5,7 @@ import {
   RotateCcw,
   CheckCircle2,
   Calendar as CalendarIcon,
-  ArrowRight,
+  // ArrowRight,
   Zap,
   Layers,
   Activity,
@@ -140,7 +140,7 @@ export default function NewDashboard() {
                         variant="ghost"
                         size="lg"
                         className="h-12 px-8 rounded-full! text-base hover:bg-primary/5 text-foreground/80 hover:text-foreground"
-                        onClick={() => navigate("/calendar")}
+                        onClick={() => navigate("/context-history")}
                       >
                         <CalendarIcon className="w-5 h-5 mr-2" /> View Timeline
                       </Button>
@@ -157,12 +157,12 @@ export default function NewDashboard() {
                       ({priorityTasks.length})
                     </span>
                   </h3>
-                  <Button
+                  {/* <Button
                     variant="ghost"
                     className="text-muted-foreground hover:text-primary"
                   >
                     View Backlog <ArrowRight className="ml-1 w-4 h-4" />
-                  </Button>
+                  </Button> */}
                 </div>
 
                 <div className="grid gap-4">
@@ -170,14 +170,15 @@ export default function NewDashboard() {
                     priorityTasks.map((task: any, i: number) => (
                       <Card
                         key={i}
-                        className="group hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                        className="group hover:border-primary/30 hover:shadow-lg transition-all duration-300 relative overflow-hidden"
                       >
+                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                         <CardContent className="p-5 flex items-center gap-5">
-                          <div className="flex-none p-3 rounded-full bg-secondary text-secondary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <div className="flex-none p-3 rounded-full bg-secondary text-secondary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
                             <Activity className="w-5 h-5" />
                           </div>
-                          <div className="flex-1">
-                            <h4 className="text-lg font-medium group-hover:text-primary transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-lg font-medium group-hover:text-primary transition-colors truncate">
                               {task.title || "Untitled Task"}
                             </h4>
                             <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
@@ -185,13 +186,38 @@ export default function NewDashboard() {
                               High Priority
                             </div>
                           </div>
-                          <div className="hidden md:block text-right">
+
+                          {/* Default View: Due Date */}
+                          <div className="hidden md:block text-right group-hover:opacity-0 group-hover:translate-x-4 transition-all duration-300 absolute right-5">
                             <div className="text-sm font-medium text-foreground">
                               Due Today
                             </div>
                             <div className="text-xs text-muted-foreground">
                               In 2 hours
                             </div>
+                          </div>
+
+                          {/* Hover View: Start Button */}
+                          <div className="absolute right-5 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                            <Button
+                              size="sm"
+                              className="rounded-full shadow-lg shadow-primary/20"
+                              onClick={() => {
+                                localStorage.removeItem(
+                                  "current_focus_session",
+                                );
+                                navigate("/focus", {
+                                  state: {
+                                    taskId: task.id,
+                                    title: task.title,
+                                    isNewSession: true,
+                                  },
+                                });
+                              }}
+                            >
+                              <Play className="w-4 h-4 mr-2 fill-current" />
+                              Start Working
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -271,7 +297,11 @@ export default function NewDashboard() {
                     )}
                   </div>
 
-                  <Button className="w-full mt-8" variant="outline">
+                  <Button
+                    className="w-full mt-8"
+                    variant="outline"
+                    onClick={() => navigate("/weekly-planner")}
+                  >
                     View Full Calendar
                   </Button>
                 </CardContent>
