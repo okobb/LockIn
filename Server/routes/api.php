@@ -13,6 +13,7 @@ use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\FocusSessionController;
 use App\Http\Controllers\KnowledgeController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\N8nAuthMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -105,6 +106,11 @@ Route::middleware('auth:api')->group(function () {
     Route::post('knowledge/ask', [KnowledgeController::class, 'ask'])->name('knowledge.ask');
     Route::get('knowledge/search', [KnowledgeController::class, 'search'])->name('knowledge.search');
     Route::delete('knowledge/{knowledge}', [KnowledgeController::class, 'destroy'])->name('knowledge.destroy');
+    // Stats
+    Route::get('stats/weekly', [StatsController::class, 'weekly'])->name('stats.weekly');
+    Route::get('stats/daily-breakdown', [StatsController::class, 'dailyBreakdown'])->name('stats.breakdown');
+    Route::post('stats/goal', [StatsController::class, 'setGoal'])->name('stats.goal');
+    Route::get('stats/insights', [StatsController::class, 'insights'])->name('stats.insights');
 });
 
 // n8n API Routes (authenticated via secret header)
