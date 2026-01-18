@@ -178,4 +178,26 @@ final class FocusSessionController extends BaseController
             return $this->errorResponse($e->getMessage(), 400);
         }
     }
+
+    public function addResource(Request $request, FocusSession $session): JsonResponse
+    {
+        if ($session->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'url' => 'required|url',
+        ]);
+
+        $snapshot = $session->contextSnapshot;
+        if (!$snapshot) {
+            $snapshot = $this->contextSnapshotService->createSnapshot($session, []);
+            $session->refresh();
+        }
+
+        $snapshot = $this->contextSnapshotService->addBrowserTab($snapshot, $validated['title'], $validated['url']);
+
+        return $this->successResponse(['snapshot' => $snapshot], 'Resource added to session context');
+    }
 }

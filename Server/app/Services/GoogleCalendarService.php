@@ -93,23 +93,41 @@ final class GoogleCalendarService
         ?Carbon $from = null,
         ?Carbon $to = null
     ): array {
-        $from ??= now()->startOfDay();
-        $to ??= now()->addDays(7)->endOfDay();
+        $from ??= now()->subDays(30)->startOfDay();
+        $to ??= now()->addDays(30)->endOfDay();
 
-        $response = $this->authenticatedGet(
-            $integration,
-            CALENDAR_API_BASE . '/calendars/primary/events',
-            [
+        $allEvents = [];
+        $pageToken = null;
+
+        do {
+            $params = [
                 'timeMin' => $from->toRfc3339String(),
                 'timeMax' => $to->toRfc3339String(),
                 'singleEvents' => 'true',
                 'orderBy' => 'startTime',
-                'maxResults' => 100,
-            ],
-            'Failed to fetch calendar events'
-        );
+                'maxResults' => 250,
+            ];
 
-        return $response->json('items', []);
+            if ($pageToken) {
+                $params['pageToken'] = $pageToken;
+            }
+
+            $response = $this->authenticatedGet(
+                $integration,
+                CALENDAR_API_BASE . '/calendars/primary/events',
+                $params,
+                'Failed to fetch calendar events'
+            );
+
+            $data = $response->json();
+            $items = $data['items'] ?? [];
+            $allEvents = array_merge($allEvents, $items);
+            
+            $pageToken = $data['nextPageToken'] ?? null;
+
+        } while ($pageToken);
+
+        return $allEvents;
     }
 
     /**

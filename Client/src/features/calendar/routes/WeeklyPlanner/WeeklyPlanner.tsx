@@ -7,7 +7,9 @@ import {
   Calendar as CalendarIcon,
   GripVertical,
   Clock,
+  RefreshCw,
 } from "lucide-react";
+
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { DayColumn } from "../../components/DayColumn";
 import { CreateBlockModal } from "../../components/modals/CreateBlockModal";
@@ -69,6 +71,8 @@ export default function WeeklyPlanner() {
     isBacklogCollapsed,
     toggleBacklog,
     returnToBacklog,
+    syncCalendar,
+    isSyncing,
   } = useWeeklyPlanner();
 
   const { isConnected, connect } = useIntegrations();
@@ -122,7 +126,7 @@ export default function WeeklyPlanner() {
 
   const handleTaskDragStart = (
     e: React.DragEvent<HTMLDivElement>,
-    task: any
+    task: any,
   ) => {
     e.dataTransfer.setData("type", "task");
     e.dataTransfer.setData("id", task.id);
@@ -138,7 +142,7 @@ export default function WeeklyPlanner() {
 
   const handleBlockDragStart = (
     e: React.DragEvent<HTMLDivElement>,
-    block: CalendarBlock
+    block: CalendarBlock,
   ) => {
     e.dataTransfer.setData("type", "block");
     e.dataTransfer.setData("id", block.id);
@@ -147,7 +151,7 @@ export default function WeeklyPlanner() {
     const start = new Date(block.start_time);
     const end = new Date(block.end_time);
     const duration = Math.round(
-      (end.getTime() - start.getTime()) / (1000 * 60)
+      (end.getTime() - start.getTime()) / (1000 * 60),
     );
 
     setDragState({
@@ -161,7 +165,7 @@ export default function WeeklyPlanner() {
   const handleDragOver = (
     e: React.DragEvent<HTMLDivElement>,
     dayIndex: number,
-    hour: number
+    hour: number,
   ) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -175,7 +179,7 @@ export default function WeeklyPlanner() {
   const handleDayDrop = (
     e: React.DragEvent<HTMLDivElement>,
     dayIndex: number,
-    hour: number
+    hour: number,
   ) => {
     e.preventDefault();
 
@@ -257,7 +261,7 @@ export default function WeeklyPlanner() {
       <main
         className={cn(
           "flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300",
-          isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]"
+          isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]",
         )}
         onDragEnd={handleDragEnd}
       >
@@ -285,6 +289,19 @@ export default function WeeklyPlanner() {
               >
                 <Plus className="mr-2 h-4 w-4" /> Add Block
               </Button>
+
+              <Button
+                variant="outline"
+                onClick={syncCalendar}
+                disabled={isSyncing}
+                title="Sync with Google Calendar"
+              >
+                <RefreshCw
+                  className={cn("h-4 w-4 mr-2", isSyncing && "animate-spin")}
+                />
+                {isSyncing ? "Syncing..." : "Sync"}
+              </Button>
+
               <Button
                 variant="outline"
                 onClick={() => handleConnect("Google Calendar")}
@@ -386,7 +403,7 @@ export default function WeeklyPlanner() {
                     day={day}
                     dayIndex={index}
                     events={events.filter((e) =>
-                      isSameDay(new Date(e.start_time), day.date)
+                      isSameDay(new Date(e.start_time), day.date),
                     )}
                     isDragging={dragState.isDragging}
                     dropTarget={dropTarget}
@@ -424,7 +441,7 @@ export default function WeeklyPlanner() {
               "rounded-xl border border-border bg-card shadow-sm",
               isBacklogCollapsed
                 ? "w-[60px] h-14 self-start"
-                : "w-[320px] h-full"
+                : "w-[320px] h-full",
             )}
             onDragOver={(e) => {
               e.preventDefault();
@@ -435,7 +452,7 @@ export default function WeeklyPlanner() {
             <div
               className={cn(
                 "flex-none h-14 flex items-center justify-between px-4",
-                !isBacklogCollapsed && "border-b border-border"
+                !isBacklogCollapsed && "border-b border-border",
               )}
             >
               {!isBacklogCollapsed && (
@@ -453,7 +470,7 @@ export default function WeeklyPlanner() {
                 size="icon"
                 className={cn(
                   "h-8 w-8 text-muted-foreground hover:text-foreground",
-                  isBacklogCollapsed && "mx-auto"
+                  isBacklogCollapsed && "mx-auto",
                 )}
                 onClick={toggleBacklog}
               >

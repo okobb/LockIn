@@ -8,6 +8,7 @@ use App\Http\Controllers\ContextSnapshotController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\N8nController;
+use App\Http\Controllers\ResourceHubController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\FocusSessionController;
@@ -45,6 +46,13 @@ Route::middleware('auth:api')->group(function () {
     Route::apiResource('users', UserController::class);
     Route::put('users/password', [UserController::class, 'updatePassword'])->name('users.password');
 
+    // Resource Hub
+    Route::apiResource('resources', ResourceHubController::class);
+    Route::post('resources/{resource}/favorite', [ResourceHubController::class, 'toggleFavorite']);
+    Route::post('resources/{resource}/read', [ResourceHubController::class, 'markAsRead']);
+    Route::get('resources-suggestions', [ResourceHubController::class, 'suggestions']);
+    Route::post('resources/bulk-import', [ResourceHubController::class, 'bulkImport']);
+
     // Integration Management
     Route::get('integrations', [IntegrationController::class, 'index'])->name('integrations.index');
     Route::get('integrations/connect/{provider}/{service}', [IntegrationController::class, 'redirect'])
@@ -80,6 +88,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('focus-sessions/{session}/checklist', [FocusSessionController::class, 'addToChecklist'])->name('focus-sessions.checklist.add');
     Route::post('focus-sessions/{session}/checklist/generate', [FocusSessionController::class, 'generateAIChecklist'])->name('focus-sessions.checklist.generate');
     Route::patch('focus-sessions/{session}/checklist/{index}', [FocusSessionController::class, 'toggleChecklistItem'])->name('focus-sessions.checklist.toggle');
+    Route::post('focus-sessions/{session}/resources', [FocusSessionController::class, 'addResource'])->name('focus-sessions.resources.add');
     
     // Context Snapshots
     Route::post('context/save', [ContextSnapshotController::class, 'store'])->name('context.save');

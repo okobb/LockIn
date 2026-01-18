@@ -54,7 +54,7 @@ final class DashboardService
     {
         return Task::query()
             ->where('user_id', '=', $userId)
-            ->where('status', '=', 'open')
+            ->whereIn('status', ['open', 'in_progress'])
             ->where('priority', '<=', 2)
             ->orderBy('priority', 'asc')
             ->orderBy('created_at', 'desc')

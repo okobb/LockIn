@@ -1,0 +1,193 @@
+import React from "react";
+import { type Resource } from "../../types";
+import {
+  BookOpen,
+  Video,
+  FileText,
+  Image as ImageIcon,
+  Globe,
+  Book,
+  Star,
+  Clock,
+  Loader2,
+  Check,
+} from "lucide-react";
+import { useResourceMutations } from "../../hooks/useResources";
+import { cn } from "../../../../lib/utils";
+
+interface ResourceCardProps {
+  resource: Resource;
+  onClick?: () => void;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+}
+
+const typeIcons = {
+  article: BookOpen,
+  video: Video,
+  document: FileText,
+  image: ImageIcon,
+  website: Globe,
+  documentation: Book,
+};
+
+const difficultyColors = {
+  beginner: "text-green-400 bg-green-400/10 border-green-400/20",
+  intermediate: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
+  advanced: "text-red-400 bg-red-400/10 border-red-400/20",
+};
+
+export const ResourceCard: React.FC<ResourceCardProps> = ({
+  resource,
+  onClick,
+  selected,
+  onToggleSelect,
+}) => {
+  const { toggleFavorite, markAsRead } = useResourceMutations();
+  const TypeIcon = typeIcons[resource.type] || Globe;
+  const isProcessing = resource._isProcessing;
+
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isProcessing) return;
+    toggleFavorite.mutate(resource.id);
+  };
+
+  const handleToggleRead = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isProcessing) return;
+    markAsRead.mutate({ id: resource.id, isRead: !resource.is_read });
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (onToggleSelect && (e.ctrlKey || e.metaKey || selected)) {
+      e.preventDefault();
+      onToggleSelect();
+      return;
+    }
+
+    if (onClick && !isProcessing) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  const handleSelect = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleSelect?.();
+  };
+
+  return (
+    <a
+      href={
+        isProcessing ? undefined : resource.url || resource.file_path || "#"
+      }
+      onClick={handleClick}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "group relative flex flex-col p-4 rounded-xl border transition-all duration-300 backdrop-blur-sm select-none",
+        selected
+          ? "bg-purple-500/10 border-purple-500/50"
+          : "bg-[#121214]/50 border-white/5 hover:bg-[#121214] hover:border-white/10",
+        isProcessing && "opacity-75 cursor-wait",
+      )}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          {onToggleSelect && (
+            <div
+              onClick={handleSelect}
+              className={cn(
+                "w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors mr-1",
+                selected
+                  ? "bg-purple-500 border-purple-500"
+                  : "border-zinc-600 hover:border-zinc-400 bg-transparent",
+              )}
+            >
+              {selected && <Check size={12} className="text-white" />}
+            </div>
+          )}
+          <div className="p-2 rounded-lg bg-white/5 text-purple-400 ring-1 ring-white/10">
+            <TypeIcon size={16} />
+          </div>
+          {resource.difficulty && (
+            <span
+              className={cn(
+                "text-xs px-2 py-0.5 rounded-full border",
+                difficultyColors[resource.difficulty],
+              )}
+            >
+              {resource.difficulty}
+            </span>
+          )}
+          {isProcessing && (
+            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-purple-400 bg-purple-400/10 border-purple-400/20">
+              <Loader2 size={10} className="animate-spin" />
+              Processing
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleFavorite}
+          className={cn(
+            "p-1.5 rounded-full transition-colors hover:bg-white/10",
+            resource.is_favorite
+              ? "text-yellow-400"
+              : "text-zinc-500 hover:text-yellow-400",
+          )}
+        >
+          <Star
+            size={16}
+            fill={resource.is_favorite ? "currentColor" : "none"}
+          />
+        </button>
+      </div>
+
+      <h3 className="text-sm font-medium text-zinc-100 mb-1 line-clamp-2 group-hover:text-purple-400 transition-colors">
+        {resource.title}
+      </h3>
+
+      <p className="text-xs text-zinc-400 mb-3 line-clamp-2 min-h-[2.5em]">
+        {resource.summary || resource.notes || "No description provided."}
+      </p>
+
+      <div className="mt-auto flex items-center justify-between pt-3 border-t border-white/5">
+        <div className="flex items-center gap-3">
+          {resource.source_domain && (
+            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+              <img
+                src={`https://www.google.com/s2/favicons?domain=${resource.source_domain}`}
+                alt=""
+                className="w-3 h-3 opacity-50 grayscale"
+              />
+              {resource.source_domain}
+            </div>
+          )}
+          {resource.estimated_time_minutes && (
+            <div className="flex items-center gap-1 text-[10px] text-zinc-500">
+              <Clock size={10} />
+              {resource.estimated_time_minutes}m
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggleRead}
+            className={cn(
+              "w-2 h-2 rounded-full ring-2 ring-offset-2 ring-offset-[#121214] transition-all",
+              resource.is_read
+                ? "bg-emerald-500 ring-emerald-500/20"
+                : "bg-zinc-700 ring-zinc-700/20 hover:bg-purple-500",
+            )}
+            title={resource.is_read ? "Mark as unread" : "Mark as read"}
+          />
+        </div>
+      </div>
+    </a>
+  );
+};

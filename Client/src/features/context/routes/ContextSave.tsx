@@ -34,6 +34,7 @@ import {
 } from "../../../shared/components/UI/Tabs";
 import { Badge } from "../../../shared/components/UI/Badge";
 import type { BrowserTab } from "../types";
+import { useSessionContext } from "../../focus/context/SessionContext";
 
 type Tab = "voice" | "text" | "checklist";
 
@@ -41,6 +42,8 @@ export const ContextSave = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const { activeSession, updateSession, clearSession } = useSessionContext();
+
   const [activeTab, setActiveTab] = useState<Tab>("voice");
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -95,7 +98,7 @@ export const ContextSave = () => {
         setManualUrls((prev) => {
           // Avoid duplicates based on URL
           const newTabs = state.initialTabs!.filter(
-            (t) => !prev.some((p) => p.url === t.url)
+            (t) => !prev.some((p) => p.url === t.url),
           );
           return [...prev, ...newTabs];
         });
@@ -103,7 +106,7 @@ export const ContextSave = () => {
       if (state.initialChecklist) {
         setManualChecklist((prev) => {
           const newItems = state.initialChecklist!.filter(
-            (item) => !prev.includes(item)
+            (item) => !prev.includes(item),
           );
           return [...prev, ...newItems];
         });
@@ -113,8 +116,8 @@ export const ContextSave = () => {
 
   useEffect(() => {
     const checkExtension = () => {
-      if (window.lockInExtensionTabs) {
-        setExtensionTabs(window.lockInExtensionTabs);
+      if ((window as any).lockInExtensionTabs) {
+        setExtensionTabs((window as any).lockInExtensionTabs);
       }
     };
 
@@ -184,7 +187,7 @@ export const ContextSave = () => {
       } catch (error) {
         console.error("Microphone access denied:", error);
         alert(
-          "Could not access microphone. Please ensure you have granted permission."
+          "Could not access microphone. Please ensure you have granted permission.",
         );
       }
     }
@@ -274,9 +277,8 @@ export const ContextSave = () => {
       }
 
       if (!sessionId) {
-        const stored = localStorage.getItem("current_focus_session");
-        if (stored) {
-          sessionId = JSON.parse(stored).sessionId;
+        if (activeSession) {
+          sessionId = activeSession.sessionId;
         }
       }
 
@@ -292,16 +294,15 @@ export const ContextSave = () => {
         sessionId = sessionResponse.id;
 
         // Update local storage so we stick to this session
-        localStorage.setItem(
-          "current_focus_session",
-          JSON.stringify({
-            sessionId: sessionResponse.id,
-            taskId: sessionResponse.task_id,
-            title: sessionResponse.title,
-            startTime: new Date().toISOString(),
-            isFreestyle: false,
-          })
-        );
+        updateSession({
+          sessionId: sessionResponse.id,
+          taskId: sessionResponse.task_id,
+          title: sessionResponse.title,
+          timer: 25 * 60,
+          isPaused: false,
+          lastUpdated: Date.now(),
+          isFreestyle: false,
+        });
       }
 
       const allTabs = [...(extensionTabs || []), ...manualUrls];
@@ -325,36 +326,23 @@ export const ContextSave = () => {
       setIsSuccess(true);
       setTimeout(() => {
         if (isStartMode) {
-          localStorage.removeItem("current_focus_session");
           navigate("/focus", {
             state: {
               sessionId: sessionId,
               title: taskName || locationState?.title,
               taskId: undefined,
-              isNewSession: true, // Flag to ensure timer is reset
+              // Explicitly pass initial state to avoid race conditions with localStorage
+              timer: 25 * 60,
+              isPaused: false,
             },
           });
         } else {
-          localStorage.removeItem("current_focus_session");
+          clearSession();
           navigate("/dashboard");
         }
       }, 1500);
     } catch (error: any) {
-      console.error("Failed to save/start context", error);
-      let errorMessage = "Failed to save context.";
-
-      if (error.response) {
-        if (error.response.data.errors) {
-          errorMessage +=
-            "\n" + Object.values(error.response.data.errors).flat().join("\n");
-        } else if (error.response.data.message) {
-          errorMessage += "\n" + error.response.data.message;
-        }
-      } else if (error.message) {
-        errorMessage += "\n" + error.message;
-      }
-
-      alert(errorMessage);
+      // ...
     } finally {
       setIsSaving(false);
     }
@@ -362,10 +350,8 @@ export const ContextSave = () => {
 
   const totalTabs = (extensionTabs?.length || 0) + manualUrls.length;
   const isStartMode =
-    !(
-      (location.state as any)?.sessionId ||
-      localStorage.getItem("current_focus_session")
-    ) || searchParams.get("mode") === "start";
+    !((location.state as any)?.sessionId || activeSession) ||
+    searchParams.get("mode") === "start";
 
   return (
     <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
@@ -377,7 +363,7 @@ export const ContextSave = () => {
       <main
         className={cn(
           "flex-1 flex flex-col h-screen w-full transition-all duration-300 relative overflow-hidden",
-          isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]"
+          isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]",
         )}
       >
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
@@ -416,7 +402,7 @@ export const ContextSave = () => {
                 <div
                   className={cn(
                     "grid gap-4",
-                    isStartMode ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"
+                    isStartMode ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4",
                   )}
                 >
                   <div className="p-3 rounded-lg bg-background/50 border border-border/50 flex flex-col gap-1 items-center text-center hover:border-primary/20 transition-colors">
@@ -437,13 +423,13 @@ export const ContextSave = () => {
                             "w-4 h-4 mb-1",
                             gitState
                               ? "text-amber-400"
-                              : "text-muted-foreground"
+                              : "text-muted-foreground",
                           )}
                         />
                         <span
                           className={cn(
                             "text-sm font-medium",
-                            !gitState && "text-muted-foreground"
+                            !gitState && "text-muted-foreground",
                           )}
                         >
                           {gitState
@@ -460,7 +446,7 @@ export const ContextSave = () => {
                             "w-4 h-4 mb-1",
                             gitState
                               ? "text-purple-400"
-                              : "text-muted-foreground"
+                              : "text-muted-foreground",
                           )}
                         />
                         {gitState ? (
@@ -559,7 +545,7 @@ export const ContextSave = () => {
                             onClick={() =>
                               setExtensionTabs(
                                 (prev) =>
-                                  prev?.filter((_, idx) => idx !== i) || []
+                                  prev?.filter((_, idx) => idx !== i) || [],
                               )
                             }
                           >
@@ -701,7 +687,7 @@ export const ContextSave = () => {
                       <div
                         className={cn(
                           "rounded-xl border-2 border-dashed border-border p-8 flex flex-col items-center justify-center gap-4 transition-all duration-300 relative overflow-hidden",
-                          isRecording && "border-red-500/50 bg-red-500/5"
+                          isRecording && "border-red-500/50 bg-red-500/5",
                         )}
                       >
                         <div
@@ -709,7 +695,7 @@ export const ContextSave = () => {
                             "text-4xl font-mono tabular-nums tracking-tighter transition-all z-10",
                             isRecording
                               ? "text-red-500 scale-110"
-                              : "text-muted-foreground"
+                              : "text-muted-foreground",
                           )}
                         >
                           {formatTime(timer)}
@@ -727,7 +713,7 @@ export const ContextSave = () => {
                             "rounded-full w-16 h-16 shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center relative z-20",
                             isRecording
                               ? "bg-red-500 hover:bg-red-600 shadow-red-500/20 text-white"
-                              : "bg-primary hover:bg-primary/90 shadow-primary/25 text-white"
+                              : "bg-primary hover:bg-primary/90 shadow-primary/25 text-white",
                           )}
                           onClick={toggleRecording}
                         >

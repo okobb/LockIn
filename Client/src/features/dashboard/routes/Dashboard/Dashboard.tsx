@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Play,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { useDashboard } from "../../hooks/useDashboard";
+import { useSessionContext } from "../../../focus/context/SessionContext";
 import { Button } from "../../../../shared/components/UI/Button";
 import { Card, CardContent } from "../../../../shared/components/UI/Card";
 import { cn } from "../../../../shared/lib/utils";
@@ -20,28 +21,17 @@ import MissionBar from "../../components/MissionBar/MissionBar";
 export default function NewDashboard() {
   const { stats, priorityTasks, upcomingEvents } = useDashboard();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [lastSession, setLastSession] = useState<any>(null);
+  const { activeSession } = useSessionContext();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const savedSession = localStorage.getItem("current_focus_session");
-    if (savedSession) {
-      try {
-        setLastSession(JSON.parse(savedSession));
-      } catch (e) {
-        console.error("Failed to parse saved session", e);
-      }
-    }
-  }, []);
-
   const handleResumeSession = () => {
-    if (lastSession) {
+    if (activeSession) {
       navigate("/focus", {
         state: {
-          taskId: lastSession.taskId,
-          title: lastSession.title,
-          sessionId: lastSession.sessionId,
-          isFreestyle: lastSession.isFreestyle,
+          taskId: activeSession.taskId,
+          title: activeSession.title,
+          sessionId: activeSession.sessionId,
+          isFreestyle: activeSession.isFreestyle,
         },
       });
     } else {
@@ -60,7 +50,7 @@ export default function NewDashboard() {
       <main
         className={cn(
           "flex-1 overflow-y-auto h-screen w-full transition-all duration-300",
-          isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]"
+          isSidebarCollapsed ? "pl-[64px]" : "pl-[260px]",
         )}
       >
         <div className="w-full h-full px-6 py-8 md:px-10 md:py-12 space-y-12">
@@ -116,7 +106,7 @@ export default function NewDashboard() {
                 </div>
               </div>
 
-              {lastSession && (
+              {activeSession && (
                 <div className="group relative rounded-3xl border border-primary/20 bg-card/40 hover:bg-card/60 transition-all duration-500 overflow-hidden">
                   <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -130,7 +120,7 @@ export default function NewDashboard() {
 
                     <div>
                       <h2 className="text-3xl md:text-4xl font-light leading-tight text-foreground">
-                        {lastSession.title}
+                        {activeSession.title}
                       </h2>
                       <p className="mt-4 text-lg text-muted-foreground font-light max-w-2xl">
                         Resume your last session where you left off.
@@ -236,7 +226,7 @@ export default function NewDashboard() {
                           <div className="space-y-1">
                             <div className="text-sm font-mono text-muted-foreground">
                               {new Date(
-                                event.start_time || Date.now()
+                                event.start_time || Date.now(),
                               ).toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
@@ -299,14 +289,14 @@ function StatCard({ label, value, unit, icon: Icon, trend, color, bg }: any) {
     <Card
       className={cn(
         "group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-transparent",
-        bg // Apply the background tint to the whole card
+        bg,
       )}
     >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div
             className={cn(
-              "p-2.5 rounded-xl transition-colors bg-background/50 border border-border/10"
+              "p-2.5 rounded-xl transition-colors bg-background/50 border border-border/10",
             )}
           >
             <Icon className={cn("w-5 h-5", color)} />
@@ -315,7 +305,7 @@ function StatCard({ label, value, unit, icon: Icon, trend, color, bg }: any) {
             <span
               className={cn(
                 "text-xs font-medium px-2 py-1 rounded-full bg-background border border-border/50",
-                color
+                color,
               )}
             >
               {trend}
@@ -334,7 +324,7 @@ function StatCard({ label, value, unit, icon: Icon, trend, color, bg }: any) {
         <div
           className={cn(
             "absolute -bottom-6 -right-6 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity",
-            color.replace("text-", "bg-")
+            color.replace("text-", "bg-"),
           )}
         />
       </CardContent>

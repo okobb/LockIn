@@ -289,4 +289,24 @@ final class ContextSnapshotService extends BaseService
         $snapshot->refresh();
         return $snapshot;
     }
+
+    public function addBrowserTab(ContextSnapshot $snapshot, string $title, string $url): ContextSnapshot
+    {
+        $current = $snapshot->browser_state ?? [];
+        
+        // Prevent duplicates
+        foreach ($current as $tab) {
+            if (($tab['url'] ?? '') === $url) {
+                return $snapshot;
+            }
+        }
+
+        $current[] = ['title' => $title, 'url' => $url];
+        
+        $snapshot->update(['browser_state' => $current]);
+        $this->updateQualityScore($snapshot);
+        $snapshot->refresh();
+        
+        return $snapshot;
+    }
 }

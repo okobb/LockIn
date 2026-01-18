@@ -60,7 +60,7 @@ const navSections: NavSection[] = [
   },
   {
     label: "Knowledge",
-    items: [{ to: "/library", icon: BookOpen, label: "Library" }],
+    items: [{ to: "/resources", icon: BookOpen, label: "Resource Hub" }],
   },
 ];
 
@@ -108,7 +108,7 @@ export default function Sidebar({
     <aside
       className={cn(
         "group/sidebar fixed left-0 top-0 z-40 h-screen flex flex-col bg-card/95 backdrop-blur-md border-r border-border/40 transition-all duration-300 ease-in-out font-sans",
-        isCollapsed ? "w-[70px]" : "w-[260px]"
+        isCollapsed ? "w-[70px]" : "w-[260px]",
       )}
     >
       <div className="flex h-16 items-center shrink-0 px-4 border-b border-border/40 relative">
@@ -116,7 +116,7 @@ export default function Sidebar({
           to="/"
           className={cn(
             "flex items-center gap-3 transition-all duration-300 overflow-hidden",
-            isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+            isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
           )}
         >
           <img
@@ -136,7 +136,7 @@ export default function Sidebar({
               "absolute flex h-6 w-6 items-center justify-center text-muted-foreground/70 hover:text-foreground transition-all duration-300 z-50",
               isCollapsed
                 ? "left-1/2 -translate-x-1/2 top-4"
-                : "right-3 top-1/2 -translate-y-1/2"
+                : "right-3 top-1/2 -translate-y-1/2",
             )}
           >
             {isCollapsed ? (
@@ -168,7 +168,7 @@ export default function Sidebar({
                       isActive
                         ? "text-primary bg-primary/5"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                      isCollapsed && "justify-center px-2"
+                      isCollapsed && "justify-center px-2",
                     )}
                     title={isCollapsed ? item.label : undefined}
                   >
@@ -181,7 +181,7 @@ export default function Sidebar({
                         "h-[18px] w-[18px] shrink-0 transition-colors z-10",
                         isActive
                           ? "text-primary"
-                          : "text-muted-foreground group-hover:text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     />
                     {!isCollapsed && (
@@ -237,7 +237,7 @@ export default function Sidebar({
             isProfileOpen && !isCollapsed
               ? "bg-accent text-accent-foreground"
               : "hover:bg-accent/50",
-            isCollapsed ? "justify-center" : "justify-start"
+            isCollapsed ? "justify-center" : "justify-start",
           )}
         >
           <div className="h-9 w-9 rounded-full bg-linear-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-bold shadow-md shadow-primary/20 shrink-0">

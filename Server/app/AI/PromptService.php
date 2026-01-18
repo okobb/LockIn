@@ -34,6 +34,15 @@ class PromptService
         Example: ["Review AuthController.php changes", "Fix the failing test in UserTest.php", "Deploy to staging"]
     EOT;
 
+    private const TITLE_GENERATION_INSTRUCTIONS = <<<'EOT'
+        Generate a concise, descriptive title (max 10 words) for a learning resource.
+        Based on the URL and content snippet provided, create a title that:
+        - Is clear and informative
+        - Indicates the topic/technology
+        - Is professional (no clickbait)
+        Return ONLY the title, no quotes or extra text.
+    EOT;
+
     /** @var array<string> */
     private array $blockedPatterns;
     private int $maxLength;
@@ -56,6 +65,7 @@ class PromptService
         return match ($key) {
             'rag_qa' => $this->buildRagQa($variables),
             'checklist' => $this->buildChecklist($variables),
+            'title_gen' => $this->buildTitleGeneration($variables),
             default => throw new InvalidArgumentException("Prompt template [{$key}] not found."),
         };
     }
@@ -185,6 +195,17 @@ class PromptService
         return [
             'sanitized' => $sanitized,
             'blocked' => $result['is_blocked'],
+        ];
+    }
+
+    /**
+     * Build the title generation prompt.
+     */
+    private function buildTitleGeneration(array $variables): array
+    {
+        return [
+            ['role' => 'system', 'content' => self::TITLE_GENERATION_INSTRUCTIONS],
+            ['role' => 'user', 'content' => "URL: " . ($variables['url'] ?? '') . "\n\nContent Preview:\n" . ($variables['content'] ?? '')],
         ];
     }
 

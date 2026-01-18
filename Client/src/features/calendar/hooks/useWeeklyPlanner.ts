@@ -1,8 +1,9 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { BacklogTask, CalendarBlock } from "../types/calendar";
 import { useCalendarNavigation } from "./useCalendarNavigation";
 import { useCalendarEvents } from "./useCalendarEvents";
 import { useTaskBacklog } from "../../tasks/hooks/useTaskBacklog";
+import { useIntegrations } from "../../settings/hooks/useIntegrations";
 import {
   WORK_END_HOUR,
   CALENDAR_END_HOUR,
@@ -53,6 +54,17 @@ export function useWeeklyPlanner() {
     syncCalendar,
   } = useCalendarEvents({ weekStart, weekEnd });
 
+  const { isConnected } = useIntegrations();
+  const hasSyncedRef = useRef(false);
+
+  // Auto-sync on mount if connected (only once)
+  useEffect(() => {
+    if (isConnected("google", "calendar") && !hasSyncedRef.current) {
+      hasSyncedRef.current = true;
+      syncCalendar();
+    }
+  }, [isConnected, syncCalendar]);
+
   const handleTaskDrop = useCallback(
     (taskId: string, date: Date, hour: number) => {
       const task = backlogTasks.find((t) => t.id === taskId);
@@ -91,7 +103,7 @@ export function useWeeklyPlanner() {
 
       addBlock(newBlock);
     },
-    [backlogTasks, checkOverlap, addBlock, removeBacklogTask]
+    [backlogTasks, checkOverlap, addBlock, removeBacklogTask],
   );
 
   const returnToBacklog = useCallback(
@@ -102,7 +114,7 @@ export function useWeeklyPlanner() {
       const start = new Date(block.start_time);
       const end = new Date(block.end_time);
       const durationMinutes = Math.round(
-        (end.getTime() - start.getTime()) / (1000 * 60)
+        (end.getTime() - start.getTime()) / (1000 * 60),
       );
 
       const newTask: BacklogTask = {
@@ -114,7 +126,7 @@ export function useWeeklyPlanner() {
       addBacklogTask(newTask);
       removeBlock(blockId);
     },
-    [calendarBlocks, addBacklogTask, removeBlock]
+    [calendarBlocks, addBacklogTask, removeBlock],
   );
 
   const handleAddBlock = useCallback(
@@ -135,7 +147,7 @@ export function useWeeklyPlanner() {
 
       if (checkOverlap(startTime, endTime)) {
         alert(
-          "This time slot already has a block. Please choose another time."
+          "This time slot already has a block. Please choose another time.",
         );
         return;
       }
@@ -146,7 +158,7 @@ export function useWeeklyPlanner() {
         hour,
       });
     },
-    [checkOverlap, setCreateBlockState]
+    [checkOverlap, setCreateBlockState],
   );
 
   const handleGlobalAddBlock = useCallback(() => {
@@ -179,7 +191,7 @@ export function useWeeklyPlanner() {
     (
       title: string,
       type: "deep_work" | "meeting" | "external",
-      durationMinutes: number
+      durationMinutes: number,
     ) => {
       const { date, hour } = createBlockState;
       if (!date || hour === null) return;
@@ -214,7 +226,7 @@ export function useWeeklyPlanner() {
       addBlock(newBlock);
       setCreateBlockState({ isOpen: false, date: null, hour: null });
     },
-    [createBlockState, checkOverlap, addBlock, setCreateBlockState]
+    [createBlockState, checkOverlap, addBlock, setCreateBlockState],
   );
 
   const closeCreateBlockModal = useCallback(() => {
@@ -227,7 +239,6 @@ export function useWeeklyPlanner() {
     weekStart,
     weekEnd,
     currentWeekOffset,
-
 
     events: calendarBlocks,
     isLoading,

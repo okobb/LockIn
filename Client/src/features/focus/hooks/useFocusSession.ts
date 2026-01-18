@@ -1,25 +1,46 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   startFocusSession,
   getSession,
   type FocusSession,
 } from "../api/focusApi";
+import { useSessionContext } from "../context/SessionContext";
 
 interface FocusState {
   taskId?: number;
   title: string;
   isFreestyle?: boolean;
   sessionId?: number;
-  isNewSession?: boolean; 
+  isNewSession?: boolean;
+  timer?: number;
+  isPaused?: boolean;
 }
 
 export const useFocusSession = (activeState: FocusState | null) => {
   const [session, setSession] = useState<FocusSession | null>(null);
   const [loading, setLoading] = useState(false);
+  const { updateSession, activeSession } = useSessionContext();
+
+  // Track if we've already initialized to prevent duplicate session creation
+  const hasInitializedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const initSession = async () => {
+      // Create a key to identify this session
+      const sessionKey = activeState?.sessionId
+        ? `session:${activeState.sessionId}`
+        : activeState?.title
+          ? `title:${activeState.title}`
+          : null;
+
+      // Skip if we've already initialized for this session
+      if (sessionKey && hasInitializedRef.current === sessionKey) {
+        return;
+      }
+
       if (activeState?.sessionId) {
+        // Restoring an existing session - just fetch data, don't reset timer
+        hasInitializedRef.current = sessionKey;
         setLoading(true);
         try {
           const fullSession = await getSession(activeState.sessionId);
@@ -37,6 +58,28 @@ export const useFocusSession = (activeState: FocusState | null) => {
       }
 
       if (activeState?.title && !session && !loading) {
+        // Creating a new session
+        if (activeSession?.sessionId) {
+          // We have an existing session in context, don't create a new one
+          hasInitializedRef.current = `session:${activeSession.sessionId}`;
+          setLoading(true);
+          try {
+            const fullSession = await getSession(activeSession.sessionId);
+            setSession(fullSession);
+          } catch (err) {
+            console.error("Failed to restore session from context", err);
+            setSession({
+              id: activeSession.sessionId,
+              title: activeSession.title,
+            } as FocusSession);
+          } finally {
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Truly a new session - create it on the backend
+        hasInitializedRef.current = sessionKey;
         setLoading(true);
         try {
           const newSession = await startFocusSession({
@@ -52,21 +95,12 @@ export const useFocusSession = (activeState: FocusState | null) => {
             taskId: activeState.taskId,
             sessionId: newSession.id,
             isFreestyle: activeState.isFreestyle,
+            timer: 25 * 60,
+            isPaused: false,
+            lastUpdated: Date.now(),
           };
-          const existingStored = localStorage.getItem("current_focus_session");
-          let existingData = {};
-          try {
-            if (existingStored) {
-              existingData = JSON.parse(existingStored);
-            }
-          } catch (e) {
-            console.error("Failed to parse existing session for merge", e);
-          }
 
-          localStorage.setItem(
-            "current_focus_session",
-            JSON.stringify({ ...existingData, ...stateToSave })
-          );
+          updateSession(stateToSave);
         } catch (error) {
           console.error("Failed to start session", error);
         } finally {
@@ -78,7 +112,7 @@ export const useFocusSession = (activeState: FocusState | null) => {
     if (activeState) {
       initSession();
     }
-  }, [activeState?.title, activeState?.sessionId]);
+  }, [activeState?.title, activeState?.sessionId, activeSession?.sessionId]);
 
   return { session, loading, setSession };
 };
