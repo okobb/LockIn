@@ -99,7 +99,7 @@ final class FocusSessionService extends BaseService
     {
         $query = FocusSession::query()->where('user_id', $userId)
             ->where('status', '!=', 'active')
-            ->with('contextSnapshot')
+            ->with(['contextSnapshot.checklistItems', 'task'])
             ->orderBy('ended_at', 'desc');
             
         if (!empty($filters['search'])) {

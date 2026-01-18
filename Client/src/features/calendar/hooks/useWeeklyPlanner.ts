@@ -4,6 +4,7 @@ import { useCalendarNavigation } from "./useCalendarNavigation";
 import { useCalendarEvents } from "./useCalendarEvents";
 import { useTaskBacklog } from "../../tasks/hooks/useTaskBacklog";
 import { useIntegrations } from "../../settings/hooks/useIntegrations";
+import { useModal } from "../../../shared/context/ModalContext";
 import {
   WORK_END_HOUR,
   CALENDAR_END_HOUR,
@@ -21,6 +22,8 @@ export function useWeeklyPlanner() {
     goToPreviousWeek,
     goToToday,
   } = useCalendarNavigation();
+
+  const modal = useModal();
 
   const {
     backlogTasks,
@@ -66,7 +69,7 @@ export function useWeeklyPlanner() {
   }, [isConnected, syncCalendar]);
 
   const handleTaskDrop = useCallback(
-    (taskId: string, date: Date, hour: number) => {
+    async (taskId: string, date: Date, hour: number) => {
       const task = backlogTasks.find((t) => t.id === taskId);
       if (!task) return;
 
@@ -81,12 +84,20 @@ export function useWeeklyPlanner() {
       // Check against CALENDAR_END_HOUR
       const endHour = endTime.getHours() + endTime.getMinutes() / 60;
       if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
-        alert("Cannot schedule tasks past 9 PM.");
+        await modal.open({
+          type: "error",
+          title: "Schedule Conflict",
+          message: "Cannot schedule tasks past 9 PM.",
+        });
         return;
       }
 
       if (checkOverlap(startTime, endTime)) {
-        alert("This time slot overlaps with an existing block.");
+        await modal.open({
+          type: "warning",
+          title: "Schedule Conflict",
+          message: "This time slot overlaps with an existing block.",
+        });
         return;
       }
 
@@ -103,7 +114,7 @@ export function useWeeklyPlanner() {
 
       addBlock(newBlock);
     },
-    [backlogTasks, checkOverlap, addBlock, removeBacklogTask],
+    [backlogTasks, checkOverlap, addBlock, removeBacklogTask, modal],
   );
 
   const returnToBacklog = useCallback(
@@ -130,7 +141,7 @@ export function useWeeklyPlanner() {
   );
 
   const handleAddBlock = useCallback(
-    (date: Date, hour: number) => {
+    async (date: Date, hour: number) => {
       const startTime = new Date(date);
       const absoluteHour = Math.floor(hour);
       const minutes = Math.round((hour - absoluteHour) * 60);
@@ -141,14 +152,21 @@ export function useWeeklyPlanner() {
 
       const endHour = endTime.getHours() + endTime.getMinutes() / 60;
       if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
-        alert("Cannot schedule blocks past 9 PM.");
+        await modal.open({
+          type: "error",
+          title: "Schedule Conflict",
+          message: "Cannot schedule blocks past 9 PM.",
+        });
         return;
       }
 
       if (checkOverlap(startTime, endTime)) {
-        alert(
-          "This time slot already has a block. Please choose another time.",
-        );
+        await modal.open({
+          type: "warning",
+          title: "Schedule Conflict",
+          message:
+            "This time slot already has a block. Please choose another time.",
+        });
         return;
       }
 
@@ -158,7 +176,7 @@ export function useWeeklyPlanner() {
         hour,
       });
     },
-    [checkOverlap, setCreateBlockState],
+    [checkOverlap, setCreateBlockState, modal],
   );
 
   const handleGlobalAddBlock = useCallback(() => {
@@ -188,7 +206,7 @@ export function useWeeklyPlanner() {
   }, [setCreateBlockState]);
 
   const confirmCreateBlock = useCallback(
-    (
+    async (
       title: string,
       type: "deep_work" | "meeting" | "external",
       durationMinutes: number,
@@ -206,12 +224,20 @@ export function useWeeklyPlanner() {
 
       const endHour = endTime.getHours() + endTime.getMinutes() / 60;
       if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
-        alert("Cannot schedule blocks past 9 PM.");
+        await modal.open({
+          type: "error",
+          title: "Schedule Conflict",
+          message: "Cannot schedule blocks past 9 PM.",
+        });
         return;
       }
 
       if (checkOverlap(startTime, endTime)) {
-        alert("This time slot overlap with an existing block.");
+        await modal.open({
+          type: "warning",
+          title: "Schedule Conflict",
+          message: "This time slot overlaps with an existing block.",
+        });
         return;
       }
 
@@ -226,7 +252,7 @@ export function useWeeklyPlanner() {
       addBlock(newBlock);
       setCreateBlockState({ isOpen: false, date: null, hour: null });
     },
-    [createBlockState, checkOverlap, addBlock, setCreateBlockState],
+    [createBlockState, checkOverlap, addBlock, setCreateBlockState, modal],
   );
 
   const closeCreateBlockModal = useCallback(() => {

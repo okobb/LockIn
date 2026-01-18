@@ -8,7 +8,7 @@ interface CalendarBlockProps {
   block: CalendarBlockType;
   onDragStart: (
     e: React.DragEvent<HTMLDivElement>,
-    block: CalendarBlockType
+    block: CalendarBlockType,
   ) => void;
   onClick: (block: CalendarBlockType) => void;
   onDelete?: (blockId: string) => void;
@@ -30,9 +30,7 @@ const CalendarBlock = memo(
 
     const handleDelete = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (confirm("Are you sure you want to delete this block?")) {
-        onDelete?.(block.id);
-      }
+      onDelete?.(block.id);
     };
 
     const blockType = (block.type ?? "deep_work").replace("_", "-");
@@ -50,7 +48,7 @@ const CalendarBlock = memo(
           blockType === "meeting" &&
             "bg-pink-500/50 border-pink-500/50 hover:bg-pink-500/30",
           blockType === "external" &&
-            "bg-amber-500/50 border-amber-500/50 hover:bg-amber-500/30"
+            "bg-amber-500/50 border-amber-500/50 hover:bg-amber-500/30",
         )}
         style={style}
         draggable
@@ -84,7 +82,7 @@ const CalendarBlock = memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 CalendarBlock.displayName = "CalendarBlock";

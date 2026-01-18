@@ -17,6 +17,7 @@ import { EditBlockModal } from "../../components/modals/EditBlockModal";
 import { MoveOvertimeModal } from "../../components/modals/MoveOvertimeModal";
 import { ConnectModal } from "../../../settings/components/ConnectModal";
 import { TaskInput } from "../../../../shared/components/TaskInput";
+import { useModal } from "../../../../shared/context/ModalContext";
 import { useWeeklyPlanner } from "../../hooks/useWeeklyPlanner";
 import { useIntegrations } from "../../../settings/hooks/useIntegrations";
 import {
@@ -34,6 +35,7 @@ export default function WeeklyPlanner() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [connectService, setConnectService] = useState("");
+  const modal = useModal();
 
   const [editBlockModalState, setEditBlockModalState] = useState<{
     isOpen: boolean;
@@ -110,9 +112,19 @@ export default function WeeklyPlanner() {
     closeEditModal();
   };
 
-  const onDeleteBlock = (id: string) => {
-    removeBlock(id);
-    closeEditModal();
+  const onDeleteBlock = async (id: string) => {
+    const confirmed = await modal.open({
+      type: "confirm",
+      title: "Delete Block",
+      message: "Are you sure you want to delete this block?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    });
+
+    if (confirmed) {
+      removeBlock(id);
+      closeEditModal();
+    }
   };
 
   const handleConnect = (service: string) => {
@@ -127,11 +139,16 @@ export default function WeeklyPlanner() {
     setIsConnectModalOpen(false);
   };
 
-  const removeBacklogTask = (taskId: string) => {
-    // Only allow explicit deletion if the user wants to remove it from backlog fully
-    if (
-      confirm("Are you sure you want to delete this task from the backlog?")
-    ) {
+  const removeBacklogTask = async (taskId: string) => {
+    const confirmed = await modal.open({
+      type: "confirm",
+      title: "Delete Task",
+      message: "Are you sure you want to delete this task from the backlog?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    });
+
+    if (confirmed) {
       removeBacklogTaskHook(taskId);
     }
   };
@@ -204,9 +221,12 @@ export default function WeeklyPlanner() {
 
     const date = weekDays[dayIndex].date;
 
-    // Enforce 9 PM Limit
     if (hour >= CALENDAR_END_HOUR) {
-      alert("Cannot schedule tasks past 9 PM.");
+      modal.open({
+        type: "error",
+        title: "Schedule Conflict",
+        message: "Cannot schedule tasks past 9 PM.",
+      });
       return;
     }
 
