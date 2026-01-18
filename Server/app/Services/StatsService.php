@@ -163,7 +163,7 @@ class StatsService
      */
     public function setWeeklyGoal(int $userId, int $targetMinutes): void
     {
-        $user = User::find($userId);
+        $user = User::query()->find($userId);
         $user->weekly_goal_min = $targetMinutes;
         $user->save();
     }
