@@ -69,16 +69,20 @@ export function useCalendarEvents({
 
   const syncMutation = useMutation({
     mutationFn: calendar.syncCalendar,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
+      console.log("Sync success:", data);
     },
-    onError: async (error) => {
+    onError: async (error: any) => {
       console.error("Sync failed:", error);
+
+      const errorMessage =
+        error.response?.data?.message || error.message || "Unknown error";
+
       await modal.open({
         type: "error",
         title: "Sync Failed",
-        message:
-          "Failed to sync calendar. Please check your connection in Settings.",
+        message: `Failed to sync calendar: ${errorMessage}. Please check your connection in Settings.`,
       });
     },
   });
@@ -111,7 +115,7 @@ export function useCalendarEvents({
             ...old,
             data: [...old.data, optimistBlock],
           };
-        }
+        },
       );
 
       return { previousData };
@@ -171,10 +175,10 @@ export function useCalendarEvents({
           return {
             ...old,
             data: old.data.filter(
-              (event: CalendarEvent) => String(event.id) !== id
+              (event: CalendarEvent) => String(event.id) !== id,
             ),
           };
-        }
+        },
       );
 
       return { previousData };
@@ -214,7 +218,7 @@ export function useCalendarEvents({
     (start: Date, end: Date, excludeBlockId?: string): boolean => {
       return checkBlocksOverlap(start, end, calendarBlocks, excludeBlockId);
     },
-    [calendarBlocks]
+    [calendarBlocks],
   );
 
   const capacityStats = useMemo<CapacityStats>(() => {
@@ -265,7 +269,7 @@ export function useCalendarEvents({
         return blockStart >= dayStart && blockStart <= dayEnd;
       });
     },
-    [calendarBlocks]
+    [calendarBlocks],
   );
 
   const addBlock = useCallback(
@@ -278,7 +282,7 @@ export function useCalendarEvents({
       };
       createMutation.mutate(createData);
     },
-    [createMutation]
+    [createMutation],
   );
 
   const updateCalendarBlock = useCallback(
@@ -303,15 +307,15 @@ export function useCalendarEvents({
             data: old.data.map((event: CalendarEvent) =>
               String(event.id) === blockId
                 ? { ...event, ...updates, id: event.id } // Preserve ID
-                : event
+                : event,
             ),
           };
-        }
+        },
       );
 
       updateMutation.mutate({ id: blockId, data: updateData });
     },
-    [updateMutation, queryClient, queryKey]
+    [updateMutation, queryClient, queryKey],
   );
 
   const moveBlock = useCallback(
@@ -356,10 +360,10 @@ export function useCalendarEvents({
                     start_time: formatDateWithOffset(newStart),
                     end_time: formatDateWithOffset(newEnd),
                   }
-                : event
+                : event,
             ),
           };
-        }
+        },
       );
 
       if (checkOverlap(newStart, newEnd, blockId)) {
@@ -425,7 +429,7 @@ export function useCalendarEvents({
       queryClient,
       queryKey,
       modal,
-    ]
+    ],
   );
 
   const confirmPendingMove = useCallback(() => {
@@ -452,7 +456,7 @@ export function useCalendarEvents({
     (blockId: string) => {
       deleteMutation.mutate(blockId);
     },
-    [deleteMutation]
+    [deleteMutation],
   );
 
   const syncCalendar = useCallback(() => {

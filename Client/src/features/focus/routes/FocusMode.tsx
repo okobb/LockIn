@@ -38,6 +38,7 @@ import { Badge } from "../../../shared/components/UI/Badge";
 import { Textarea } from "../../../shared/components/UI/Textarea";
 import { Input } from "../../../shared/components/UI/Input";
 import { QualityScoreBadge } from "../../../shared/components/QualityScoreBadge/QualityScoreBadge";
+import { useSessionContext } from "../context/SessionContext";
 
 interface FocusState {
   taskId?: number;
@@ -45,17 +46,20 @@ interface FocusState {
   isFreestyle?: boolean;
   sessionId?: number;
   isNewSession?: boolean;
+  timer?: number;
+  isPaused?: boolean;
 }
 
+// ... (in component)
 export default function FocusMode() {
   const location = useLocation();
   const navigate = useNavigate();
   const { open } = useModal();
+  const { activeSession, updateSession, clearSession } = useSessionContext();
 
   const locationState = location.state as FocusState | null;
-  const [restoredState, setRestoredState] = useState<FocusState | null>(null);
 
-  const activeState = locationState || restoredState;
+  const activeState = locationState || activeSession;
 
   const { session, setSession } = useFocusSession(activeState);
 
@@ -71,8 +75,37 @@ export default function FocusMode() {
     return `title:${state.title}`;
   };
 
-  const [timer, setTimer] = useState(25 * 60); // 25 minutes in seconds
-  const [isPaused, setIsPaused] = useState(false);
+  // Initialize timer from context if available (for page reload)
+  const [timer, setTimer] = useState(() => {
+    if (locationState?.timer !== undefined) return locationState.timer;
+
+    if (typeof window === "undefined") return 25 * 60;
+    const stored = localStorage.getItem("current_focus_session");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        return parsed.timer ?? 25 * 60;
+      } catch {
+        return 25 * 60;
+      }
+    }
+    return 25 * 60;
+  });
+  const [isPaused, setIsPaused] = useState(() => {
+    if (locationState?.isPaused !== undefined) return locationState.isPaused;
+
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem("current_focus_session");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        return parsed.isPaused ?? false;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
 
   const [note, setNote] = useState("");
 
@@ -110,20 +143,13 @@ export default function FocusMode() {
 
   useEffect(() => {
     const currentSessionKey = getSessionKey(locationState);
-    const stored = localStorage.getItem("current_focus_session");
-    let parsed: any = null;
-    try {
-      if (stored) parsed = JSON.parse(stored);
-    } catch (e) {
-      console.error("Failed to parse stored session", e);
-    }
 
     if (activeState) {
-      if (activeState.isNewSession) {
+      if ((activeState as FocusState).isNewSession) {
         console.log(
           "New session flag detected - Resetting timer for fresh start",
         );
-        localStorage.removeItem("current_focus_session");
+        clearSession();
         setTimer(25 * 60);
         setIsPaused(false);
         lastInitializedSession.current = currentSessionKey;
@@ -131,64 +157,34 @@ export default function FocusMode() {
 
         // Consume the flag so it doesn't trigger on reload
         const newState = { ...activeState };
-        delete newState.isNewSession;
+        delete (newState as any).isNewSession;
         navigate(location.pathname, { replace: true, state: newState });
         return;
       }
 
-      let isSameAsStoredSession = false;
-
-      if (parsed) {
+      if (locationState && activeSession) {
         const sameSessionId =
           activeState.sessionId &&
-          parsed.sessionId &&
-          Number(activeState.sessionId) === Number(parsed.sessionId);
+          activeSession.sessionId &&
+          Number(activeState.sessionId) === Number(activeSession.sessionId);
 
         const sameTaskId =
           activeState.taskId &&
-          parsed.taskId &&
-          Number(activeState.taskId) === Number(parsed.taskId);
+          activeSession.taskId &&
+          Number(activeState.taskId) === Number(activeSession.taskId);
 
-        const sameFreestyle =
-          !activeState.sessionId &&
-          !activeState.taskId &&
-          !parsed.sessionId &&
-          !parsed.taskId &&
-          activeState.title === parsed.title;
+        const sameFreestyle = activeState.title === activeSession.title;
 
-        if (sameSessionId || sameTaskId || sameFreestyle) {
-          isSameAsStoredSession = true;
+        if (!(sameSessionId || sameTaskId || sameFreestyle)) {
+          // Mismatch - navigating to a different task
+          console.log("Session mismatch - Resetting timer for new task");
+          clearSession();
+          setTimer(25 * 60);
+          setIsPaused(false);
         }
       }
 
-      if (parsed && !isSameAsStoredSession) {
-        console.log("Session mismatch - Resetting timer for new task", {
-          active: activeState,
-          stored: parsed,
-        });
-        localStorage.removeItem("current_focus_session");
-        setTimer(25 * 60);
-        setIsPaused(false);
-      } else if (isSameAsStoredSession) {
-        console.log("Restoring session state from storage");
-        if (typeof parsed.timer === "number") setTimer(parsed.timer);
-        if (typeof parsed.isPaused === "boolean") setIsPaused(parsed.isPaused);
-      } else if (!parsed) {
-        console.log("No stored session - Starting fresh");
-        // Ensure defaults just in case
-        setTimer(25 * 60);
-        setIsPaused(false);
-      }
-
       lastInitializedSession.current = currentSessionKey;
-    } else {
-      if (parsed) {
-        console.log("Restoring full session from storage (no active state)");
-        setRestoredState(parsed);
-        if (typeof parsed.timer === "number") setTimer(parsed.timer);
-        if (typeof parsed.isPaused === "boolean") setIsPaused(parsed.isPaused);
-        lastInitializedSession.current = getSessionKey(parsed);
-      }
     }
 
     setIsInitialized(true);
@@ -198,7 +194,7 @@ export default function FocusMode() {
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      setTimer((prev: number) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
   }, [isPaused]);
@@ -207,40 +203,31 @@ export default function FocusMode() {
   useEffect(() => {
     if (!activeState || !isInitialized) return;
 
-    const stored = localStorage.getItem("current_focus_session");
-    let shouldSave = true;
-
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        const currentKey = getSessionKey({
-          ...activeState,
-          sessionId: session?.id || activeState.sessionId,
+    // Check if we need to update context
+    if (activeSession) {
+      if (
+        activeSession.timer !== timer ||
+        activeSession.isPaused !== isPaused
+      ) {
+        updateSession({
+          ...activeSession,
+          timer,
+          isPaused,
+          lastUpdated: Date.now(),
         });
-        const storedKey = getSessionKey(parsed);
-
-        if (storedKey && currentKey !== storedKey) {
-          shouldSave = false;
-        }
-      } catch (e) {}
-    }
-
-    if (shouldSave) {
-      const stateToSave = {
-        title: activeState.title,
+      }
+    } else if (session?.id && activeState) {
+      updateSession({
+        sessionId: session.id,
         taskId: activeState.taskId,
-        sessionId: session?.id || activeState.sessionId, // Prefer real ID
+        title: activeState.title,
         isFreestyle: activeState.isFreestyle,
-        timer: timer,
-        isPaused: isPaused,
+        timer,
+        isPaused,
         lastUpdated: Date.now(),
-      };
-      localStorage.setItem(
-        "current_focus_session",
-        JSON.stringify(stateToSave),
-      );
+      });
     }
-  }, [timer, isPaused, activeState, isInitialized, session?.id]);
+  }, [timer, isPaused, activeState, isInitialized, activeSession, session?.id]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -497,7 +484,7 @@ export default function FocusMode() {
                   <Button
                     variant="outline"
                     className="h-14 px-6 rounded-full border-2 border-border hover:border-primary/50 hover:bg-primary/5 gap-2 transition-all duration-300 text-sm font-medium"
-                    onClick={() => setTimer((t) => t + 300)}
+                    onClick={() => setTimer((t: number) => t + 300)}
                   >
                     <Plus className="w-4 h-4" />
                     <span>5m</span>

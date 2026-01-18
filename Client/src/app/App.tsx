@@ -8,6 +8,7 @@ import {
   ContextHistory,
   ContextDetail,
 } from "../features/context";
+import { ResourceHub } from "../features/resources/routes/ResourceHub/ResourceHub";
 import { Settings } from "../features/settings";
 import { ModalProvider } from "../shared/context/ModalContext";
 import "../shared/styles/global.css";
@@ -27,7 +28,11 @@ function App() {
             <Route path="/focus" element={<FocusMode />} />
             <Route path="/context-save" element={<ContextSave />} />
             <Route path="/context-history" element={<ContextHistory />} />
-            <Route path="/context-history/:sessionId" element={<ContextDetail />} />
+            <Route
+              path="/context-history/:sessionId"
+              element={<ContextDetail />}
+            />
+            <Route path="/resources" element={<ResourceHub />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>

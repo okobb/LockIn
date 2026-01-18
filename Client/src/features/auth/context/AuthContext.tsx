@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("current_focus_session");
   }, []);
 
   const value = useMemo(
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuth,
       logout,
     }),
-    [user, token, setAuth, logout]
+    [user, token, setAuth, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

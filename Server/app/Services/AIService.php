@@ -8,6 +8,7 @@ use OpenAI;
 use OpenAI\Contracts\ClientContract;
 
 use App\AI\PromptService;
+use Illuminate\Support\Str;
 
 class AIService
 {
@@ -90,5 +91,17 @@ class AIService
         $decoded = json_decode($cleaned, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+    /**
+     * Generate a concise title for a resource using AI.
+     */
+    public function generateResourceTitle(string $url, ?string $contentSnippet): string
+    {
+        $messages = $this->promptService->build('title_gen', [
+            'url' => $url,
+            'content' => Str::limit($contentSnippet ?? '', 500),
+        ]);
+
+        return trim($this->chat($messages, ['temperature' => 0.5]));
     }
 }

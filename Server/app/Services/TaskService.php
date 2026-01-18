@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @extends BaseService<Task>
@@ -23,7 +24,8 @@ final class TaskService extends BaseService
      */
     public function getForUser(int $userId, ?string $status = 'open', ?string $scheduled = null): Collection
     {
-        $query = Task::where('user_id', $userId);
+        $query = Task::query()->where('user_id', '=', $userId);
+
 
         if ($status !== 'all') {
             $query->where('status', $status);
@@ -45,11 +47,13 @@ final class TaskService extends BaseService
      */
     public function getSuggestions(int $userId, ?string $query, int $limit = 10): Collection
     {
-        return Task::where('user_id', $userId)
-            ->where('status', 'open')
-            ->when($query, function ($q) use ($query) {
-                $q->where('title', 'ilike', '%' . $query . '%');
+        return Task::query()->where('user_id', '=', $userId)
+            ->where('status', '=', 'open')
+            ->when($query, function ($q) use ($query, $userId) {
+
+                $q->where('title', 'ILIKE', '%' . $query . '%');
             })
+
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get(['id', 'title']);
@@ -82,6 +86,7 @@ final class TaskService extends BaseService
         }
 
         $task->update($data);
+        Log::info('Task updated', ['task_id' => $task->id, 'data' => $data]);
 
         return $task->fresh();
     }
