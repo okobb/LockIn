@@ -9,6 +9,7 @@ import {
   ContextDetail,
 } from "../features/context";
 import { ResourceHub } from "../features/resources/routes/ResourceHub/ResourceHub";
+import { StatsPage } from "../features/stats";
 import { Settings } from "../features/settings";
 import { ModalProvider } from "../shared/context/ModalContext";
 import "../shared/styles/global.css";
@@ -33,6 +34,7 @@ function App() {
               element={<ContextDetail />}
             />
             <Route path="/resources" element={<ResourceHub />} />
+            <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
