@@ -69,6 +69,8 @@ class ResourceHubService
 
         \Illuminate\Support\Facades\Bus::chain($jobs)->dispatch();
 
+        $resource->refresh();
+
         return $resource;
     }
 
