@@ -1,5 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Login, Signup, ProtectedRoute, AuthCallback } from "../features/auth";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  Login,
+  Signup,
+  ProtectedRoute,
+  AuthCallback,
+  Landing,
+  Onboarding,
+} from "../features/auth";
 import { WeeklyPlanner } from "../features/calendar";
 import { Dashboard } from "../features/dashboard";
 import FocusMode from "../features/focus/routes/FocusMode";
@@ -19,11 +26,12 @@ function App() {
     <ModalProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/weekly-planner" element={<WeeklyPlanner />} />
             <Route path="/focus" element={<FocusMode />} />
