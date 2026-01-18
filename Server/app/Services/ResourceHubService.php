@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Jobs\FetchResourceMetadata;
 use App\Jobs\GenerateResourceTitle;
+use App\Jobs\GenerateResourceMetadata;
 use App\Jobs\ProcessResourceEmbedding;
 use App\Models\KnowledgeResource;
 use App\Models\User;
@@ -108,6 +109,9 @@ class ResourceHubService
         if ($shouldGenerateTitle) {
             GenerateResourceTitle::dispatch($resource);
         }
+
+        // Generate Metadata (Tags, Difficulty, Summary)
+        GenerateResourceMetadata::dispatch($resource);
 
         // Index for RAG
         if ($resource->summary || $resource->file_path) {

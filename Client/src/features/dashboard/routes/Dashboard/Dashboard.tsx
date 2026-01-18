@@ -17,9 +17,20 @@ import { Button } from "../../../../shared/components/UI/Button";
 import { Card, CardContent } from "../../../../shared/components/UI/Card";
 import { cn } from "../../../../shared/lib/utils";
 import MissionBar from "../../components/MissionBar/MissionBar";
+import {
+  Skeleton,
+  CardSkeleton,
+} from "../../../../shared/components/Skeleton/Skeleton";
 
 export default function NewDashboard() {
-  const { stats, priorityTasks, upcomingEvents } = useDashboard();
+  const {
+    stats,
+    priorityTasks,
+    upcomingEvents,
+    isLoadingStats,
+    isLoadingPriority,
+    isLoadingUpcoming,
+  } = useDashboard();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activeSession } = useSessionContext();
   const navigate = useNavigate();
@@ -65,37 +76,45 @@ export default function NewDashboard() {
           </header>
 
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              label="Flow Time"
-              value={stats.flowTime}
-              icon={Zap}
-              color="text-warning"
-              bg="bg-warning/10"
-            />
-            <StatCard
-              label="Contexts Saved"
-              value={stats.contextsSaved}
-              unit="sessions"
-              icon={RotateCcw}
-              color="text-primary"
-              bg="bg-primary/10"
-            />
-            <StatCard
-              label="Deep Work"
-              value={stats.deepWorkBlocks}
-              unit="blocks"
-              icon={Layers}
-              color="text-primary"
-              bg="bg-primary/10"
-            />
-            <StatCard
-              label="Tasks Done"
-              value={stats.tasksDone}
-              unit="completed"
-              icon={CheckCircle2}
-              color="text-emerald-500"
-              bg="bg-emerald-500/10"
-            />
+            {isLoadingStats ? (
+              Array(4)
+                .fill(0)
+                .map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)
+            ) : (
+              <>
+                <StatCard
+                  label="Flow Time"
+                  value={stats.flowTime}
+                  icon={Zap}
+                  color="text-warning"
+                  bg="bg-warning/10"
+                />
+                <StatCard
+                  label="Contexts Saved"
+                  value={stats.contextsSaved}
+                  unit="sessions"
+                  icon={RotateCcw}
+                  color="text-primary"
+                  bg="bg-primary/10"
+                />
+                <StatCard
+                  label="Deep Work"
+                  value={stats.deepWorkBlocks}
+                  unit="blocks"
+                  icon={Layers}
+                  color="text-primary"
+                  bg="bg-primary/10"
+                />
+                <StatCard
+                  label="Tasks Done"
+                  value={stats.tasksDone}
+                  unit="completed"
+                  icon={CheckCircle2}
+                  color="text-emerald-500"
+                  bg="bg-emerald-500/10"
+                />
+              </>
+            )}
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -157,16 +176,15 @@ export default function NewDashboard() {
                       ({priorityTasks.length})
                     </span>
                   </h3>
-                  {/* <Button
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    View Backlog <ArrowRight className="ml-1 w-4 h-4" />
-                  </Button> */}
+
                 </div>
 
                 <div className="grid gap-4">
-                  {priorityTasks.length > 0 ? (
+                  {isLoadingPriority ? (
+                    Array(3)
+                      .fill(0)
+                      .map((_, i) => <CardSkeleton key={i} />)
+                  ) : priorityTasks.length > 0 ? (
                     priorityTasks.map((task: any, i: number) => (
                       <Card
                         key={i}
@@ -187,7 +205,6 @@ export default function NewDashboard() {
                             </div>
                           </div>
 
-                          {/* Default View: Due Date */}
                           <div className="hidden md:block text-right group-hover:opacity-0 group-hover:translate-x-4 transition-all duration-300 absolute right-5">
                             <div className="text-sm font-medium text-foreground">
                               Due Today
@@ -197,7 +214,6 @@ export default function NewDashboard() {
                             </div>
                           </div>
 
-                          {/* Hover View: Start Button */}
                           <div className="absolute right-5 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                             <Button
                               size="sm"
@@ -245,7 +261,12 @@ export default function NewDashboard() {
                   </div>
 
                   <div className="relative border-l-2 border-border/40 ml-3.5 space-y-8 py-2">
-                    {upcomingEvents.length > 0 ? (
+                    {isLoadingUpcoming ? (
+                      <div className="space-y-6">
+                        <Skeleton className="h-12 w-full ml-4" />
+                        <Skeleton className="h-12 w-full ml-4" />
+                      </div>
+                    ) : upcomingEvents.length > 0 ? (
                       upcomingEvents.map((event: any, i: number) => (
                         <div key={i} className="relative pl-8">
                           <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-4 border-background bg-foreground" />

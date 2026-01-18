@@ -73,6 +73,7 @@ export default function WeeklyPlanner() {
     returnToBacklog,
     syncCalendar,
     isSyncing,
+    removeBacklogTask: removeBacklogTaskHook,
   } = useWeeklyPlanner();
 
   const { isConnected, connect } = useIntegrations();
@@ -88,6 +89,8 @@ export default function WeeklyPlanner() {
     id: null,
     duration: 60,
   });
+
+  const [isBacklogDragOver, setIsBacklogDragOver] = useState(false);
 
   const [dropTarget, setDropTarget] = useState<{
     day: number;
@@ -122,6 +125,15 @@ export default function WeeklyPlanner() {
   const confirmConnect = () => {
     connect("google", "calendar");
     setIsConnectModalOpen(false);
+  };
+
+  const removeBacklogTask = (taskId: string) => {
+    // Only allow explicit deletion if the user wants to remove it from backlog fully
+    if (
+      confirm("Are you sure you want to delete this task from the backlog?")
+    ) {
+      removeBacklogTaskHook(taskId);
+    }
   };
 
   const handleTaskDragStart = (
@@ -213,6 +225,7 @@ export default function WeeklyPlanner() {
     const id = e.dataTransfer.getData("id");
 
     if (type === "block" && id) {
+      console.log("Dropping block back to backlog:", id);
       returnToBacklog(id);
     }
   };
@@ -446,13 +459,19 @@ export default function WeeklyPlanner() {
             onDragOver={(e) => {
               e.preventDefault();
               e.dataTransfer.dropEffect = "move";
+              if (!isBacklogDragOver) setIsBacklogDragOver(true);
             }}
-            onDrop={handleBacklogDrop}
+            onDragLeave={() => setIsBacklogDragOver(false)}
+            onDrop={(e) => {
+              handleBacklogDrop(e);
+              setIsBacklogDragOver(false);
+            }}
           >
             <div
               className={cn(
-                "flex-none h-14 flex items-center justify-between px-4",
+                "flex-none h-14 flex items-center justify-between px-4 transition-colors duration-200",
                 !isBacklogCollapsed && "border-b border-border",
+                isBacklogDragOver && "bg-primary/10 border-primary/30",
               )}
             >
               {!isBacklogCollapsed && (
@@ -514,6 +533,31 @@ export default function WeeklyPlanner() {
                           <Clock className="w-3 h-3" /> ~
                           {Math.round(task.estimatedMinutes / 60)}h
                         </span>
+                        <div className="flex-1" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeBacklogTask(task.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/10 text-destructive/70 hover:text-destructive rounded transition-all"
+                          title="Delete Task"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -532,6 +576,14 @@ export default function WeeklyPlanner() {
                   </div>
                 </div>
               </>
+            )}
+
+            {!isBacklogCollapsed && isBacklogDragOver && (
+              <div className="absolute inset-0 bg-primary/10 border-2 border-primary/30 rounded-xl z-50 flex items-center justify-center pointer-events-none">
+                <span className="bg-background/80 backdrop-blur-md px-3 py-1 rounded-full text-sm font-medium text-primary shadow-sm border border-primary/20">
+                  Drop to Unschedle
+                </span>
+              </div>
             )}
           </div>
         </div>

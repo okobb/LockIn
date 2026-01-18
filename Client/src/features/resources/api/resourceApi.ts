@@ -89,4 +89,13 @@ export const resourceApi = {
   ): Promise<void> => {
     await axios.post(`/focus-sessions/${sessionId}/resources`, { title, url });
   },
+
+  getFileUrl: (id: number): string => {
+    return `${import.meta.env.VITE_API_URL}/resources/${id}/file`;
+  },
+
+  getDownloadUrl: async (id: number): Promise<{ url: string }> => {
+    const response = await axios.get(`/resources/${id}/url`);
+    return response.data;
+  },
 };

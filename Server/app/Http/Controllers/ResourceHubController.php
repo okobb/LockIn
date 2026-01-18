@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Storage;
 
 class ResourceHubController extends Controller
 {
@@ -113,5 +115,37 @@ class ResourceHubController extends Controller
         if ($resource->user_id !== Auth::id()) {
             abort(403);
         }
+    }
+
+    public function getDownloadUrl(KnowledgeResource $resource): JsonResponse
+    {
+        $this->authorizeResource($resource);
+        
+        if (!$resource->file_path) {
+            abort(404, 'No file associated with this resource');
+        }
+
+        // URL valid for 30 minutes
+        $url = URL::temporarySignedRoute(
+            'resources.download',
+            now()->addMinutes(30),
+            ['resource' => $resource->id]
+        );
+        
+        return response()->json(['url' => $url]);
+    }
+
+    public function download(KnowledgeResource $resource): mixed
+    {
+        // If the request is not signed, we enforce standard auth
+        if (!request()->hasValidSignature()) {
+            $this->authorizeResource($resource);
+        }
+        
+        if (!$resource->file_path || !Storage::disk('public')->exists($resource->file_path)) {
+            abort(404, 'File not found');
+        }
+        
+        return response()->file(Storage::disk('public')->path($resource->file_path));
     }
 }

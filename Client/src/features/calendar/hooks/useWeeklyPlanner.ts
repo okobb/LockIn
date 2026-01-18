@@ -266,6 +266,7 @@ export function useWeeklyPlanner() {
     returnToBacklog,
     updateBacklogTask,
     addBacklogTask,
+    removeBacklogTask,
     updateCalendarBlock,
 
     pendingMoveState,

@@ -84,7 +84,18 @@ export default function FocusMode() {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        return parsed.timer ?? 25 * 60;
+        // Verify this is for the same session/task
+        const sameSession =
+          locationState?.sessionId &&
+          parsed.sessionId === locationState.sessionId;
+        const sameTask =
+          locationState?.taskId && parsed.taskId === locationState.taskId;
+        const sameTitle =
+          locationState?.title && parsed.title === locationState.title;
+
+        if (sameSession || sameTask || sameTitle) {
+          return parsed.timer ?? 25 * 60;
+        }
       } catch {
         return 25 * 60;
       }
@@ -99,7 +110,17 @@ export default function FocusMode() {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        return parsed.isPaused ?? false;
+        const sameSession =
+          locationState?.sessionId &&
+          parsed.sessionId === locationState.sessionId;
+        const sameTask =
+          locationState?.taskId && parsed.taskId === locationState.taskId;
+        const sameTitle =
+          locationState?.title && parsed.title === locationState.title;
+
+        if (sameSession || sameTask || sameTitle) {
+          return parsed.isPaused ?? false;
+        }
       } catch {
         return false;
       }
@@ -331,14 +352,40 @@ export default function FocusMode() {
 
   const handleAddChecklistItem = async () => {
     if (!newChecklistItem.trim() || !session?.id) return;
+
+    // Optimistic Update
+    const newItem = {
+      text: newChecklistItem,
+      is_completed: false,
+      source: "user",
+    };
+
+    if (session.context_snapshot) {
+      setSession({
+        ...session,
+        context_snapshot: {
+          ...session.context_snapshot,
+          ai_resume_checklist: [
+            ...(session.context_snapshot.ai_resume_checklist || []),
+            newItem as any,
+          ],
+        },
+      });
+    }
+    setNewChecklistItem("");
+
     try {
       const response = await addToChecklist(session.id, newChecklistItem);
       if (response.success && session) {
-        setSession({
-          ...session,
-          context_snapshot: response.data.snapshot,
-        });
-        setNewChecklistItem("");
+        // Sync with server response to get real IDs/state if needed
+        setSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                context_snapshot: response.data.snapshot,
+              }
+            : prev,
+        );
       }
     } catch (err) {
       console.error("Failed to add checklist item", err);
@@ -347,6 +394,7 @@ export default function FocusMode() {
         title: "Error",
         message: "Failed to add checklist item.",
       });
+      // Revert optimistic update? For now assume success or user retry.
     }
   };
 
