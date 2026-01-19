@@ -6,12 +6,16 @@ namespace App\Services;
 
 use App\Models\FocusSession;
 use Illuminate\Support\Facades\DB;
+use App\Traits\CachesData;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @extends BaseService<FocusSession>
  */
 final class FocusSessionService extends BaseService
 {
+    use CachesData;
+
     protected function getModelClass(): string
     {
         return FocusSession::class;
@@ -118,19 +122,49 @@ final class FocusSessionService extends BaseService
      */
     public function getStats(int $userId): array
     {
-        return [
-            'total_contexts' => FocusSession::query()->where('user_id', $userId)
-                ->where('status', '!=', 'active')
-                ->count(),
-                
-            'this_week' => FocusSession::query()->where('user_id', $userId)
-                ->where('status', '!=', 'active')
-                ->where('ended_at', '>=', now()->startOfWeek())
-                ->count(),
-                
-            'time_saved_minutes' => (int) FocusSession::query()->where('user_id', $userId)
-                ->where('status', 'completed')
-                ->sum('actual_duration_min'),
-        ];
+        return Cache::remember("focus:stats:{$userId}", now()->addMinutes(15), function () use ($userId) {
+            return [
+                'total_contexts' => FocusSession::query()->where('user_id', $userId)
+                    ->where('status', '!=', 'active')
+                    ->count(),
+                    
+                'this_week' => FocusSession::query()->where('user_id', $userId)
+                    ->where('status', '!=', 'active')
+                    ->where('ended_at', '>=', now()->startOfWeek())
+                    ->count(),
+                    
+                'time_saved_minutes' => (int) FocusSession::query()->where('user_id', $userId)
+                    ->where('status', 'completed')
+                    ->sum('actual_duration_min'),
+            ];
+        });
+    }
+
+    /**
+     * Mark session as completed and invalidate cache.
+     */
+    public function completeSession(FocusSession $session): FocusSession
+    {
+        $session->update([
+            'status' => 'completed',
+            'ended_at' => $session->ended_at ?? now(),
+        ]);
+        
+        $this->clearUserStatsCache($session->user_id);
+     
+        return $session;
+    }
+
+    /**
+     * Delete session and invalidate cache.
+     */
+    public function deleteSession(FocusSession $session): void
+    {
+        if ($session->contextSnapshot) {
+            $session->contextSnapshot->delete();
+        }
+        
+        $session->delete();
+        $this->clearUserStatsCache($session->user_id);
     }
 }

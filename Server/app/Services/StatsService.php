@@ -9,6 +9,7 @@ use App\Models\FocusSession;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class StatsService
 {
@@ -20,8 +21,9 @@ class StatsService
      */
     public function getWeeklyStats(int $userId): array
     {
-        $startOfWeek = now()->startOfWeek();
-        $endOfWeek = now()->endOfWeek();
+        return Cache::remember("stats:weekly:{$userId}", now()->addMinutes(10), function () use ($userId) {
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
 
         // Fetch daily stats for this week
         $dailyStats = DailyStat::query()->where('user_id', $userId)
@@ -56,16 +58,17 @@ class StatsService
         $user = User::query()->find($userId);
         $weeklyGoalMin = $user->weekly_goal_min;
 
-        return [
-            'flow_time_minutes' => $totalFlowTime,
-            'deep_work_blocks' => $totalDeepWorkBlocks,
-            'tasks_completed' => $totalTasksCompleted,
-            'contexts_saved' => $totalContextsSaved,
-            'flow_time_change_percent' => $flowTimeChange,
-            'current_streak_days' => $currentStreak,
-            'weekly_goal_minutes' => $weeklyGoalMin,
-            'goal_progress_percent' => $weeklyGoalMin > 0 ? min(round(($totalFlowTime / $weeklyGoalMin) * 100), 100) : 0,
-        ];
+            return [
+                'flow_time_minutes' => $totalFlowTime,
+                'deep_work_blocks' => $totalDeepWorkBlocks,
+                'tasks_completed' => $totalTasksCompleted,
+                'contexts_saved' => $totalContextsSaved,
+                'flow_time_change_percent' => $flowTimeChange,
+                'current_streak_days' => $currentStreak,
+                'weekly_goal_minutes' => $weeklyGoalMin,
+                'goal_progress_percent' => $weeklyGoalMin > 0 ? min(round(($totalFlowTime / $weeklyGoalMin) * 100), 100) : 0,
+            ];
+        });
     }
 
     /**
@@ -76,32 +79,34 @@ class StatsService
      */
     public function getDailyBreakdown(int $userId): array
     {
-        $startOfWeek = now()->startOfWeek();
-        $endOfWeek = now()->endOfWeek();
+        return Cache::remember("stats:daily:{$userId}", now()->addMinutes(10), function () use ($userId) {
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
 
-        $dailyStats = DailyStat::query()->where('user_id', $userId)
-            ->whereBetween('date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
-            ->get()
-            ->keyBy('date');
+            $dailyStats = DailyStat::query()->where('user_id', $userId)
+                ->whereBetween('date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+                ->get()
+                ->keyBy('date');
 
-        $breakdown = [];
-        $currentDate = $startOfWeek->copy();
+            $breakdown = [];
+            $currentDate = $startOfWeek->copy();
 
-        while ($currentDate <= $endOfWeek) {
-            $dateStr = $currentDate->toDateString();
-            $statForDay = $dailyStats->first(fn($item) => $item->date->toDateString() === $dateStr);
+            while ($currentDate <= $endOfWeek) {
+                $dateStr = $currentDate->toDateString();
+                $statForDay = $dailyStats->first(fn($item) => $item->date->toDateString() === $dateStr);
 
-            $breakdown[] = [
-                'date' => $dateStr,
-                'day_name' => $currentDate->format('D'), // Mon, Tue...
-                'flow_time_minutes' => $statForDay ? $statForDay->flow_time_min : 0,
-                'tasks_completed' => $statForDay ? $statForDay->tasks_completed : 0,
-            ];
+                $breakdown[] = [
+                    'date' => $dateStr,
+                    'day_name' => $currentDate->format('D'), // Mon, Tue...
+                    'flow_time_minutes' => $statForDay ? $statForDay->flow_time_min : 0,
+                    'tasks_completed' => $statForDay ? $statForDay->tasks_completed : 0,
+                ];
 
-            $currentDate->addDay();
-        }
+                $currentDate->addDay();
+            }
 
-        return $breakdown;
+            return $breakdown;
+        });
     }
 
     /**
@@ -112,46 +117,48 @@ class StatsService
      */
     public function getCurrentStreak(int $userId): int
     {
-        $streak = 0;
-        $checkDate = now();
-        
-        $hasWorkedToday = DailyStat::query()->where('user_id', '=', $userId)
-            ->where('date', '=', $checkDate->toDateString())
-            ->where('flow_time_min', '>', 0)
-            ->exists();
+        return Cache::remember("stats:streak:{$userId}", now()->addHour(), function () use ($userId) {
+            $streak = 0;
+            $checkDate = now();
             
-        if ($hasWorkedToday) {
-            $streak++;
-            $checkDate->subDay();
-        } else {
-            // Check yesterday
-            $checkDate->subDay();
-            $hasWorkedYesterday = DailyStat::query()->where('user_id', '=', $userId)
-            ->where('date', '=', $checkDate->toDateString())
-            ->where('flow_time_min', '>', 0)
-            ->exists();
-            
-            if (!$hasWorkedYesterday) {
-                return 0; // Streak broken
-            }
-        }
-
-        // Count backwards
-        while (true) {
-            $hasWorked = DailyStat::query()->where('user_id', '=', $userId)
+            $hasWorkedToday = DailyStat::query()->where('user_id', '=', $userId)
                 ->where('date', '=', $checkDate->toDateString())
                 ->where('flow_time_min', '>', 0)
                 ->exists();
                 
-            if ($hasWorked) {
+            if ($hasWorkedToday) {
                 $streak++;
                 $checkDate->subDay();
             } else {
-                break;
+                // Check yesterday
+                $checkDate->subDay();
+                $hasWorkedYesterday = DailyStat::query()->where('user_id', '=', $userId)
+                ->where('date', '=', $checkDate->toDateString())
+                ->where('flow_time_min', '>', 0)
+                ->exists();
+                
+                if (!$hasWorkedYesterday) {
+                    return 0; // Streak broken
+                }
             }
-        }
-        
-        return $streak;
+
+            // Count backwards
+            while (true) {
+                $hasWorked = DailyStat::query()->where('user_id', '=', $userId)
+                    ->where('date', '=', $checkDate->toDateString())
+                    ->where('flow_time_min', '>', 0)
+                    ->exists();
+                    
+                if ($hasWorked) {
+                    $streak++;
+                    $checkDate->subDay();
+                } else {
+                    break;
+                }
+            }
+            
+            return $streak;
+        });
     }
 
     /**

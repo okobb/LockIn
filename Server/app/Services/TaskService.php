@@ -8,12 +8,15 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
+use App\Traits\CachesData;
 
 /**
  * @extends BaseService<Task>
  */
 final class TaskService extends BaseService
 {
+    use CachesData;
+
     protected function getModelClass(): string
     {
         return Task::class;
@@ -88,6 +91,7 @@ final class TaskService extends BaseService
 
         $task->update($data);
         Log::info('Task updated', ['task_id' => $task->id, 'data' => $data]);
+        $this->clearUserDashboardCache($task->user_id);
 
         return $task->fresh();
     }
@@ -174,5 +178,14 @@ final class TaskService extends BaseService
             'low' => 4,
             default => 3,
         };
+    }
+
+    /**
+     * Delete a task and invalidate cache.
+     */
+    public function deleteTask(Task $task): void
+    {
+        $task->delete();
+        $this->clearUserDashboardCache($task->user_id);
     }
 }

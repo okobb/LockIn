@@ -50,10 +50,7 @@ final class FocusSessionController extends BaseController
             return $this->forbiddenResponse();
         }
 
-        $session->update([
-            'status' => 'completed',
-            'ended_at' => $session->ended_at ?? now(),
-        ]);
+        $this->focusSessionService->completeSession($session);
 
         return $this->successResponse(['session' => $session], 'Session marked as completed');
     }
@@ -67,12 +64,7 @@ final class FocusSessionController extends BaseController
             return $this->forbiddenResponse();
         }
 
-        // Delete associated context snapshot if exists
-        if ($session->contextSnapshot) {
-            $session->contextSnapshot->delete();
-        }
-
-        $session->delete();
+        $this->focusSessionService->deleteSession($session);
 
         return $this->successResponse(null, 'Session deleted successfully');
     }
