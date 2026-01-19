@@ -1,4 +1,4 @@
-import api from "../../../shared/lib/axios";
+import client from "../../../shared/api/client";
 
 import type { Task } from "../../../shared/types";
 export type { Task };
@@ -30,34 +30,29 @@ export const tasks = {
     status?: string;
     scheduled?: "true" | "false";
   }) => {
-    const response = await api.get<TasksResponse>("/tasks", { params });
-    return response.data;
+    return client.get<TasksResponse>("/tasks", { params });
   },
 
   getBacklog: async () => {
-    const response = await api.get<TasksResponse>("/tasks", {
+    return client.get<TasksResponse>("/tasks", {
       params: { status: "open", scheduled: "false" },
     });
-    return response.data;
   },
 
   getById: async (id: number) => {
-    const response = await api.get<{ data: Task }>(`/tasks/${id}`);
-    return response.data;
+    return client.get<{ data: Task }>(`/tasks/${id}`);
   },
 
   create: async (data: CreateTaskData) => {
-    const response = await api.post<{ data: Task }>("/tasks", data);
-    return response.data;
+    return client.post<{ data: Task }>("/tasks", data);
   },
 
   update: async (id: number, data: UpdateTaskData) => {
-    const response = await api.patch<{ data: Task }>(`/tasks/${id}`, data);
-    return response.data;
+    return client.patch<{ data: Task }>(`/tasks/${id}`, data);
   },
 
   delete: async (id: number) => {
-    await api.delete(`/tasks/${id}`);
+    await client.delete(`/tasks/${id}`);
   },
 
   complete: async (id: number) => {

@@ -1,4 +1,4 @@
-import api from "../../../shared/lib/axios";
+import client from "../../../shared/api/client";
 
 export interface LoginCredentials {
   email: string;
@@ -29,26 +29,22 @@ export interface AuthResponse {
 
 export const auth = {
   login: async (credentials: LoginCredentials) => {
-    const response = await api.post<AuthResponse>("/login", credentials);
-    return response.data;
+    return client.post<AuthResponse>("/login", credentials);
   },
 
   register: async (data: RegisterData) => {
-    const response = await api.post<AuthResponse>("/register", data);
-    return response.data;
+    return client.post<AuthResponse>("/register", data);
   },
 
   getGithubRedirect: async () => {
-    const response = await api.get<{ data: { redirect_url: string } }>(
+    return client.get<{ data: { redirect_url: string } }>(
       "/auth/github/redirect",
     );
-    return response.data;
   },
 
   getGoogleRedirect: async () => {
-    const response = await api.get<{ data: { redirect_url: string } }>(
+    return client.get<{ data: { redirect_url: string } }>(
       "/auth/google/redirect",
     );
-    return response.data;
   },
 };
