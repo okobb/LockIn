@@ -12,11 +12,16 @@ use App\Models\KnowledgeResource;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Builder;
+use App\Traits\CachesData;
 use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ResourceHubService
 {
+    use CachesData;
+
     public function __construct(
         private UrlMetadataService $urlMetadata,
         private VideoMetadataService $videoMetadata,
@@ -118,12 +123,15 @@ class ResourceHubService
             ProcessResourceEmbedding::dispatch($resource);
         }
         
+        $this->clearUserResourceCache($userId);
+
         return $resource;
     }
 
     public function updateResource(KnowledgeResource $resource, array $data): KnowledgeResource
     {
         $resource->update($data);
+        $this->clearUserResourceCache($resource->user_id);
         return $resource;
     }
 
@@ -133,17 +141,20 @@ class ResourceHubService
             Storage::disk('public')->delete($resource->file_path);
         }
         $this->ragService->deleteResource($resource);
+        $this->clearUserResourceCache($resource->user_id);
     }
 
     public function toggleFavorite(KnowledgeResource $resource): KnowledgeResource
     {
         $resource->update(['is_favorite' => !$resource->is_favorite]);
+        $this->clearUserResourceCache($resource->user_id);
         return $resource;
     }
 
     public function markAsRead(KnowledgeResource $resource, bool $isRead = true): KnowledgeResource
     {
         $resource->update(['is_read' => $isRead]);
+        $this->clearUserResourceCache($resource->user_id);
         return $resource;
     }
 
@@ -165,47 +176,52 @@ class ResourceHubService
         // Placeholder for AI suggestions logic
         return [];
     }
-    public function getResources(int $userId, array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function getResources(int $userId, array $filters = []): LengthAwarePaginator
     {
-        $query = KnowledgeResource::query()
-            ->where('user_id', $userId)
-            ->orderBy('is_favorite', 'desc')
-            ->orderBy('created_at', 'desc');
+        // Use tags for invalidation, or unique key based on filters
+        $key = "resources:list:{$userId}:" . md5(json_encode($filters));
 
-        if (!empty($filters['search'])) {
-            $term = $filters['search'];
-            $query->where(function (Builder $q) use ($term) {
-                $q->where('title', 'like', "%{$term}%")
-                  ->orWhere('tags', 'like', "%{$term}%")
-                  ->orWhere('notes', 'like', "%{$term}%");
-            });
-        }
+        return Cache::tags(["resources:{$userId}"])->remember($key, now()->addMinutes(10), function () use ($userId, $filters) {
+            $query = KnowledgeResource::query()
+                ->where('user_id', $userId)
+                ->orderBy('is_favorite', 'desc')
+                ->orderBy('created_at', 'desc');
 
-        if (!empty($filters['type']) && $filters['type'] !== 'all') {
-            if (is_array($filters['type'])) {
-                $query->whereIn('type', $filters['type']);
-            } else {
-                $query->where('type', $filters['type']);
+            if (!empty($filters['search'])) {
+                $term = $filters['search'];
+                $query->where(function (Builder $q) use ($term) {
+                    $q->where('title', 'like', "%{$term}%")
+                    ->orWhere('tags', 'like', "%{$term}%")
+                    ->orWhere('notes', 'like', "%{$term}%");
+                });
             }
-        }
 
-        if (!empty($filters['difficulty']) && $filters['difficulty'] !== 'all') {
-            if (is_array($filters['difficulty'])) {
-                $query->whereIn('difficulty', $filters['difficulty']);
-            } else {
-                $query->where('difficulty', $filters['difficulty']);
+            if (!empty($filters['type']) && $filters['type'] !== 'all') {
+                if (is_array($filters['type'])) {
+                    $query->whereIn('type', $filters['type']);
+                } else {
+                    $query->where('type', $filters['type']);
+                }
             }
-        }
 
-        if (!empty($filters['status'])) {
-            match ($filters['status']) {
-                'unread' => $query->where('is_read', false),
-                'read' => $query->where('is_read', true),
-                'favorites' => $query->where('is_favorite', true),
-                default => null,
-            };
-        }
+            if (!empty($filters['difficulty']) && $filters['difficulty'] !== 'all') {
+                if (is_array($filters['difficulty'])) {
+                    $query->whereIn('difficulty', $filters['difficulty']);
+                } else {
+                    $query->where('difficulty', $filters['difficulty']);
+                }
+            }
 
-        return $query->paginate(20);
+            if (!empty($filters['status'])) {
+                match ($filters['status']) {
+                    'unread' => $query->where('is_read', false),
+                    'read' => $query->where('is_read', true),
+                    'favorites' => $query->where('is_favorite', true),
+                    default => null,
+                };
+            }
+
+            return $query->paginate(20);
+        });
     }
 }

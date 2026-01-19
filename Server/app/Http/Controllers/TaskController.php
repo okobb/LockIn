@@ -78,7 +78,7 @@ final class TaskController extends BaseController
             return $this->forbiddenResponse('You do not own this task');
         }
 
-        Task::destroy($task->id);
+        $this->taskService->deleteTask($task);
 
         return $this->successResponse(null, 'Task deleted successfully');
     }

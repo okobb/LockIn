@@ -42,6 +42,14 @@ services:
     volumes:
       - ./qdrant_data:/qdrant/storage
 
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_data:/data
+
 volumes:
   postgres_data:
   n8n_data:
