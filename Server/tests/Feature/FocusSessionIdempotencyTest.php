@@ -122,7 +122,7 @@ class FocusSessionIdempotencyTest extends TestCase
 
         // 3. Verify: New session should have the SAME snapshot ID
         /** @var FocusSession $newSession */
-        $newSession = FocusSession::where('id', '!=', $pastSession->id, 'and')->first(['*']);
+        $newSession = FocusSession::query()->where('id', '!=', $pastSession->id)->first(['*']);
         $this->assertEquals($snapshot->id, $newSession->context_snapshot_id);
     }
 }

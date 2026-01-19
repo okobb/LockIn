@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\FocusSession;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @extends BaseService<FocusSession>
@@ -39,9 +40,12 @@ final class FocusSessionService extends BaseService
      */
     public function handleSessionStart(int $userId, array $validated): array
     {
-        $activeSession = FocusSession::where('user_id', '=', $userId, 'and')
-            ->whereNull('ended_at')
-            ->first();
+        return DB::transaction(function () use ($userId, $validated) {
+            $activeSession = FocusSession::query()
+                ->where('user_id', $userId)
+                ->whereNull('ended_at')
+                ->lockForUpdate()
+                ->first();
 
         if ($activeSession) {
             $matchesTitle = $activeSession->title === $validated['title'];
@@ -61,30 +65,32 @@ final class FocusSessionService extends BaseService
             ]);
         }
 
-        $prevSession = FocusSession::where('user_id', '=', $userId, 'and')
-            ->where(function ($query) use ($validated) {
-                $query->where('title', '=', $validated['title'], 'and')
-                    ->when(isset($validated['task_id']), function ($q) use ($validated) {
-                        $q->orWhere('task_id', '=', $validated['task_id']);
-                    });
-            })
-            ->whereNotNull('context_snapshot_id')
-            ->orderBy('ended_at', 'desc')
-            ->first(['*']);
+            $prevSession = FocusSession::query()
+                ->where('user_id', $userId)
+                ->where(function ($query) use ($validated) {
+                    $query->where('title', $validated['title'])
+                        ->when(isset($validated['task_id']), function ($q) use ($validated) {
+                            $q->orWhere('task_id', $validated['task_id']);
+                        });
+                })
+                ->whereNotNull('context_snapshot_id')
+                ->orderBy('ended_at', 'desc')
+                ->first(['*']);
 
-        $session = $this->startSession(
-            $userId,
-            $validated['title'],
-            $validated['task_id'] ?? null,
-            $validated['duration_min'] ?? 25,
-            $prevSession?->context_snapshot_id
-        );
+            $session = $this->startSession(
+                $userId,
+                $validated['title'],
+                $validated['task_id'] ?? null,
+                $validated['duration_min'] ?? 25,
+                $prevSession?->context_snapshot_id
+            );
 
-        return [
-            'session' => $session,
-            'status' => 'started',
-            'restored_context' => (bool) $prevSession,
-        ];
+            return [
+                'session' => $session,
+                'status' => 'started',
+                'restored_context' => (bool) $prevSession,
+            ];
+        });
     }
     /**
      * Get history of focus sessions with filtering.
@@ -93,7 +99,7 @@ final class FocusSessionService extends BaseService
     {
         $query = FocusSession::query()->where('user_id', $userId)
             ->where('status', '!=', 'active')
-            ->with('contextSnapshot')
+            ->with(['contextSnapshot.checklistItems', 'task'])
             ->orderBy('ended_at', 'desc');
             
         if (!empty($filters['search'])) {

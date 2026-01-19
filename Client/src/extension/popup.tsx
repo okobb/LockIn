@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Save, ExternalLink, X } from "lucide-react";
+import { Save, ExternalLink, X, AlertCircle } from "lucide-react";
 import "../shared/styles/global.css";
 import "./popup.css";
 
@@ -13,6 +13,7 @@ interface TabData {
 
 const Popup = () => {
   const [tabs, setTabs] = useState<TabData[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Fetch all tabs in the current window
@@ -22,10 +23,14 @@ const Popup = () => {
   }, []);
 
   const handleSaveContext = () => {
-
     const targetUrl = "http://localhost:5173/context-save?mode=start";
 
     chrome.tabs.create({ url: targetUrl }, (tab) => {
+      if (chrome.runtime.lastError) {
+        setError(`Failed to open LockIn: ${chrome.runtime.lastError.message}`);
+        return;
+      }
+
       if (tab.id) {
         const tabId = tab.id;
         const tabsData = tabs;
@@ -34,24 +39,36 @@ const Popup = () => {
           if (tid === tabId && changeInfo.status === "complete") {
             chrome.tabs.onUpdated.removeListener(listener);
 
-            chrome.scripting.executeScript({
-              target: { tabId },
-              world: "MAIN",
-              func: (data) => {
-                // @ts-ignore
-                window.lockInExtensionTabs = data;
-
-                window.postMessage({ type: "LOCKIN_TABS", tabs: data }, "*");
-
-                let retries = 0;
-                const interval = setInterval(() => {
+            chrome.scripting.executeScript(
+              {
+                target: { tabId },
+                world: "MAIN",
+                func: (data) => {
+                  // @ts-ignore
+                  window.lockInExtensionTabs = data;
                   window.postMessage({ type: "LOCKIN_TABS", tabs: data }, "*");
-                  retries++;
-                  if (retries > 5) clearInterval(interval);
-                }, 500);
+
+                  let retries = 0;
+                  const interval = setInterval(() => {
+                    window.postMessage(
+                      { type: "LOCKIN_TABS", tabs: data },
+                      "*",
+                    );
+                    retries++;
+                    if (retries > 5) clearInterval(interval);
+                  }, 500);
+                },
+                args: [tabsData],
               },
-              args: [tabsData],
-            });
+              () => {
+                if (chrome.runtime.lastError) {
+                  console.error(
+                    "Script injection failed",
+                    chrome.runtime.lastError,
+                  );
+                }
+              },
+            );
           }
         };
 
@@ -75,6 +92,19 @@ const Popup = () => {
           {tabs.length} Tabs
         </span>
       </header>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-500 text-sm flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto text-red-500 hover:text-red-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto pr-1">
         {tabs.map((tab) => (
@@ -125,5 +155,5 @@ const root = createRoot(document.getElementById("root")!);
 root.render(
   <React.StrictMode>
     <Popup />
-  </React.StrictMode>
+  </React.StrictMode>,
 );

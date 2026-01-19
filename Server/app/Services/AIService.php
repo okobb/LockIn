@@ -104,4 +104,19 @@ class AIService
 
         return trim($this->chat($messages, ['temperature' => 0.5]));
     }
+
+    /**
+     * Generate metadata for a resource.
+     *
+     * @return array{title: string, summary: string, difficulty: string, tags: string[], estimated_minutes: int}
+     */
+    public function generateResourceMetadata(string $content, string $type = 'document'): array
+    {
+        $messages = $this->promptService->build('metadata_gen', [
+            'type' => $type,
+            'content' => Str::limit($content, 8000), // Limit context window
+        ]);
+
+        return $this->getJson($messages, ['temperature' => 0.3]);
+    }
 }

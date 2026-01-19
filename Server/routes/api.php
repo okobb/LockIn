@@ -53,8 +53,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('resources/{resource}/read', [ResourceHubController::class, 'markAsRead']);
     Route::get('resources-suggestions', [ResourceHubController::class, 'suggestions']);
     Route::post('resources/bulk-import', [ResourceHubController::class, 'bulkImport']);
+    Route::get('resources/{resource}/url', [ResourceHubController::class, 'getDownloadUrl']);
 
-    // Integration Management
+
     Route::get('integrations', [IntegrationController::class, 'index'])->name('integrations.index');
     Route::get('integrations/connect/{provider}/{service}', [IntegrationController::class, 'redirect'])
         ->name('integrations.redirect');
@@ -112,6 +113,11 @@ Route::middleware('auth:api')->group(function () {
     Route::post('stats/goal', [StatsController::class, 'setGoal'])->name('stats.goal');
     Route::get('stats/insights', [StatsController::class, 'insights'])->name('stats.insights');
 });
+
+// Public Signed Routes
+Route::get('resources/{resource}/download', [ResourceHubController::class, 'download'])
+    ->middleware('signed')
+    ->name('resources.download');
 
 // n8n API Routes (authenticated via secret header)
 Route::prefix('n8n')->middleware(N8nAuthMiddleware::class)->group(function () {

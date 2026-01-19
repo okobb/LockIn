@@ -52,6 +52,15 @@ final class SocialiteService
             $parameters['prompt'] = 'consent';
         }
 
+        if ($provider === PROVIDER_SLACK) {
+            return $driver
+                ->setScopes($scopes)
+                ->with($parameters)
+                ->stateless()
+                ->redirect()
+                ->getTargetUrl();
+        }
+
         return $driver
             ->scopes($scopes)
             ->with($parameters)
@@ -113,7 +122,11 @@ final class SocialiteService
                 'read:user', 'user:email', 'repo',
             ],
             [PROVIDER_SLACK, SERVICE_NOTIFICATIONS] => [
-                'channels:read', 'channels:history',
+                'channels:read', 'channels:history',   // Public channels
+                'groups:read', 'groups:history',       // Private channels
+                'im:read', 'im:history',               // Direct messages
+                'mpim:read', 'mpim:history',           // Group DMs
+                'users:read',                          // Look up user names
                 'chat:write',
             ],
             default => $this->getLoginScopes($provider),

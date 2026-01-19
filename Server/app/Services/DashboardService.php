@@ -58,6 +58,7 @@ final class DashboardService
             ->where('priority', '<=', 2)
             ->orderBy('priority', 'asc')
             ->orderBy('created_at', 'desc')
+            ->with('incomingMessages')
             ->limit($limit)
             ->get()
             ->map(fn(Task $task) => [

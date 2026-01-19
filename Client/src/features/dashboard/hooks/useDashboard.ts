@@ -42,7 +42,11 @@ export const useDashboard = () => {
       statsQuery.isLoading ||
       priorityTasksQuery.isLoading ||
       upcomingQuery.isLoading ||
+      upcomingQuery.isLoading ||
       communicationsQuery.isLoading,
+    isLoadingStats: statsQuery.isLoading,
+    isLoadingPriority: priorityTasksQuery.isLoading,
+    isLoadingUpcoming: upcomingQuery.isLoading,
     isError:
       statsQuery.isError ||
       priorityTasksQuery.isError ||

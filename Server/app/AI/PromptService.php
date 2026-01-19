@@ -43,6 +43,16 @@ class PromptService
         Return ONLY the title, no quotes or extra text.
     EOT;
 
+    private const METADATA_GENERATION_INSTRUCTIONS = <<<'EOT'
+        Analyze the provided learning resource content and generate metadata in JSON format.
+        Return ONLY the raw JSON object with the following keys:
+        - title: A clear, descriptive title (string)
+        - summary: A 2-3 sentence summary of the main points (string)
+        - difficulty: One of "beginner", "intermediate", "advanced" (string)
+        - tags: Array of 3-5 relevant topic keywords (array of strings)
+        - estimated_minutes: Estimated time to read/watch in minutes (integer)
+    EOT;
+
     /** @var array<string> */
     private array $blockedPatterns;
     private int $maxLength;
@@ -66,8 +76,20 @@ class PromptService
             'rag_qa' => $this->buildRagQa($variables),
             'checklist' => $this->buildChecklist($variables),
             'title_gen' => $this->buildTitleGeneration($variables),
+            'metadata_gen' => $this->buildMetadataGeneration($variables),
             default => throw new InvalidArgumentException("Prompt template [{$key}] not found."),
         };
+    }
+
+    /**
+     * Build the metadata generation prompt.
+     */
+    private function buildMetadataGeneration(array $variables): array
+    {
+        return [
+            ['role' => 'system', 'content' => self::METADATA_GENERATION_INSTRUCTIONS],
+            ['role' => 'user', 'content' => "Type: " . ($variables['type'] ?? 'document') . "\n\nContent:\n" . ($variables['content'] ?? '')],
+        ];
     }
 
     /**

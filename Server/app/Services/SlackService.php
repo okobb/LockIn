@@ -9,6 +9,7 @@ use App\Models\IncomingMessage;
 use App\Models\Integration;
 use App\Services\Traits\UsesIntegrationTokens;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 require_once __DIR__ . '/../consts.php';
 
@@ -28,13 +29,45 @@ final class SlackService
 
     /**
      * Fetch recent messages and store them in the database.
+     * If no channel is specified, syncs from all channels.
      *
      * @return Collection<int, IncomingMessage>
      * @throws ServiceException
      */
     public function syncAndStoreMessages(int $userId, ?string $channel = null, int $limit = 20): Collection
     {
-        $messages = $this->fetchRecentMessages($userId, $channel, $limit);
+        $stored = collect();
+
+        if ($channel !== null) {
+            // Sync specific channel
+            $messages = $this->fetchRecentMessages($userId, $channel, $limit);
+            $stored = $stored->merge($this->storeMessages($userId, $messages));
+        } else {
+            $integration = $this->getSlackIntegration($userId);
+            $integration = $this->integrationService->refreshTokenIfExpired($integration);
+            $channels = $this->listChannels($integration);
+
+            foreach ($channels as $ch) {
+                try {
+                    $messages = $this->fetchRecentMessages($userId, $ch['id'], $limit);
+                    $stored = $stored->merge($this->storeMessages($userId, $messages));
+                } catch (\Exception $e) {
+                    Log::warning("Failed to sync Slack channel {$ch['id']}: " . $e->getMessage());
+                }
+            }
+        }
+
+        return $stored;
+    }
+
+    /**
+     * Store messages in the database, avoiding duplicates.
+     *
+     * @param array<int, array<string, mixed>> $messages
+     * @return Collection<int, IncomingMessage>
+     */
+    private function storeMessages(int $userId, array $messages): Collection
+    {
         $stored = collect();
 
         foreach ($messages as $message) {
@@ -57,7 +90,7 @@ final class SlackService
                 'user_id' => $userId,
                 'provider' => 'slack',
                 'external_id' => $externalId,
-                'sender_info' => $message['user'] ?? 'Unknown',
+                'sender_info' => $message['user_name'] ?? $message['user'] ?? 'Unknown',
                 'channel_info' => $message['channel'] ?? null,
                 'content_raw' => $message['text'] ?? '',
                 'status' => 'pending',
@@ -110,10 +143,75 @@ final class SlackService
             );
         }
 
-        return array_map(
-            fn ($msg) => $this->parseMessage($msg, $channel),
-            $data['messages'] ?? []
+        // Filter out system messages (joins, leaves, etc.)
+        $messages = array_filter(
+            $data['messages'] ?? [],
+            fn ($msg) => !isset($msg['subtype']) || $msg['subtype'] === 'bot_message'
         );
+
+        // Resolve user IDs to names
+        $userCache = [];
+        $result = [];
+        foreach ($messages as $msg) {
+            $userId = $msg['user'] ?? null;
+            if ($userId && !isset($userCache[$userId])) {
+                $userCache[$userId] = $this->resolveUserName($integration, $userId);
+            }
+            $parsed = $this->parseMessage($msg, $channel);
+            $parsed['user_name'] = $userCache[$userId] ?? $parsed['user'];
+            // Also resolve @mentions in text
+            $parsed['text'] = $this->resolveUserMentions($integration, $parsed['text'], $userCache);
+            $result[] = $parsed;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Resolve a Slack user ID to their display name.
+     */
+    private function resolveUserName(Integration $integration, string $userId): string
+    {
+        try {
+            $response = $this->authenticatedGet(
+                $integration,
+                self::SLACK_API_BASE . '/users.info',
+                ['user' => $userId],
+                'Failed to fetch user info'
+            );
+
+            $data = $response->json();
+            if ($data['ok'] ?? false) {
+                return $data['user']['profile']['display_name']
+                    ?: $data['user']['profile']['real_name']
+                    ?: $data['user']['name']
+                    ?? $userId;
+            }
+        } catch (\Exception $e) {
+            // Fall back to user ID if lookup fails
+        }
+
+        return $userId;
+    }
+
+    /**
+     * Replace @mentions in text with actual usernames.
+     *
+     * @param array<string, string> $userCache
+     */
+    private function resolveUserMentions(Integration $integration, string $text, array &$userCache): string
+    {
+        return preg_replace_callback(
+            '/<@([A-Z0-9]+)>/',
+            function ($matches) use ($integration, &$userCache) {
+                $userId = $matches[1];
+                if (!isset($userCache[$userId])) {
+                    $userCache[$userId] = $this->resolveUserName($integration, $userId);
+                }
+                return '@' . $userCache[$userId];
+            },
+            $text
+        ) ?? $text;
     }
 
     /**

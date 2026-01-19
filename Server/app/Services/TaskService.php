@@ -37,7 +37,8 @@ final class TaskService extends BaseService
             $query->whereNull('scheduled_start');
         }
 
-        return $query->orderByRaw('priority ASC')
+        return $query->with('focusSessions')
+            ->orderByRaw('priority ASC')
             ->orderBy('created_at', 'desc')
             ->get();
     }
