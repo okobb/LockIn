@@ -6,21 +6,8 @@ export interface StartSessionParams {
   duration_min?: number;
 }
 
-export interface FocusSession {
-  id: number;
-  title: string;
-  task_id?: number;
-  context_snapshot?: {
-    browser_state: Array<{ title: string; url: string }>;
-    quality_score?: number;
-    ai_resume_checklist?: Array<{
-      text: string;
-      source: string;
-      is_completed?: boolean;
-    }>;
-    text_note?: string;
-  };
-}
+import type { FocusSession } from "../../../shared/types";
+export type { FocusSession };
 
 export const startFocusSession = async (
   params: StartSessionParams,

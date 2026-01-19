@@ -12,15 +12,8 @@ export interface RegisterData {
   password_confirmation: string;
 }
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  timezone: string;
-  email_verified_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import type { User } from "../../../shared/types";
+export type { User };
 
 export interface AuthResponse {
   data: {
@@ -47,14 +40,14 @@ export const auth = {
 
   getGithubRedirect: async () => {
     const response = await api.get<{ data: { redirect_url: string } }>(
-      "/auth/github/redirect"
+      "/auth/github/redirect",
     );
     return response.data;
   },
 
   getGoogleRedirect: async () => {
     const response = await api.get<{ data: { redirect_url: string } }>(
-      "/auth/google/redirect"
+      "/auth/google/redirect",
     );
     return response.data;
   },
