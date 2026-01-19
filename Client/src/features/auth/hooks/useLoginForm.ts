@@ -1,40 +1,63 @@
 import { useState, type FormEvent, type ChangeEvent } from "react";
 import { useAuth } from "./useAuth";
 
+interface LoginErrors {
+  email?: string;
+  password?: string;
+  general?: string;
+}
+
 export const useLoginForm = () => {
   const { login } = useAuth();
   const [values, setValues] = useState({ email: "", password: "" });
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<LoginErrors>({});
 
-  const handleChange = (field: keyof typeof values) => (
-    e: ChangeEvent<HTMLInputElement>
-  ) => {
-    setValues((prev) => ({ ...prev, [field]: e.target.value }));
-    if (validationError) setValidationError(null);
+  const validate = (): boolean => {
+    const newErrors: LoginErrors = {};
+
+    if (!values.email) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(values.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!values.password) {
+      newErrors.password = "Password is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
+
+  const handleChange =
+    (field: keyof typeof values) => (e: ChangeEvent<HTMLInputElement>) => {
+      setValues((prev) => ({ ...prev, [field]: e.target.value }));
+      // Clear error for this field when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: undefined }));
+      }
+    };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setValidationError(null);
 
-    if (!values.email || !values.email.includes("@")) {
-      setValidationError("Please enter a valid email address.");
-      return;
-    }
-    if (!values.password) {
-      setValidationError("Password is required.");
-      return;
-    }
+    if (!validate()) return;
 
-    login.mutate(values);
+    login.mutate(values, {
+      onError: (error) => {
+        setErrors((prev) => ({
+          ...prev,
+          general: error instanceof Error ? error.message : "Login failed",
+        }));
+      },
+    });
   };
 
   return {
     values,
+    errors,
     handleChange,
     handleSubmit,
     isLoading: login.isPending,
-    apiError: login.error instanceof Error ? login.error.message : null,
-    validationError,
   };
 };
