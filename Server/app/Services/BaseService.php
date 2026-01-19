@@ -42,7 +42,7 @@ abstract class BaseService implements ServiceInterface
      *
      * @throws ServiceException
      */
-    public function findOrFail(int|string $id): ?Model
+    public function findOrFail(int|string $id): Model
     {
         $record = $this->find($id);
 
@@ -118,7 +118,7 @@ abstract class BaseService implements ServiceInterface
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    protected function applyFilters($query, array $filters)
+    protected function applyFilters($query, array $filters): \Illuminate\Database\Eloquent\Builder
     {
         return $query;
     }

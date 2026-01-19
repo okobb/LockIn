@@ -72,7 +72,7 @@ final class TaskService extends BaseService
             'user_id' => $userId,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'priority' => $this->mapPriorityLabelToInt($data['priority_label'] ?? 'normal'),
+            'priority' => $this->resolvePriority(['priority_label' => $data['priority_label'] ?? 'normal']),
             'status' => $data['status'] ?? 'open',
             'due_date' => $data['due_date'] ?? null,
             'estimated_minutes' => $data['estimated_minutes'] ?? null,
@@ -106,7 +106,7 @@ final class TaskService extends BaseService
                 'user_id'           => $user?->id, 
                 'title'             => $payload['title'] ?? 'Untitled Task',
                 'description'       => $this->formatDescription($payload),
-                'priority'          => $this->mapPriority($payload),
+                'priority'          => $this->resolvePriority($payload),
                 'source_type'       => $payload['source_type'] ?? 'api',
                 'source_link'       => $payload['source_link'] ?? null,
                 'source_metadata'   => $payload, 
@@ -127,14 +127,28 @@ final class TaskService extends BaseService
     /**
      * Map priority label string to integer.
      */
-    private function mapPriorityLabelToInt(string $label): int
+    /**
+     * Resolve priority from payload.
+     */
+    private function resolvePriority(array $payload): int
     {
-        return match (strtolower($label)) {
-            'critical' => 1,
-            'high' => 2,
-            'normal', 'medium' => 3,
-            'low' => 4,
-            default => 3,
+        if (isset($payload['urgency_score'])) {
+            $score = (float) $payload['urgency_score'];
+            
+            if ($score >= 0.8) return PRIORITY_CRITICAL;
+            if ($score >= 0.6) return PRIORITY_HIGH;
+            if ($score >= 0.4) return PRIORITY_NORMAL;
+            return PRIORITY_LOW;
+        }
+
+        $label = strtolower($payload['priority'] ?? $payload['priority_label'] ?? 'normal');
+
+        return match ($label) {
+            'urgent', 'critical' => PRIORITY_CRITICAL,
+            'high' => PRIORITY_HIGH,
+            'normal', 'medium' => PRIORITY_NORMAL,
+            'low' => PRIORITY_LOW,
+            default => PRIORITY_NORMAL,
         };
     }
 
@@ -155,30 +169,7 @@ final class TaskService extends BaseService
         return $output;
     }
 
-    /**
-     * Map priority from urgency_score or string.
-     */
-    private function mapPriority(array $payload): int
-    {
-        if (isset($payload['urgency_score'])) {
-            $score = (float) $payload['urgency_score'];
-            
-            if ($score >= 0.8) return 1;
-            if ($score >= 0.6) return 2;
-            if ($score >= 0.4) return 3;
-            return 4;
-        }
 
-        $priority = strtolower($payload['priority'] ?? 'normal');
-
-        return match ($priority) {
-            'urgent', 'critical' => 1,
-            'high' => 2,
-            'normal', 'medium' => 3,
-            'low' => 4,
-            default => 3,
-        };
-    }
 
     /**
      * Delete a task and invalidate cache.

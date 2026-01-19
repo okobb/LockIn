@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Cache;
 
 class StatsService
 {
+    public function __construct(
+        private readonly UserService $userService
+    ) {}
     /**
      * Get aggregated stats for the current week.
      *
@@ -22,8 +25,7 @@ class StatsService
     public function getWeeklyStats(int $userId): array
     {
         return Cache::remember("stats:weekly:{$userId}", now()->addMinutes(10), function () use ($userId) {
-            $startOfWeek = now()->startOfWeek();
-            $endOfWeek = now()->endOfWeek();
+            ['start' => $startOfWeek, 'end' => $endOfWeek] = $this->getCurrentWeekRange();
 
         // Fetch daily stats for this week
         $dailyStats = DailyStat::query()->where('user_id', $userId)
@@ -80,8 +82,7 @@ class StatsService
     public function getDailyBreakdown(int $userId): array
     {
         return Cache::remember("stats:daily:{$userId}", now()->addMinutes(10), function () use ($userId) {
-            $startOfWeek = now()->startOfWeek();
-            $endOfWeek = now()->endOfWeek();
+            ['start' => $startOfWeek, 'end' => $endOfWeek] = $this->getCurrentWeekRange();
 
             $dailyStats = DailyStat::query()->where('user_id', $userId)
                 ->whereBetween('date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
@@ -170,9 +171,7 @@ class StatsService
      */
     public function setWeeklyGoal(int $userId, int $targetMinutes): void
     {
-        $user = User::query()->find($userId);
-        $user->weekly_goal_min = $targetMinutes;
-        $user->save();
+        $this->userService->setWeeklyGoal($userId, $targetMinutes);
     }
 
     /**
@@ -223,5 +222,17 @@ class StatsService
         }
 
         return $insights;
+    }
+    /**
+     * Get start and end of current week.
+     * 
+     * @return array{start: Carbon, end: Carbon}
+     */
+    private function getCurrentWeekRange(): array
+    {
+        return [
+            'start' => now()->startOfWeek(),
+            'end' => now()->endOfWeek(),
+        ];
     }
 }

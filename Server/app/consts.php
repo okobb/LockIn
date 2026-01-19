@@ -34,3 +34,9 @@ const RESOURCE_DIFFICULTY_BEGINNER = 'beginner';
 const RESOURCE_DIFFICULTY_INTERMEDIATE = 'intermediate';
 const RESOURCE_DIFFICULTY_ADVANCED = 'advanced';
 
+// Task Priorities
+const PRIORITY_CRITICAL = 1;
+const PRIORITY_HIGH = 2;
+const PRIORITY_NORMAL = 3;
+const PRIORITY_LOW = 4;
+
