@@ -12,12 +12,15 @@ import {
   FileText,
   Image as ImageIcon,
   Globe,
+  Trash,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { type Resource } from "../../types";
 import { cn } from "../../../../lib/utils";
 import { resourceApi } from "../../api/resourceApi";
 import { useSessionContext } from "../../../focus/context/SessionContext";
+import { useResourceMutations } from "../../hooks/useResources";
+import { useModal } from "../../../../shared/context/ModalContext";
 
 interface ResourceDetailModalProps {
   resource: Resource | null;
@@ -74,11 +77,38 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
 }) => {
   const navigate = useNavigate();
   const { activeSession } = useSessionContext();
+  const { deleteResource } = useResourceMutations();
+  const { open } = useModal();
   const activeSessionId = activeSession?.sessionId;
   const [isAdding, setIsAdding] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [textContent, setTextContent] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (
+      !resource ||
+      !window.confirm("Are you sure you want to delete this resource?")
+    )
+      return;
+
+    try {
+      await deleteResource.mutateAsync(resource.id);
+      onClose();
+      open({
+        type: "info",
+        title: "Resource Deleted",
+        message: "Resource has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error("Failed to delete resource", error);
+      open({
+        type: "error",
+        title: "Deletion Failed",
+        message: "Failed to delete resource. Please try again.",
+      });
+    }
+  };
 
   // Detect file types
   const getFileExtension = (path: string | null | undefined) => {
@@ -314,6 +344,13 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
 
         <div className="p-6 border-t border-white/5 bg-[#121214] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex gap-3 w-full sm:w-auto">
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-colors border border-red-500/20"
+              title="Delete Resource"
+            >
+              <Trash size={16} />
+            </button>
             <a
               href={signedUrl || "#"}
               target="_blank"
