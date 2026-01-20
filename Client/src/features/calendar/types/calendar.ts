@@ -33,6 +33,8 @@ export interface CalendarEvent {
   type: "deep_work" | "meeting" | "external";
   source: "manual" | "google_calendar";
   external_id: string | null;
+  priority?: "high" | "low" | "urgent" | "medium";
+  tags?: string[];
 }
 
 export interface CreateBlockData {
@@ -41,6 +43,8 @@ export interface CreateBlockData {
   end_time: string;
   type: "deep_work" | "meeting" | "external";
   description?: string;
+  priority?: "high" | "low" | "urgent" | "medium";
+  tags?: string[];
 }
 
 export interface UpdateBlockData {

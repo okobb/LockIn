@@ -109,8 +109,8 @@ export function useCalendarEvents({
             end_time: newBlockData.end_time,
             type: newBlockData.type,
             description: newBlockData.description || null,
-            priority: undefined, // CreateBlockData doesn't have priority yet
-            tags: undefined, // CreateBlockData doesn't have tags yet
+            priority: newBlockData.priority,
+            tags: newBlockData.tags,
             source: "manual",
             external_id: null,
           };
@@ -131,17 +131,31 @@ export function useCalendarEvents({
           queryKey,
           (old: CalendarEventsResponse | undefined) => {
             if (!old) return old;
+
+            // Find the optimistic block to preserve its client-only fields
+            const optimisticBlock = old.data.find(
+              (e) => e.id === context.tempId,
+            );
+
             return {
               ...old,
               data: old.data.map((event: CalendarEvent) =>
-                event.id === context.tempId ? { ...response.data } : event,
+                event.id === context.tempId
+                  ? {
+                      ...response.data,
+                      // Preserve client-side fields that backend might not return yet
+                      priority: optimisticBlock?.priority,
+                      tags: optimisticBlock?.tags,
+                    }
+                  : event,
               ),
             };
           },
         );
       }
-      // Also invalidate to ensure full sync
-      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
+      // Note: We skip invalidateQueries here to preserve our client-side priority/tags
+      // which would be lost on a fresh fetch until backend supports them.
+      // queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     },
     onError: async (error, _variables, context) => {
       if (context?.previousData) {
@@ -294,6 +308,7 @@ export function useCalendarEvents({
       const createData: CreateBlockData = {
         title: block.title,
         start_time: block.start_time,
+        end_time: block.end_time,
         type: block.type,
         // @ts-ignore - API needs to support these fields
         priority: block.priority,
@@ -474,9 +489,27 @@ export function useCalendarEvents({
 
   const removeBlock = useCallback(
     (blockId: string) => {
+      // Check if this is a temp ID (negative number) - skip API call if so
+      const numericId = Number(blockId);
+      if (!isNaN(numericId) && numericId < 0) {
+        // Temp block - just remove from cache without calling API
+        queryClient.setQueryData<CalendarEventsResponse>(
+          queryKey,
+          (old: CalendarEventsResponse | undefined) => {
+            if (!old) return old;
+            return {
+              ...old,
+              data: old.data.filter(
+                (event: CalendarEvent) => String(event.id) !== blockId,
+              ),
+            };
+          },
+        );
+        return;
+      }
       deleteMutation.mutate(blockId);
     },
-    [deleteMutation],
+    [deleteMutation, queryClient, queryKey],
   );
 
   const syncCalendar = useCallback(() => {

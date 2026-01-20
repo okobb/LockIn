@@ -147,8 +147,9 @@ export function useWeeklyPlanner() {
       const newTask: BacklogTask = {
         id: block.id,
         title: block.title,
-        priority: "medium",
+        priority: block.priority || "medium",
         estimatedMinutes: durationMinutes,
+        tags: block.tags,
       };
       addBacklogTask(newTask);
       removeBlock(block.id);
