@@ -175,6 +175,7 @@ export default function WeeklyPlanner() {
   ) => {
     e.dataTransfer.setData("type", "block");
     e.dataTransfer.setData("id", block.id);
+    e.dataTransfer.setData("title", block.title);
     e.dataTransfer.effectAllowed = "move";
 
     const start = new Date(block.start_time);
@@ -243,10 +244,11 @@ export default function WeeklyPlanner() {
 
     const type = e.dataTransfer.getData("type");
     const id = e.dataTransfer.getData("id");
+    const title = e.dataTransfer.getData("title");
 
     if (type === "block" && id) {
-      console.log("Dropping block back to backlog:", id);
-      returnToBacklog(id);
+      console.log("Dropping block back to backlog:", id, "title:", title);
+      returnToBacklog(id, title);
     }
   };
 

@@ -95,12 +95,13 @@ export function useCalendarEvents({
       const previousData =
         queryClient.getQueryData<CalendarEventsResponse>(queryKey);
 
+      // Use negative ID for temp blocks to match `number` type but distinguish from DB IDs
+      const tempId = -Date.now();
+
       queryClient.setQueryData<CalendarEventsResponse>(
         queryKey,
         (old: CalendarEventsResponse | undefined) => {
           if (!old) return old;
-          // Use negative ID for temp blocks to match `number` type but distinguish from DB IDs
-          const tempId = -Date.now();
           const optimistBlock: CalendarEvent = {
             id: tempId,
             title: newBlockData.title,
@@ -118,9 +119,26 @@ export function useCalendarEvents({
         },
       );
 
-      return { previousData };
+      // Store tempId in context so onSuccess can replace it
+      return { previousData, tempId };
     },
-    onSuccess: () => {
+    onSuccess: (response, _variables, context) => {
+      // Immediately replace the temp ID with the real server ID
+      if (context?.tempId && response.data) {
+        queryClient.setQueryData<CalendarEventsResponse>(
+          queryKey,
+          (old: CalendarEventsResponse | undefined) => {
+            if (!old) return old;
+            return {
+              ...old,
+              data: old.data.map((event: CalendarEvent) =>
+                event.id === context.tempId ? { ...response.data } : event,
+              ),
+            };
+          },
+        );
+      }
+      // Also invalidate to ensure full sync
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     },
     onError: async (error, _variables, context) => {
@@ -133,9 +151,6 @@ export function useCalendarEvents({
         title: "Create Failed",
         message: "Failed to create block. Please try again.",
       });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     },
   });
 

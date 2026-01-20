@@ -118,9 +118,23 @@ export function useWeeklyPlanner() {
   );
 
   const returnToBacklog = useCallback(
-    (blockId: string) => {
-      const block = calendarBlocks.find((b) => b.id === blockId);
-      if (!block) return;
+    (blockId: string, fallbackTitle?: string) => {
+      // Try to find by ID first, then fall back to title match
+      let block = calendarBlocks.find((b) => b.id === blockId);
+
+      // If not found by ID (stale temp ID), try to find by title
+      if (!block && fallbackTitle) {
+        block = calendarBlocks.find((b) => b.title === fallbackTitle);
+        console.log("Block ID not found, matched by title:", block?.id);
+      }
+
+      if (!block) {
+        console.error("Cannot return to backlog: block not found", {
+          blockId,
+          fallbackTitle,
+        });
+        return;
+      }
 
       const start = new Date(block.start_time);
       const end = new Date(block.end_time);
@@ -129,13 +143,13 @@ export function useWeeklyPlanner() {
       );
 
       const newTask: BacklogTask = {
-        id: blockId,
+        id: block.id,
         title: block.title,
         priority: "medium",
         estimatedMinutes: durationMinutes,
       };
       addBacklogTask(newTask);
-      removeBlock(blockId);
+      removeBlock(block.id);
     },
     [calendarBlocks, addBacklogTask, removeBlock],
   );
