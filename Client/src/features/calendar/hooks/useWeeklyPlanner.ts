@@ -110,6 +110,8 @@ export function useWeeklyPlanner() {
         start_time: formatDateWithOffset(startTime),
         end_time: formatDateWithOffset(endTime),
         type: "deep_work",
+        priority: task.priority,
+        tags: task.tags,
       };
 
       addBlock(newBlock);

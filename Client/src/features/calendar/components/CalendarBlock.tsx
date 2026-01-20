@@ -38,7 +38,7 @@ const CalendarBlock = memo(
     return (
       <div
         className={cn(
-          "calendar-block group absolute inset-x-1 rounded-md px-2 py-1.5 cursor-grab overflow-hidden z-10 transition-all duration-200",
+          "calendar-block group absolute inset-x-1 rounded-md px-2 py-1.5 cursor-grab overflow-hidden z-10 transition-all duration-200 border-l-[3px]",
           "hover:z-50! hover:scale-[1.02] hover:shadow-xl hover:ring-1 hover:ring-white/10",
 
           "backdrop-blur-md shadow-sm",
@@ -49,6 +49,12 @@ const CalendarBlock = memo(
             "bg-pink-500/50 border-pink-500/50 hover:bg-pink-500/30",
           blockType === "external" &&
             "bg-amber-500/50 border-amber-500/50 hover:bg-amber-500/30",
+
+          // Priority borders
+          block.priority === "urgent" && "border-l-red-500",
+          block.priority === "high" && "border-l-orange-500",
+          block.priority === "medium" && "border-l-blue-500",
+          block.priority === "low" && "border-l-slate-400",
         )}
         style={style}
         draggable
