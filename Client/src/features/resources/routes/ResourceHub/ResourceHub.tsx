@@ -13,7 +13,7 @@ import { useModal } from "../../../../shared/context/ModalContext";
 
 export const ResourceHub: React.FC = () => {
   const navigate = useNavigate();
-  const { open } = useModal();
+  const { open, confirm } = useModal();
   const [filters, setFilters] = useState<ResourceFilters>({
     status: "all",
     type: "all",
@@ -40,9 +40,10 @@ export const ResourceHub: React.FC = () => {
     if (selectedResourceIds.size === 0) return;
 
     if (
-      !window.confirm(
+      !(await confirm(
+        "Delete Resources",
         `Are you sure you want to delete ${selectedResourceIds.size} resources? This action cannot be undone.`,
-      )
+      ))
     ) {
       return;
     }
@@ -58,7 +59,7 @@ export const ResourceHub: React.FC = () => {
 
       setSelectedResourceIds(new Set());
       open({
-        type: "info",
+        type: "success",
         title: "Resources Deleted",
         message: `Successfully deleted ${successCount} resources.`,
       });

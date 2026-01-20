@@ -78,7 +78,7 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
   const navigate = useNavigate();
   const { activeSession } = useSessionContext();
   const { deleteResource } = useResourceMutations();
-  const { open } = useModal();
+  const { open, confirm } = useModal();
   const activeSessionId = activeSession?.sessionId;
   const [isAdding, setIsAdding] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -88,7 +88,10 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
   const handleDelete = async () => {
     if (
       !resource ||
-      !window.confirm("Are you sure you want to delete this resource?")
+      !(await confirm(
+        "Delete Resource",
+        "Are you sure you want to delete this resource?",
+      ))
     )
       return;
 
@@ -96,7 +99,7 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
       await deleteResource.mutateAsync(resource.id);
       onClose();
       open({
-        type: "info",
+        type: "success",
         title: "Resource Deleted",
         message: "Resource has been successfully deleted.",
       });

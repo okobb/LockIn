@@ -8,7 +8,7 @@ import {
 } from "react";
 import { GlobalModal } from "../components/UI/GlobalModal";
 
-export type ModalType = "info" | "warning" | "error" | "confirm";
+export type ModalType = "info" | "success" | "warning" | "error" | "confirm";
 
 export interface ModalContent {
   type: ModalType;
@@ -53,7 +53,7 @@ export function ModalProvider({ children }: ModalProviderProps) {
       resolverRef.current(result);
       resolverRef.current = null;
     }
-    
+
     setTimeout(() => {
       setModalContent(null);
     }, 200);
@@ -69,7 +69,7 @@ export function ModalProvider({ children }: ModalProviderProps) {
         cancelText: "Cancel",
       });
     },
-    [open]
+    [open],
   );
 
   const handleConfirm = useCallback(() => {

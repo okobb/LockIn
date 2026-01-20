@@ -1,5 +1,12 @@
 import React, { useEffect, useCallback } from "react";
-import { AlertTriangle, Info, AlertCircle, HelpCircle, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Info,
+  AlertCircle,
+  HelpCircle,
+  X,
+  CheckCircle,
+} from "lucide-react";
 import type { ModalType } from "../../context/ModalContext";
 import { cn } from "../../lib/utils";
 import { Button } from "./Button";
@@ -17,6 +24,7 @@ interface GlobalModalProps {
 
 const iconMap: Record<ModalType, React.ReactNode> = {
   info: <Info size={24} />,
+  success: <CheckCircle size={24} />,
   warning: <AlertTriangle size={24} />,
   error: <AlertCircle size={24} />,
   confirm: <HelpCircle size={24} />,
@@ -38,7 +46,7 @@ export function GlobalModal({
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   useEffect(() => {
@@ -58,7 +66,7 @@ export function GlobalModal({
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   if (!isOpen) {
@@ -69,7 +77,7 @@ export function GlobalModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-in fade-in duration-200 backdrop-blur-sm"
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-100 animate-in fade-in duration-200 backdrop-blur-sm"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -90,6 +98,7 @@ export function GlobalModal({
           <div
             className={cn("p-3 rounded-full mb-2", {
               "bg-blue-500/10 text-blue-500": type === "info",
+              "bg-emerald-500/10 text-emerald-500": type === "success",
               "bg-amber-500/10 text-amber-500": type === "warning",
               "bg-red-500/10 text-red-500": type === "error",
               "bg-purple-500/10 text-purple-500": type === "confirm",
