@@ -17,7 +17,7 @@
         "openai-php/client": "^0.18.0",
         "php-open-source-saver/jwt-auth": "^2.8",
         "predis/predis": "^3.3",
-        "smalot/pdfparser": "*"
+        "smalot/pdfparser": "^2.12"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

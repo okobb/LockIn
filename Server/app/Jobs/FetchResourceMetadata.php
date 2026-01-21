@@ -66,13 +66,36 @@ class FetchResourceMetadata implements ShouldQueue
         
         $currentType = $updateData['type'] ?? $this->resource->type;
 
-        // Calculate Time
         $time = null;
         $videoType = defined('RESOURCE_TYPE_VIDEO') ? RESOURCE_TYPE_VIDEO : 'video';
         $articleType = defined('RESOURCE_TYPE_ARTICLE') ? RESOURCE_TYPE_ARTICLE : 'article';
+        
+        $apiTags = [];
 
         if ($currentType === $videoType) {
-            $time = $videoMetadata->getDuration($this->resource->url);
+            $details = $videoMetadata->fetchDetails($this->resource->url);
+            
+            if ($details) {
+                $updateData['title'] = $details['title'];
+                $updateData['summary'] = $details['description'];
+                $updateData['thumbnail_url'] = $details['thumbnail_url'];
+                $time = $details['duration'];
+                
+                if (!empty($details['tags'])) {
+                    $apiTags = $details['tags'];
+                }
+            } else {
+                // Fallback (e.g. Vimeo just gets duration)
+                $time = $videoMetadata->getDuration($this->resource->url);
+            }
+
+            // Transcript logic
+            if (empty($this->resource->content_text) && !isset($updateData['content_text'])) {
+                 $transcript = $videoMetadata->getTranscript($this->resource->url);
+                 if ($transcript) {
+                     $updateData['content_text'] = $transcript;
+                 }
+            }
         } elseif ($currentType === $articleType) {
             // 5 mins default
             $time = 5; 
@@ -82,16 +105,13 @@ class FetchResourceMetadata implements ShouldQueue
             $updateData['estimated_time_minutes'] = $time;
         }
 
-        // Video Transcript Extraction
-        if ($currentType === $videoType && empty($this->resource->content_text) && !isset($updateData['content_text'])) {
-             $transcript = $videoMetadata->getTranscript($this->resource->url);
-             if ($transcript) {
-                 $updateData['content_text'] = $transcript;
-             }
-        }
-
         if (!empty($updateData)) {
+            if (!empty($apiTags) && empty($this->resource->tags)) {
+                $updateData['tags'] = $apiTags;
+            }
+
             $this->resource->update($updateData);
+
             if (isset($updateData['content_text'])) {
                 ProcessResourceEmbedding::dispatch($this->resource);
             }
