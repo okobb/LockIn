@@ -173,6 +173,24 @@ function getIntegrationIcon(iconName: string) {
   }
 }
 
+const getTimezoneLabel = (value: string, label: string) => {
+  if (value === "UTC") return `(GMT+00:00) ${label}`;
+  try {
+    // Get the current offset (e.g., "GMT-5" or "GMT+5:30")
+    // using longOffset for consistency like "GMT-05:00"
+    const offset = new Intl.DateTimeFormat("en-US", {
+      timeZone: value,
+      timeZoneName: "longOffset",
+    })
+      .formatToParts(new Date())
+      .find((part) => part.type === "timeZoneName")?.value;
+
+    return `(${offset}) ${label}`;
+  } catch (error) {
+    return label;
+  }
+};
+
 export default function Settings() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, setAuth } = useAuthContext();
@@ -316,7 +334,7 @@ export default function Settings() {
                     <optgroup key={group.group} label={group.group}>
                       {group.zones.map((tz) => (
                         <option key={tz.value} value={tz.value}>
-                          {tz.label}
+                          {getTimezoneLabel(tz.value, tz.label)}
                         </option>
                       ))}
                     </optgroup>
