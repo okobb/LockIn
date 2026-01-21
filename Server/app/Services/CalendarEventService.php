@@ -23,15 +23,23 @@ final class CalendarEventService extends BaseService
      */
     public function createForUser(int $userId, array $data): CalendarEvent
     {
+        $tags = $data['tags'] ?? [];
+        
+        // Add Manual tag if not present
+        if (!in_array('Manual', $tags)) {
+            $tags[] = 'Manual';
+        }
+
         return $this->create([
             'user_id' => $userId,
+            'source' => $data['source'] ?? 'manual',
             'title' => $data['title'],
             'start_time' => $this->toUtc($data['start_time']),
             'end_time' => $this->toUtc($data['end_time']),
             'type' => $data['type'] ?? 'deep_work',
             'metadata' => array_filter([
                 'description' => $data['description'] ?? null,
-                'tags' => $data['tags'] ?? null,
+                'tags' => $tags,
                 'priority' => $data['priority'] ?? null,
             ], fn($value) => !is_null($value)),
         ]);
@@ -88,7 +96,6 @@ final class CalendarEventService extends BaseService
     {
         $externalId = $googleEvent['id'] ?? null;
 
-        // Inject Google Calendar tag
         $googleEvent['tags'] = ['Google Calendar'];
 
         $startTime = $this->parseGoogleDateTime($googleEvent['start'] ?? []);
@@ -102,6 +109,7 @@ final class CalendarEventService extends BaseService
         if ($externalId === null) {
             return $this->create([
                 'user_id' => $userId,
+                'source' => 'google',
                 'title' => $googleEvent['summary'] ?? 'Untitled Event',
                 'start_time' => $startTimeUtc,
                 'end_time' => $endTimeUtc,
@@ -117,6 +125,7 @@ final class CalendarEventService extends BaseService
 
         if ($existing) {
             $existing->update([
+                'source' => 'google',
                 'title' => $googleEvent['summary'] ?? $existing->title,
                 'start_time' => $startTimeUtc,
                 'end_time' => $endTimeUtc,
@@ -131,6 +140,7 @@ final class CalendarEventService extends BaseService
         return $this->create([
             'user_id' => $userId,
             'external_id' => $externalId,
+            'source' => 'google',
             'title' => $googleEvent['summary'] ?? 'Untitled Event',
             'start_time' => $startTimeUtc,
             'end_time' => $endTimeUtc,

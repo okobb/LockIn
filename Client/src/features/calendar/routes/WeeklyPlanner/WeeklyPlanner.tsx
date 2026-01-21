@@ -21,6 +21,7 @@ import { MoveOvertimeModal } from "../../components/modals/MoveOvertimeModal";
 import { ConnectModal } from "../../../settings/components/ConnectModal";
 import { TaskInput } from "../../../../shared/components/TaskInput";
 import { useModal } from "../../../../shared/context/ModalContext";
+import { useToast } from "../../../../shared/context/ToastContext";
 import { useWeeklyPlanner } from "../../hooks/useWeeklyPlanner";
 import { useIntegrations } from "../../../settings/hooks/useIntegrations";
 import { useAuthContext } from "../../../auth/context/AuthContext";
@@ -42,6 +43,7 @@ export default function WeeklyPlanner() {
   const [connectService, setConnectService] = useState("");
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const modal = useModal();
+  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<
@@ -152,8 +154,9 @@ export default function WeeklyPlanner() {
     });
 
     if (confirmed) {
-      removeBlock(id);
+      await removeBlock(id);
       closeEditModal();
+      toast("success", "Block deleted successfully");
     }
   };
 
@@ -357,7 +360,14 @@ export default function WeeklyPlanner() {
 
               <Button
                 variant="outline"
-                onClick={syncCalendar}
+                onClick={async () => {
+                  try {
+                    await syncCalendar();
+                    toast("success", "Calendar synced successfully");
+                  } catch (error) {
+                    toast("error", "Failed to sync calendar");
+                  }
+                }}
                 disabled={isSyncing}
                 title="Sync with Google Calendar"
               >
@@ -640,7 +650,7 @@ export default function WeeklyPlanner() {
                                 key={tag}
                                 className="text-[10px] px-1.5 py-0.5 bg-secondary text-secondary-foreground rounded border border-border/50"
                               >
-                                #{tag}
+                                {tag}
                               </span>
                             ))}
                           </div>

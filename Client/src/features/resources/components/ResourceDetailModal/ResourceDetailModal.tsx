@@ -21,6 +21,7 @@ import { resourceApi } from "../../api/resourceApi";
 import { useSessionContext } from "../../../focus/context/SessionContext";
 import { useResourceMutations } from "../../hooks/useResources";
 import { useModal } from "../../../../shared/context/ModalContext";
+import { useToast } from "../../../../shared/context/ToastContext";
 
 interface ResourceDetailModalProps {
   resource: Resource | null;
@@ -78,7 +79,8 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
   const navigate = useNavigate();
   const { activeSession } = useSessionContext();
   const { deleteResource } = useResourceMutations();
-  const { open, confirm } = useModal();
+  const { confirm } = useModal();
+  const { toast } = useToast();
   const activeSessionId = activeSession?.sessionId;
   const [isAdding, setIsAdding] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -98,18 +100,10 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
     try {
       await deleteResource.mutateAsync(resource.id);
       onClose();
-      open({
-        type: "success",
-        title: "Resource Deleted",
-        message: "Resource has been successfully deleted.",
-      });
+      toast("success", "Resource deleted successfully");
     } catch (error) {
       console.error("Failed to delete resource", error);
-      open({
-        type: "error",
-        title: "Deletion Failed",
-        message: "Failed to delete resource. Please try again.",
-      });
+      toast("error", "Failed to delete resource. Please try again.");
     }
   };
 
@@ -336,7 +330,7 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
                       key={tag}
                       className="px-3 py-1 bg-white/5 text-zinc-300 rounded-full text-xs border border-white/10"
                     >
-                      #{tag}
+                      {tag}
                     </span>
                   ))}
                 </div>

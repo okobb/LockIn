@@ -94,7 +94,7 @@ const CalendarBlock = memo(
                     key={tag}
                     className="text-[8px] px-1 rounded-sm bg-black/5 dark:bg-white/10 text-foreground/70"
                   >
-                    #{tag}
+                    {tag}
                   </span>
                 ))}
               </div>

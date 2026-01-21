@@ -193,36 +193,12 @@ export function useCalendarEvents({
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => calendar.deleteBlock(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
-
-      const previousData =
-        queryClient.getQueryData<CalendarEventsResponse>(queryKey);
-
-      queryClient.setQueryData<CalendarEventsResponse>(
-        queryKey,
-        (old: CalendarEventsResponse | undefined) => {
-          if (!old) return old;
-          return {
-            ...old,
-            data: old.data.filter(
-              (event: CalendarEvent) => String(event.id) !== id,
-            ),
-          };
-        },
-      );
-
-      return { previousData };
-    },
-    onError: async (error, _id, context) => {
+    onError: async (error) => {
       console.error("Delete block failed:", error);
-      if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData);
-      }
       await modal.open({
         type: "error",
         title: "Delete Failed",
-        message: "Failed to delete block. Changes have been reverted.",
+        message: "Failed to delete block. Please try again.",
       });
     },
     onSuccess: () => {
@@ -488,7 +464,7 @@ export function useCalendarEvents({
   }, [queryClient]);
 
   const removeBlock = useCallback(
-    (blockId: string) => {
+    async (blockId: string) => {
       // Check if this is a temp ID (negative number) - skip API call if so
       const numericId = Number(blockId);
       if (!isNaN(numericId) && numericId < 0) {
@@ -507,7 +483,7 @@ export function useCalendarEvents({
         );
         return;
       }
-      deleteMutation.mutate(blockId);
+      return deleteMutation.mutateAsync(blockId);
     },
     [deleteMutation, queryClient, queryKey],
   );
