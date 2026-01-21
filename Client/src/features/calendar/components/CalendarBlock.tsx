@@ -43,18 +43,19 @@ const CalendarBlock = memo(
 
           "backdrop-blur-md shadow-sm",
 
+          // Block type backgrounds - using semantic colors from palette
           blockType === "deep-work" &&
-            "bg-primary/50 border-primary/50 hover:bg-primary/30",
+            "bg-[hsl(217_91%_60%/0.5)] border-[hsl(217_91%_60%/0.6)] hover:bg-[hsl(217_91%_60%/0.6)]",
           blockType === "meeting" &&
-            "bg-pink-500/50 border-pink-500/50 hover:bg-pink-500/30",
+            "bg-[hsl(0_84%_60%/0.5)] border-[hsl(0_84%_60%/0.6)] hover:bg-[hsl(0_84%_60%/0.6)]",
           blockType === "external" &&
-            "bg-amber-500/50 border-amber-500/50 hover:bg-amber-500/30",
+            "bg-[hsl(38_92%_50%/0.5)] border-[hsl(38_92%_50%/0.6)] hover:bg-[hsl(38_92%_50%/0.6)]",
 
-          // Priority borders
-          block.priority === "urgent" && "border-l-red-500",
-          block.priority === "high" && "border-l-orange-500",
-          block.priority === "medium" && "border-l-blue-500",
-          block.priority === "low" && "border-l-slate-400",
+          // Priority borders - using semantic colors
+          block.priority === "urgent" && "border-l-[hsl(0_84%_60%)]",
+          block.priority === "high" && "border-l-[hsl(38_92%_50%)]",
+          block.priority === "medium" && "border-l-[hsl(217_91%_60%)]",
+          block.priority === "low" && "border-l-[hsl(240_5%_65%)]",
         )}
         style={style}
         draggable
@@ -77,13 +78,13 @@ const CalendarBlock = memo(
                     className={cn(
                       "text-[7px] px-1 py-0.5 rounded uppercase font-bold tracking-wider leading-none",
                       block.priority === "urgent" &&
-                        "bg-red-500/20 text-red-400",
+                        "bg-[hsl(0_84%_60%/0.2)] text-[hsl(0_84%_60%)]",
                       block.priority === "high" &&
-                        "bg-orange-500/20 text-orange-400",
+                        "bg-[hsl(38_92%_50%/0.2)] text-[hsl(38_92%_50%)]",
                       block.priority === "medium" &&
-                        "bg-blue-500/20 text-blue-400",
+                        "bg-[hsl(217_91%_60%/0.2)] text-[hsl(217_91%_60%)]",
                       block.priority === "low" &&
-                        "bg-slate-500/20 text-slate-400",
+                        "bg-[hsl(240_5%_65%/0.2)] text-[hsl(240_5%_65%)]",
                     )}
                   >
                     {block.priority}
@@ -92,7 +93,7 @@ const CalendarBlock = memo(
                 {block.tags?.map((tag) => (
                   <span
                     key={tag}
-                    className="text-[8px] px-1 rounded-sm bg-black/5 dark:bg-white/10 text-foreground/70"
+                    className="text-[8px] px-1 rounded-sm bg-[hsl(217_91%_60%/0.15)] text-[hsl(217_91%_60%)]"
                   >
                     {tag}
                   </span>
