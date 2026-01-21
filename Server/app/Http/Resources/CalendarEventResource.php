@@ -22,8 +22,8 @@ final class CalendarEventResource extends JsonResource
         // Get user timezone, fallback to UTC
         $userTimezone = $request->user()?->timezone ?? 'UTC';
         
-        $startTime = $this->start_time?->copy()->shiftTimezone('UTC')->setTimezone($userTimezone);
-        $endTime = $this->end_time?->copy()->shiftTimezone('UTC')->setTimezone($userTimezone);
+        $startTime = $this->start_time?->copy()->setTimezone($userTimezone);
+        $endTime = $this->end_time?->copy()->setTimezone($userTimezone);
         
         return [
             'id' => $this->id,
@@ -33,6 +33,9 @@ final class CalendarEventResource extends JsonResource
             'end_time' => $endTime?->toIso8601String(),
             'status' => $this->status,
             'type' => $this->type,
+            'priority' => ($this->metadata ?? [])['priority'] ?? null,
+            'tags' => ($this->metadata ?? [])['tags'] ?? [],
+            'description' => ($this->metadata ?? [])['description'] ?? null,
             'auto_save_enabled' => $this->auto_save_enabled,
             'metadata' => $this->when(
                 $request->query('include_metadata') === 'true',

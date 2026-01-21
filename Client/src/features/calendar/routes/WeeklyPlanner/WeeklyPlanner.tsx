@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { isSameDay } from "date-fns";
 import {
   ChevronLeft,
@@ -8,18 +8,23 @@ import {
   GripVertical,
   Clock,
   RefreshCw,
+  Search,
+  MoreVertical,
 } from "lucide-react";
 
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { DayColumn } from "../../components/DayColumn";
 import { CreateBlockModal } from "../../components/modals/CreateBlockModal";
+import { CreateTaskModal } from "../../../tasks/components/CreateTaskModal";
 import { EditBlockModal } from "../../components/modals/EditBlockModal";
 import { MoveOvertimeModal } from "../../components/modals/MoveOvertimeModal";
 import { ConnectModal } from "../../../settings/components/ConnectModal";
 import { TaskInput } from "../../../../shared/components/TaskInput";
 import { useModal } from "../../../../shared/context/ModalContext";
+import { useToast } from "../../../../shared/context/ToastContext";
 import { useWeeklyPlanner } from "../../hooks/useWeeklyPlanner";
 import { useIntegrations } from "../../../settings/hooks/useIntegrations";
+import { useAuthContext } from "../../../auth/context/AuthContext";
 import {
   TIME_SLOTS,
   formatTime,
@@ -32,10 +37,18 @@ import { Button } from "../../../../shared/components/UI/Button";
 import type { CalendarBlock } from "../../types/calendar";
 
 export default function WeeklyPlanner() {
+  const { user } = useAuthContext();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [connectService, setConnectService] = useState("");
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const modal = useModal();
+  const { toast } = useToast();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<
+    "all" | "urgent" | "high" | "medium" | "low"
+  >("all");
 
   const [editBlockModalState, setEditBlockModalState] = useState<{
     isOpen: boolean;
@@ -77,6 +90,25 @@ export default function WeeklyPlanner() {
     isSyncing,
     removeBacklogTask: removeBacklogTaskHook,
   } = useWeeklyPlanner();
+
+  const filteredBacklogTasks = useMemo(() => {
+    return backlogTasks.filter((task) => {
+      // Search filter
+      if (
+        searchQuery &&
+        !task.title.toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
+        return false;
+      }
+
+      // Priority filter
+      if (priorityFilter !== "all" && task.priority !== priorityFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [backlogTasks, searchQuery, priorityFilter]);
 
   const { isConnected, connect } = useIntegrations();
 
@@ -122,8 +154,9 @@ export default function WeeklyPlanner() {
     });
 
     if (confirmed) {
-      removeBlock(id);
+      await removeBlock(id);
       closeEditModal();
+      toast("success", "Block deleted successfully");
     }
   };
 
@@ -175,6 +208,7 @@ export default function WeeklyPlanner() {
   ) => {
     e.dataTransfer.setData("type", "block");
     e.dataTransfer.setData("id", block.id);
+    e.dataTransfer.setData("title", block.title);
     e.dataTransfer.effectAllowed = "move";
 
     const start = new Date(block.start_time);
@@ -243,10 +277,11 @@ export default function WeeklyPlanner() {
 
     const type = e.dataTransfer.getData("type");
     const id = e.dataTransfer.getData("id");
+    const title = e.dataTransfer.getData("title");
 
     if (type === "block" && id) {
-      console.log("Dropping block back to backlog:", id);
-      returnToBacklog(id);
+      console.log("Dropping block back to backlog:", id, "title:", title);
+      returnToBacklog(id, title);
     }
   };
 
@@ -325,7 +360,14 @@ export default function WeeklyPlanner() {
 
               <Button
                 variant="outline"
-                onClick={syncCalendar}
+                onClick={async () => {
+                  try {
+                    await syncCalendar();
+                    toast("success", "Calendar synced successfully");
+                  } catch (error) {
+                    toast("error", "Failed to sync calendar");
+                  }
+                }}
                 disabled={isSyncing}
                 title="Sync with Google Calendar"
               >
@@ -404,7 +446,8 @@ export default function WeeklyPlanner() {
             </div>
 
             <div className="hidden xl:flex items-center px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-md text-xs font-medium">
-              Target: 10h+ Deep Work
+              Target: {Math.round((user?.weekly_goal_min || 3000) / 60)}h+ Deep
+              Work
             </div>
           </div>
         </div>
@@ -523,18 +566,56 @@ export default function WeeklyPlanner() {
 
             {!isBacklogCollapsed && (
               <>
-                <div className="flex-none p-4 text-xs text-muted-foreground border-b border-border/50">
-                  Drag tasks to schedule them
+                <div className="flex-none p-3 space-y-2 border-b border-border/50 bg-muted/20">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search tasks..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-2 py-1.5 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
+                    {(["all", "urgent", "high", "medium", "low"] as const).map(
+                      (p) => (
+                        <button
+                          key={p}
+                          onClick={() => setPriorityFilter(p)}
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] whitespace-nowrap border transition-all",
+                            priorityFilter === p
+                              ? "bg-primary text-primary-foreground border-primary font-medium"
+                              : "bg-background text-muted-foreground border-border hover:border-primary/30",
+                          )}
+                        >
+                          {p.charAt(0).toUpperCase() + p.slice(1)}
+                        </button>
+                      ),
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {backlogTasks.map((task) => (
+                  {filteredBacklogTasks.map((task) => (
                     <div
                       key={task.id}
                       draggable
                       onDragStart={(e) => handleTaskDragStart(e, task)}
                       onDragEnd={handleDragEnd}
-                      className="group flex flex-col gap-2 p-3 bg-card border border-border rounded-lg shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-all hover:shadow-md"
+                      className={cn(
+                        "group flex flex-col gap-2 p-3 bg-card border border-border rounded-lg shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-all hover:shadow-md relative overflow-hidden",
+                        task.priority === "urgent" &&
+                          "border-l-4 border-l-red-500",
+                        task.priority === "high" &&
+                          "border-l-4 border-l-orange-500",
+                        task.priority === "medium" &&
+                          "border-l-4 border-l-blue-500",
+                        task.priority === "low" &&
+                          "border-l-4 border-l-slate-400",
+                      )}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-sm font-medium line-clamp-2 leading-snug">
@@ -543,17 +624,43 @@ export default function WeeklyPlanner() {
                         <GripVertical className="text-muted-foreground w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 shrink-0" />
                       </div>
 
-                      <div className="flex items-center gap-2 mt-1">
-                        {task.priority === "urgent" && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded border border-red-500/20">
-                            Urgent
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        {task.priority && (
+                          <span
+                            className={cn(
+                              "text-[10px] px-1.5 py-0.5 rounded border uppercase font-semibold tracking-wider",
+                              task.priority === "urgent" &&
+                                "bg-red-500/10 text-red-500 border-red-500/20",
+                              task.priority === "high" &&
+                                "bg-orange-500/10 text-orange-500 border-orange-500/20",
+                              task.priority === "medium" &&
+                                "bg-blue-500/10 text-blue-500 border-blue-500/20",
+                              task.priority === "low" &&
+                                "bg-slate-500/10 text-slate-500 border-slate-500/20",
+                            )}
+                          >
+                            {task.priority}
                           </span>
                         )}
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+
+                        {task.tags && task.tags.length > 0 && (
+                          <div className="flex gap-1">
+                            {task.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-[10px] px-1.5 py-0.5 bg-secondary text-secondary-foreground rounded border border-border/50"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
                           <Clock className="w-3 h-3" /> ~
                           {Math.round(task.estimatedMinutes / 60)}h
                         </span>
-                        <div className="flex-1" />
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -582,17 +689,32 @@ export default function WeeklyPlanner() {
                     </div>
                   ))}
 
-                  {backlogTasks.length === 0 && (
+                  {backlogTasks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-muted-foreground bg-secondary/20 rounded-lg border border-dashed border-border/50">
                       <p className="text-xs">Your backlog is simple.</p>
                     </div>
-                  )}
+                  ) : filteredBacklogTasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-muted-foreground bg-secondary/20 rounded-lg border border-dashed border-border/50">
+                      <p className="text-xs">No tasks match your filters.</p>
+                    </div>
+                  ) : null}
 
-                  <div className="pt-2">
-                    <TaskInput
-                      onAddTask={handleAddTask}
-                      placeholder="+ Add Task"
-                    />
+                  <div className="pt-2 flex gap-1">
+                    <div className="flex-1">
+                      <TaskInput
+                        onAddTask={handleAddTask}
+                        placeholder="+ Add Task"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 border-dashed"
+                      onClick={() => setIsCreateTaskModalOpen(true)}
+                      title="More options"
+                    >
+                      <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                   </div>
                 </div>
               </>
@@ -601,12 +723,21 @@ export default function WeeklyPlanner() {
             {!isBacklogCollapsed && isBacklogDragOver && (
               <div className="absolute inset-0 bg-primary/10 border-2 border-primary/30 rounded-xl z-50 flex items-center justify-center pointer-events-none">
                 <span className="bg-background/80 backdrop-blur-md px-3 py-1 rounded-full text-sm font-medium text-primary shadow-sm border border-primary/20">
-                  Drop to Unschedle
+                  Drop to Unschedule
                 </span>
               </div>
             )}
           </div>
         </div>
+
+        <CreateTaskModal
+          isOpen={isCreateTaskModalOpen}
+          onClose={() => setIsCreateTaskModalOpen(false)}
+          onConfirm={(task) => {
+            addBacklogTask(task);
+            setIsCreateTaskModalOpen(false);
+          }}
+        />
 
         <CreateBlockModal
           isOpen={createBlockState.isOpen}

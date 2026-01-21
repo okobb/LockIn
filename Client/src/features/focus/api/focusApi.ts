@@ -1,4 +1,4 @@
-import api from "../../../shared/lib/axios";
+import client from "../../../shared/api/client";
 
 export interface StartSessionParams {
   title: string;
@@ -6,32 +6,30 @@ export interface StartSessionParams {
   duration_min?: number;
 }
 
-export interface FocusSession {
-  id: number;
-  title: string;
-  task_id?: number;
-  context_snapshot?: {
-    browser_state: Array<{ title: string; url: string }>;
-    quality_score?: number;
-    ai_resume_checklist?: Array<{
-      text: string;
-      source: string;
-      is_completed?: boolean;
-    }>;
-    text_note?: string;
+import type { FocusSession } from "../../../shared/types";
+export type { FocusSession };
+
+interface SingleSessionResponse {
+  data: {
+    session: FocusSession;
   };
 }
 
 export const startFocusSession = async (
   params: StartSessionParams,
 ): Promise<FocusSession> => {
-  const response = await api.post("/focus-sessions", params);
-  return response.data.data.session;
+  const data = await client.post<SingleSessionResponse>(
+    "/focus-sessions",
+    params,
+  );
+  return data.data.session;
 };
 
 export const getSession = async (sessionId: number): Promise<FocusSession> => {
-  const response = await api.get(`/focus-sessions/${sessionId}`);
-  return response.data.data.session;
+  const data = await client.get<SingleSessionResponse>(
+    `/focus-sessions/${sessionId}`,
+  );
+  return data.data.session;
 };
 
 export interface GitStatusResponse {
@@ -45,8 +43,10 @@ export interface GitStatusResponse {
 export const getGitStatus = async (
   sessionId: number,
 ): Promise<GitStatusResponse | null> => {
-  const response = await api.get(`/focus-sessions/${sessionId}/git-status`);
-  return response.data.data;
+  const data = await client.get<{ data: GitStatusResponse | null }>(
+    `/focus-sessions/${sessionId}/git-status`,
+  );
+  return data.data;
 };
 
 export interface AskAIResponse {
@@ -59,27 +59,19 @@ export interface AskAIResponse {
 }
 
 export const askAI = async (question: string): Promise<AskAIResponse> => {
-  const response = await api.post("/knowledge/ask", { question });
-  return response.data;
+  return client.post<AskAIResponse>("/knowledge/ask", { question });
 };
 
 export const toggleChecklistItem = async (sessionId: number, index: number) => {
-  const response = await api.patch(
-    `/focus-sessions/${sessionId}/checklist/${index}`,
-  );
-  return response.data;
+  return client.patch(`/focus-sessions/${sessionId}/checklist/${index}`);
 };
 
 export const addToChecklist = async (sessionId: number, text: string) => {
-  const response = await api.post(`/focus-sessions/${sessionId}/checklist`, {
+  return client.post(`/focus-sessions/${sessionId}/checklist`, {
     text,
   });
-  return response.data;
 };
 
 export const generateAIChecklist = async (sessionId: number) => {
-  const response = await api.post(
-    `/focus-sessions/${sessionId}/checklist/generate`,
-  );
-  return response.data;
+  return client.post(`/focus-sessions/${sessionId}/checklist/generate`);
 };

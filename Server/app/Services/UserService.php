@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exceptions\ServiceException;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -80,7 +81,7 @@ final class UserService extends BaseService
     /**
      * Apply filters to the query builder.
      */
-    protected function applyFilters($query, array $filters)
+    protected function applyFilters($query, array $filters): Builder
     {
         if (!empty($filters['email'])) {
             $query->where('email', 'like', '%' . $filters['email'] . '%');
@@ -99,5 +100,14 @@ final class UserService extends BaseService
         }
 
         return $query;
+    }
+
+    /**
+     * Set the weekly flow time goal for a user.
+     */
+    public function setWeeklyGoal(int $userId, int $targetMinutes): void
+    {
+        $user = $this->findOrFail($userId);
+        $user->update(['weekly_goal_min' => $targetMinutes]);
     }
 }

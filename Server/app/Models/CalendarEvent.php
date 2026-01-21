@@ -15,6 +15,7 @@ class CalendarEvent extends Model
     protected $fillable = [
         'user_id',
         'external_id',
+        'source',
         'title',
         'start_time',
         'end_time',
@@ -22,6 +23,7 @@ class CalendarEvent extends Model
         'type',
         'auto_save_enabled',
         'metadata',
+        'is_dismissed',
     ];
 
     /**
@@ -34,6 +36,7 @@ class CalendarEvent extends Model
             'end_time' => 'datetime',
             'auto_save_enabled' => 'boolean',
             'metadata' => 'array',
+            'is_dismissed' => 'boolean',
         ];
     }
 

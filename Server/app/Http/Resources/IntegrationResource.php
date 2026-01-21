@@ -17,6 +17,7 @@ class IntegrationResource extends JsonResource
             'scopes' => $this->scopes,
             'is_active' => $this->is_active,
             'expires_at' => $this->expires_at?->toIso8601String(),
+            'last_synced_at' => $this->last_synced_at?->toIso8601String(),
             'connected_at' => $this->created_at->toIso8601String(),
             'updated_at' => $this->updated_at->toIso8601String(),
         ];

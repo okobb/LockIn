@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { type ResourceFilters } from "../../types";
 import { useResources, useResourceMutations } from "../../hooks/useResources";
 import { ResourceCard } from "../../components/ResourceCard/ResourceCard";
-import { Plus, Search, Loader2, BookOpen, X, Play } from "lucide-react";
+import { Plus, Search, Loader2, BookOpen, X, Play, Trash } from "lucide-react";
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { AddResourceModal } from "../../components/AddResourceModal/AddResourceModal";
 import { ResourceDetailModal } from "../../components/ResourceDetailModal/ResourceDetailModal";
@@ -13,7 +13,7 @@ import { useModal } from "../../../../shared/context/ModalContext";
 
 export const ResourceHub: React.FC = () => {
   const navigate = useNavigate();
-  const { open } = useModal();
+  const { open, confirm } = useModal();
   const [filters, setFilters] = useState<ResourceFilters>({
     status: "all",
     type: "all",
@@ -32,9 +32,46 @@ export const ResourceHub: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data, isLoading } = useResources({ ...filters, search: searchTerm });
-  const { addToSession } = useResourceMutations();
+  const { addToSession, deleteResource } = useResourceMutations();
   const { activeSession } = useSessionContext();
   const resources = data?.data || [];
+
+  const handleBulkDelete = async () => {
+    if (selectedResourceIds.size === 0) return;
+
+    if (
+      !(await confirm(
+        "Delete Resources",
+        `Are you sure you want to delete ${selectedResourceIds.size} resources? This action cannot be undone.`,
+      ))
+    ) {
+      return;
+    }
+
+    let successCount = 0;
+    try {
+      await Promise.all(
+        Array.from(selectedResourceIds).map(async (id) => {
+          await deleteResource.mutateAsync(id);
+          successCount++;
+        }),
+      );
+
+      setSelectedResourceIds(new Set());
+      open({
+        type: "success",
+        title: "Resources Deleted",
+        message: `Successfully deleted ${successCount} resources.`,
+      });
+    } catch (error) {
+      console.error("Failed to delete resources", error);
+      open({
+        type: "error",
+        title: "Error",
+        message: "Failed to delete some resources.",
+      });
+    }
+  };
 
   const toggleSelection = (id: number) => {
     setSelectedResourceIds((prev) => {
@@ -210,6 +247,13 @@ export const ResourceHub: React.FC = () => {
                       <Plus size={12} />
                     )}
                     Add to Active Context
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    className="p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-red-400 transition-colors mr-1"
+                    title="Delete selected"
+                  >
+                    <Trash size={14} />
                   </button>
                   <button
                     onClick={() => setSelectedResourceIds(new Set())}

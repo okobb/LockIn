@@ -16,6 +16,8 @@ class AuthResource extends JsonResource
                 'id' => $this->resource['user']->id,
                 'name' => $this->resource['user']->name,
                 'email' => $this->resource['user']->email,
+                'timezone' => $this->resource['user']->timezone,
+                'weekly_goal_min' => $this->resource['user']->weekly_goal_min,
             ],
             'authorization' => [
                 'token' => $this->resource['token'],

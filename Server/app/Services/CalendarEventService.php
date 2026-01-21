@@ -23,13 +23,25 @@ final class CalendarEventService extends BaseService
      */
     public function createForUser(int $userId, array $data): CalendarEvent
     {
+        $tags = $data['tags'] ?? [];
+        
+        // Add Manual tag if not present
+        if (!in_array('Manual', $tags)) {
+            $tags[] = 'Manual';
+        }
+
         return $this->create([
             'user_id' => $userId,
+            'source' => $data['source'] ?? 'manual',
             'title' => $data['title'],
             'start_time' => $this->toUtc($data['start_time']),
             'end_time' => $this->toUtc($data['end_time']),
             'type' => $data['type'] ?? 'deep_work',
-            'metadata' => isset($data['description']) ? ['description' => $data['description']] : null,
+            'metadata' => array_filter([
+                'description' => $data['description'] ?? null,
+                'tags' => $tags,
+                'priority' => $data['priority'] ?? null,
+            ], fn($value) => !is_null($value)),
         ]);
     }
 
@@ -56,9 +68,19 @@ final class CalendarEventService extends BaseService
             $updateData['type'] = $data['type'];
         }
 
-        if (isset($data['description'])) {
+        if (isset($data['description']) || isset($data['tags']) || isset($data['priority'])) {
             $metadata = $event->metadata ?? [];
-            $metadata['description'] = $data['description'];
+            
+            if (isset($data['description'])) {
+                $metadata['description'] = $data['description'];
+            }
+            if (isset($data['tags'])) {
+                $metadata['tags'] = $data['tags'];
+            }
+            if (isset($data['priority'])) {
+                $metadata['priority'] = $data['priority'];
+            }
+            
             $updateData['metadata'] = $metadata;
         }
 
@@ -74,6 +96,8 @@ final class CalendarEventService extends BaseService
     {
         $externalId = $googleEvent['id'] ?? null;
 
+        $googleEvent['tags'] = ['Google Calendar'];
+
         $startTime = $this->parseGoogleDateTime($googleEvent['start'] ?? []);
         $endTime = $this->parseGoogleDateTime($googleEvent['end'] ?? []);
 
@@ -85,6 +109,7 @@ final class CalendarEventService extends BaseService
         if ($externalId === null) {
             return $this->create([
                 'user_id' => $userId,
+                'source' => 'google',
                 'title' => $googleEvent['summary'] ?? 'Untitled Event',
                 'start_time' => $startTimeUtc,
                 'end_time' => $endTimeUtc,
@@ -100,6 +125,7 @@ final class CalendarEventService extends BaseService
 
         if ($existing) {
             $existing->update([
+                'source' => 'google',
                 'title' => $googleEvent['summary'] ?? $existing->title,
                 'start_time' => $startTimeUtc,
                 'end_time' => $endTimeUtc,
@@ -114,6 +140,7 @@ final class CalendarEventService extends BaseService
         return $this->create([
             'user_id' => $userId,
             'external_id' => $externalId,
+            'source' => 'google',
             'title' => $googleEvent['summary'] ?? 'Untitled Event',
             'start_time' => $startTimeUtc,
             'end_time' => $endTimeUtc,

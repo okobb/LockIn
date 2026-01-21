@@ -7,7 +7,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import type { User } from "../api/auth";
+import { auth, type User } from "../api/auth";
 
 interface AuthState {
   user: User | null;
@@ -15,6 +15,7 @@ interface AuthState {
   isAuthenticated: boolean;
   setAuth: (user: User, token: string) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -37,6 +38,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("user");
       }
     }
+
+    // Refresh user data if we have a token
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      auth
+        .getMe()
+        .then((res) => {
+          const fresh = res.data;
+          setUser(fresh);
+          localStorage.setItem("user", JSON.stringify(fresh));
+        })
+        .catch((err) => {
+          console.error("Background user refresh failed", err);
+        });
+    }
   }, []);
 
   const setAuth = useCallback((newUser: User, newToken: string) => {
@@ -54,6 +70,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("current_focus_session");
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken) return;
+    try {
+      const response = await auth.getMe();
+      const freshUser = response.data;
+      setUser(freshUser);
+      localStorage.setItem("user", JSON.stringify(freshUser));
+    } catch (e) {
+      console.error("Manual refresh user failed", e);
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -61,8 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!token,
       setAuth,
       logout,
+      refreshUser,
     }),
-    [user, token, setAuth, logout],
+    [user, token, setAuth, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

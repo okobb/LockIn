@@ -176,7 +176,6 @@ export default function NewDashboard() {
                       ({priorityTasks.length})
                     </span>
                   </h3>
-
                 </div>
 
                 <div className="grid gap-4">

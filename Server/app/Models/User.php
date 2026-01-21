@@ -27,6 +27,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'preferences',
         'timezone',
         'urgent_keywords',
+        'weekly_goal_min',
     ];
 
     /**
@@ -49,6 +50,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'password' => 'hashed',
             'preferences' => 'array',
             'urgent_keywords' => 'array',
+            'weekly_goal_min' => 'integer',
         ];
     }
 

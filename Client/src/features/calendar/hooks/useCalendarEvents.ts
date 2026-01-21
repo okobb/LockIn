@@ -20,6 +20,7 @@ import {
   formatDateWithOffset,
   CALENDAR_END_HOUR,
 } from "../utils/domain";
+import { useAuthContext } from "../../auth/context/AuthContext";
 
 export interface PendingMoveState {
   blockId: string;
@@ -40,6 +41,7 @@ export function useCalendarEvents({
 }: UseCalendarEventsProps) {
   const queryClient = useQueryClient();
   const modal = useModal();
+  const { user } = useAuthContext();
   const [selectedBlockType, setSelectedBlockType] = useState<
     "deep_work" | "meeting" | "external"
   >("deep_work");
@@ -95,12 +97,13 @@ export function useCalendarEvents({
       const previousData =
         queryClient.getQueryData<CalendarEventsResponse>(queryKey);
 
+      // Use negative ID for temp blocks to match `number` type but distinguish from DB IDs
+      const tempId = -Date.now();
+
       queryClient.setQueryData<CalendarEventsResponse>(
         queryKey,
         (old: CalendarEventsResponse | undefined) => {
           if (!old) return old;
-          // Use negative ID for temp blocks to match `number` type but distinguish from DB IDs
-          const tempId = -Date.now();
           const optimistBlock: CalendarEvent = {
             id: tempId,
             title: newBlockData.title,
@@ -108,6 +111,8 @@ export function useCalendarEvents({
             end_time: newBlockData.end_time,
             type: newBlockData.type,
             description: newBlockData.description || null,
+            priority: newBlockData.priority,
+            tags: newBlockData.tags,
             source: "manual",
             external_id: null,
           };
@@ -118,9 +123,38 @@ export function useCalendarEvents({
         },
       );
 
-      return { previousData };
+      // Store tempId in context so onSuccess can replace it
+      return { previousData, tempId };
     },
-    onSuccess: () => {
+    onSuccess: (response, _variables, context) => {
+      // Immediately replace the temp ID with the real server ID
+      if (context?.tempId && response.data) {
+        queryClient.setQueryData<CalendarEventsResponse>(
+          queryKey,
+          (old: CalendarEventsResponse | undefined) => {
+            if (!old) return old;
+
+            // Find the optimistic block to preserve its client-only fields
+            const optimisticBlock = old.data.find(
+              (e) => e.id === context.tempId,
+            );
+
+            return {
+              ...old,
+              data: old.data.map((event: CalendarEvent) =>
+                event.id === context.tempId
+                  ? {
+                      ...response.data,
+                      // Preserve client-side fields that backend might not return yet
+                      priority: optimisticBlock?.priority,
+                      tags: optimisticBlock?.tags,
+                    }
+                  : event,
+              ),
+            };
+          },
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     },
     onError: async (error, _variables, context) => {
@@ -133,9 +167,6 @@ export function useCalendarEvents({
         title: "Create Failed",
         message: "Failed to create block. Please try again.",
       });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     },
   });
 
@@ -162,36 +193,12 @@ export function useCalendarEvents({
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => calendar.deleteBlock(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
-
-      const previousData =
-        queryClient.getQueryData<CalendarEventsResponse>(queryKey);
-
-      queryClient.setQueryData<CalendarEventsResponse>(
-        queryKey,
-        (old: CalendarEventsResponse | undefined) => {
-          if (!old) return old;
-          return {
-            ...old,
-            data: old.data.filter(
-              (event: CalendarEvent) => String(event.id) !== id,
-            ),
-          };
-        },
-      );
-
-      return { previousData };
-    },
-    onError: async (error, _id, context) => {
+    onError: async (error) => {
       console.error("Delete block failed:", error);
-      if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData);
-      }
       await modal.open({
         type: "error",
         title: "Delete Failed",
-        message: "Failed to delete block. Changes have been reverted.",
+        message: "Failed to delete block. Please try again.",
       });
     },
     onSuccess: () => {
@@ -244,7 +251,7 @@ export function useCalendarEvents({
       }
     });
 
-    const totalWorkMinutes = 3000;
+    const totalWorkMinutes = user?.weekly_goal_min || 3000;
     const scheduledMinutes = deepWorkMinutes + meetingMinutes + externalMinutes;
     const availableMinutes = Math.max(0, totalWorkMinutes - scheduledMinutes);
 
@@ -255,7 +262,7 @@ export function useCalendarEvents({
       availableMinutes,
       targetMet: deepWorkMinutes >= 600,
     };
-  }, [calendarBlocks]);
+  }, [calendarBlocks, user?.weekly_goal_min]);
 
   const getEventsForDay = useCallback(
     (date: Date): CalendarBlock[] => {
@@ -279,6 +286,10 @@ export function useCalendarEvents({
         start_time: block.start_time,
         end_time: block.end_time,
         type: block.type,
+        // @ts-ignore - API needs to support these fields
+        priority: block.priority,
+        // @ts-ignore - API needs to support these fields
+        tags: block.tags,
       };
       createMutation.mutate(createData);
     },
@@ -453,10 +464,28 @@ export function useCalendarEvents({
   }, [queryClient]);
 
   const removeBlock = useCallback(
-    (blockId: string) => {
-      deleteMutation.mutate(blockId);
+    async (blockId: string) => {
+      // Check if this is a temp ID (negative number) - skip API call if so
+      const numericId = Number(blockId);
+      if (!isNaN(numericId) && numericId < 0) {
+        // Temp block - just remove from cache without calling API
+        queryClient.setQueryData<CalendarEventsResponse>(
+          queryKey,
+          (old: CalendarEventsResponse | undefined) => {
+            if (!old) return old;
+            return {
+              ...old,
+              data: old.data.filter(
+                (event: CalendarEvent) => String(event.id) !== blockId,
+              ),
+            };
+          },
+        );
+        return;
+      }
+      return deleteMutation.mutateAsync(blockId);
     },
-    [deleteMutation],
+    [deleteMutation, queryClient, queryKey],
   );
 
   const syncCalendar = useCallback(() => {
