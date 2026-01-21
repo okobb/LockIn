@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
+use Smalot\PdfParser\Parser;
 use ZipArchive;
 
 class DocumentParserService
@@ -26,6 +27,7 @@ class DocumentParserService
             'txt', 'md', 'json', 'csv' => $this->parseText($path),
             'docx' => $this->parseDocx($fullPath),
             'png', 'jpg', 'jpeg', 'webp' => $this->aiService->ocr($fullPath),
+            'pdf' => $this->parsePdf($fullPath),
             default => null,
         };
     }
@@ -53,5 +55,16 @@ class DocumentParserService
         }
 
         return trim($content) ?: null;
+    }
+
+    private function parsePdf(string $filePath): ?string
+    {
+        try {
+            $parser = new Parser();
+            $pdf = $parser->parseFile($filePath);
+            return trim($pdf->getText());
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
