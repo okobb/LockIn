@@ -3,6 +3,10 @@ export interface User {
   name: string;
   email: string;
   timezone: string;
+  preferences?: {
+    calendar_sync_frequency?: "manual" | "daily" | "weekly";
+    [key: string]: any;
+  };
   weekly_goal_min?: number;
   email_verified_at: string | null;
   created_at: string;

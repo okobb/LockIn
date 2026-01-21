@@ -4,6 +4,10 @@ export interface UpdateProfileData {
   name?: string;
   email?: string;
   timezone?: string;
+  preferences?: {
+    calendar_sync_frequency?: "manual" | "daily" | "weekly";
+    [key: string]: any;
+  };
 }
 
 export interface UserResponse {

@@ -438,6 +438,37 @@ export default function Settings() {
               <CardTitle>Focus Mode</CardTitle>
             </CardHeader>
             <CardContent>
+              <SettingRow
+                label="Calendar Sync Frequency"
+                description="How often to automatically sync your calendar"
+              >
+                <select
+                  className="w-full sm:w-auto px-3 py-2 bg-background border border-border rounded-md text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  value={user?.preferences?.calendar_sync_frequency || "manual"}
+                  onChange={(e) => {
+                    if (!user) return;
+                    const newPreferences = {
+                      ...user.preferences,
+                      calendar_sync_frequency: e.target.value as
+                        | "manual"
+                        | "daily"
+                        | "weekly",
+                    };
+                    setAuth(
+                      { ...user, preferences: newPreferences },
+                      localStorage.getItem("token") || "",
+                    );
+                    userApi.updateProfile(user.id, {
+                      preferences: newPreferences,
+                    });
+                  }}
+                >
+                  <option value="manual">Manual (Sync button only)</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </SettingRow>
+
               <SettingRow label="Default Timer Duration">
                 <select
                   className="w-full sm:w-auto px-3 py-2 bg-background border border-border rounded-md text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/50"
