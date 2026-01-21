@@ -87,4 +87,43 @@ class UrlMetadataService
             'type' => $this->detectType($url),
         ];
     }
+
+    public function fetchContent(string $url): ?string
+    {
+        try {
+            /** @var \Illuminate\Http\Client\Response $response */
+            $response = Http::timeout(10)->get($url);
+            
+            if ($response->failed()) {
+                return null;
+            }
+            return $this->extractBodyContent($response->body());
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function extractBodyContent(string $html): string
+    {
+        // Suppress warnings for malformed HTML
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument();
+        // UTF-8 hack
+        $dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($dom);
+
+        // Remove irrelevant nodes
+        $nodesToRemove = $xpath->query('//script | //style | //nav | //footer | //header | //aside | //noscript | //iframe | //svg');
+        foreach ($nodesToRemove as $node) {
+            $node->parentNode->removeChild($node);
+        }
+
+        $content = $dom->textContent;
+
+        // Cleanup whitespace
+        $content = preg_replace('/\s+/', ' ', $content);
+        return trim($content);
+    }
 }

@@ -6,6 +6,7 @@ use App\Models\KnowledgeResource;
 use App\Services\UrlMetadataService;
 use App\Services\VideoMetadataService;
 use App\Services\AIService;
+use App\Jobs\ProcessResourceEmbedding;
 use Illuminate\Bus\Queueable;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -52,6 +53,16 @@ class FetchResourceMetadata implements ShouldQueue
         if ($this->resource->type === 'article' || $this->resource->type === 'website') { 
              if (!empty($metadata['type'])) {
                  $updateData['type'] = $metadata['type'];
+             }
+             
+             // Content Extraction
+             if (empty($this->resource->content_text)) {
+                 $content = $urlMetadata->fetchContent($this->resource->url);
+                 if ($content) {
+                     $updateData['content_text'] = $content;
+                     
+                     ProcessResourceEmbedding::dispatch($this->resource);
+                 }
              }
         }
         
