@@ -23,6 +23,7 @@ import { TaskInput } from "../../../../shared/components/TaskInput";
 import { useModal } from "../../../../shared/context/ModalContext";
 import { useWeeklyPlanner } from "../../hooks/useWeeklyPlanner";
 import { useIntegrations } from "../../../settings/hooks/useIntegrations";
+import { useAuthContext } from "../../../auth/context/AuthContext";
 import {
   TIME_SLOTS,
   formatTime,
@@ -35,6 +36,7 @@ import { Button } from "../../../../shared/components/UI/Button";
 import type { CalendarBlock } from "../../types/calendar";
 
 export default function WeeklyPlanner() {
+  const { user } = useAuthContext();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [connectService, setConnectService] = useState("");
@@ -434,7 +436,8 @@ export default function WeeklyPlanner() {
             </div>
 
             <div className="hidden xl:flex items-center px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-md text-xs font-medium">
-              Target: 10h+ Deep Work
+              Target: {Math.round((user?.weekly_goal_min || 3000) / 60)}h+ Deep
+              Work
             </div>
           </div>
         </div>

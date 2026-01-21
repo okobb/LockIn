@@ -47,4 +47,8 @@ export const auth = {
       "/auth/google/redirect",
     );
   },
+
+  getUser: async (id: number) => {
+    return client.get<{ data: User }>(`/users/${id}`);
+  },
 };

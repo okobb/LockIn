@@ -176,8 +176,6 @@ function getIntegrationIcon(iconName: string) {
 const getTimezoneLabel = (value: string, label: string) => {
   if (value === "UTC") return `(GMT+00:00) ${label}`;
   try {
-    // Get the current offset (e.g., "GMT-5" or "GMT+5:30")
-    // using longOffset for consistency like "GMT-05:00"
     const offset = new Intl.DateTimeFormat("en-US", {
       timeZone: value,
       timeZoneName: "longOffset",

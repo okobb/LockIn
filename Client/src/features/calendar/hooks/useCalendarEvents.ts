@@ -20,6 +20,7 @@ import {
   formatDateWithOffset,
   CALENDAR_END_HOUR,
 } from "../utils/domain";
+import { useAuthContext } from "../../auth/context/AuthContext";
 
 export interface PendingMoveState {
   blockId: string;
@@ -40,6 +41,7 @@ export function useCalendarEvents({
 }: UseCalendarEventsProps) {
   const queryClient = useQueryClient();
   const modal = useModal();
+  const { user } = useAuthContext();
   const [selectedBlockType, setSelectedBlockType] = useState<
     "deep_work" | "meeting" | "external"
   >("deep_work");
@@ -275,7 +277,7 @@ export function useCalendarEvents({
       }
     });
 
-    const totalWorkMinutes = 3000;
+    const totalWorkMinutes = user?.weekly_goal_min || 3000;
     const scheduledMinutes = deepWorkMinutes + meetingMinutes + externalMinutes;
     const availableMinutes = Math.max(0, totalWorkMinutes - scheduledMinutes);
 
@@ -286,7 +288,7 @@ export function useCalendarEvents({
       availableMinutes,
       targetMet: deepWorkMinutes >= 600,
     };
-  }, [calendarBlocks]);
+  }, [calendarBlocks, user?.weekly_goal_min]);
 
   const getEventsForDay = useCallback(
     (date: Date): CalendarBlock[] => {

@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   timezone: string;
+  weekly_goal_min?: number;
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;

@@ -7,7 +7,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import type { User } from "../api/auth";
+import { auth, type User } from "../api/auth";
 
 interface AuthState {
   user: User | null;
@@ -15,6 +15,7 @@ interface AuthState {
   isAuthenticated: boolean;
   setAuth: (user: User, token: string) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -31,7 +32,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+
+        // Refresh valid user data in background
+        if (parsedUser.id) {
+          auth
+            .getUser(parsedUser.id)
+            .then((res) => {
+              const fresh = res.data;
+              setUser(fresh);
+              localStorage.setItem("user", JSON.stringify(fresh));
+            })
+            .catch((err) => {
+              console.error("Background user refresh failed", err);
+            });
+        }
       } catch (e) {
         console.error("Failed to parse user from storage", e);
         localStorage.removeItem("user");
@@ -54,6 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("current_focus_session");
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await auth.getUser(user.id);
+      const freshUser = response.data;
+      setUser(freshUser);
+      localStorage.setItem("user", JSON.stringify(freshUser));
+    } catch (e) {
+      console.error("Manual refresh user failed", e);
+    }
+  }, [user?.id]);
+
   const value = useMemo(
     () => ({
       user,
@@ -61,8 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!token,
       setAuth,
       logout,
+      refreshUser,
     }),
-    [user, token, setAuth, logout],
+    [user, token, setAuth, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
