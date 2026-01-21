@@ -92,7 +92,6 @@ final class GoogleCalendarService
             $syncedEvents->push($event);
         }
     
-        // Update last synced at
         $integration->update(['last_synced_at' => now()]);
 
         return [

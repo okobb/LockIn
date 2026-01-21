@@ -88,6 +88,9 @@ final class CalendarEventService extends BaseService
     {
         $externalId = $googleEvent['id'] ?? null;
 
+        // Inject Google Calendar tag
+        $googleEvent['tags'] = ['Google Calendar'];
+
         $startTime = $this->parseGoogleDateTime($googleEvent['start'] ?? []);
         $endTime = $this->parseGoogleDateTime($googleEvent['end'] ?? []);
 
