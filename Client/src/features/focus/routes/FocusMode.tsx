@@ -376,13 +376,13 @@ export default function FocusMode() {
 
     try {
       const response = await addToChecklist(session.id, newChecklistItem);
-      if (response.success && session) {
+      if ((response as any).success && session) {
         // Sync with server response to get real IDs/state if needed
         setSession((prev) =>
           prev
             ? {
                 ...prev,
-                context_snapshot: response.data.snapshot,
+                context_snapshot: (response as any).data.snapshot,
               }
             : prev,
         );
@@ -403,10 +403,10 @@ export default function FocusMode() {
     setIsGeneratingChecklist(true);
     try {
       const response = await generateAIChecklist(session.id);
-      if (response.success && session) {
+      if ((response as any).success && session) {
         setSession({
           ...session,
-          context_snapshot: response.data.snapshot,
+          context_snapshot: (response as any).data.snapshot,
         });
       }
     } catch (err) {

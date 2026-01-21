@@ -59,5 +59,8 @@ export const useLoginForm = () => {
     handleChange,
     handleSubmit,
     isLoading: login.isPending,
+    // Map existing errors to what Login.tsx expects
+    apiError: errors.general,
+    validationError: errors.email || errors.password,
   };
 };
