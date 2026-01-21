@@ -219,7 +219,7 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
       >
         <div className="flex items-start justify-between px-6 py-6 border-b border-white/5 bg-[#121214]">
           <div className="flex gap-4">
-            <div className="p-3 rounded-xl bg-white/5 text-purple-400 ring-1 ring-white/10 h-fit">
+            <div className="p-3 rounded-xl bg-muted text-primary ring-1 ring-border h-fit">
               <TypeIcon size={24} />
             </div>
             <div className="space-y-1">
@@ -230,7 +230,7 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
                 href={signedUrl || resource.url || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-purple-400 transition-colors w-fit"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors w-fit"
               >
                 {resource.source_domain || "Resource File"}
                 {resource.url && <ExternalLink size={12} />}
@@ -250,7 +250,7 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
             {(isImage || isPDF || isTextFile) && (
               <div className="mb-6 rounded-lg overflow-hidden border border-white/10 bg-[#18181B] min-h-[300px] flex items-center justify-center">
                 {loadingUrl ? (
-                  <Spinner className="animate-spin text-purple-500" size={32} />
+                  <Spinner className="animate-spin text-primary" size={32} />
                 ) : signedUrl ? (
                   <>
                     {isImage && (
@@ -375,10 +375,10 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
               onClick={handleAction}
               disabled={isAdding}
               className={cn(
-                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-medium transition-all shadow-lg shadow-purple-900/20",
+                "btn",
                 activeSessionId
-                  ? "bg-emerald-600 hover:bg-emerald-500"
-                  : "bg-purple-600 hover:bg-purple-500",
+                  ? "bg-success hover:bg-success/90 text-success-foreground"
+                  : "btn-primary",
               )}
             >
               {isAdding ? (

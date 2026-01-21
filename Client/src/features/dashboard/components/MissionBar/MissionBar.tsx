@@ -93,7 +93,7 @@ export default function MissionBar() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto" ref={containerRef}>
+    <div className="w-full" ref={containerRef}>
       <div className="flex items-center gap-3">
         <div
           className={cn(

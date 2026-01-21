@@ -8,38 +8,38 @@
 
 @layer base {
   :root {
-    /* === COLOR PALETTE (Pale Lavender / Solid Light) === */
-    /* Canvas - Background: Very subtle lavender tint */
-    --background: 280 30% 98%;
+    /* === COLOR PALETTE (Clean Zinc Light Mode) === */
+    /* Canvas - Background: Clean off-white with slight warmth */
+    --background: 0 0% 98%;
 
     /* Surface - Card, Popover: Pure White */
     --card: 0 0% 100%;
     --popover: 0 0% 100%;
-    --secondary: 280 20% 96%;
+    --secondary: 240 5% 96%;
 
-    /* Border - Border, Input: Subtle purple-grey */
-    --border: 280 20% 90%;
-    --input: 280 20% 90%;
+    /* Border - Border, Input: Zinc gray */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
 
     /* Muted - Muted: Secondary backgrounds */
-    --muted: 280 20% 96%;
-    --muted-foreground: 270 10% 45%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    /* Text - Foreground: Deep Purple-Black */
-    --foreground: 280 50% 5%;
-    --card-foreground: 280 50% 5%;
-    --popover-foreground: 280 50% 5%;
-    --secondary-foreground: 280 50% 5%;
+    /* Text - Foreground: Near black */
+    --foreground: 240 10% 4%;
+    --card-foreground: 240 10% 4%;
+    --popover-foreground: 240 10% 4%;
+    --secondary-foreground: 240 10% 4%;
 
-    /* Accent (#9302d6) - Primary: Electric Purple */
-    --primary: 281 98% 42%;
-    --primary-light: 281 100% 63%; /* Lighter purple for gradients */
+    /* Primary: Blue #3b82f6 (from mockups) */
+    --primary: 217 91% 60%;
+    --primary-light: 213 94% 68%;
     --primary-foreground: 0 0% 100%;
-    --ring: 281 98% 42%;
+    --ring: 217 91% 60%;
 
     /* Accent - Interactive states */
-    --accent: 280 30% 94%;
-    --accent-foreground: 280 50% 5%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 10% 4%;
 
     /* Destructive - Error states */
     --destructive: 0 84% 60%;
@@ -61,44 +61,45 @@
     --touch-min: 44px;
 
     /* === TYPOGRAPHY === */
-    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      Roboto, sans-serif;
+    --font-sans:
+      system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
     --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
   }
 
   .dark {
-    /* === COLOR PALETTE (Deep Purple Void) === */
-    /* Canvas - Background: Deepest Violet (Rich, not Grey) */
-    --background: 280 50% 5%;
+    /* === COLOR PALETTE (True Zinc Dark Mode - matching mockups) === */
+    /* Canvas - Background: Zinc-950 #09090b */
+    --background: 240 10% 4%;
 
-    /* Surface - Card, Popover: Solid Purple-Black */
-    --card: 280 35% 14%;
-    --popover: 280 35% 14%;
-    --secondary: 280 35% 19%;
+    /* Surface - Card, Popover: Zinc-900 #131316 */
+    --card: 240 6% 8%;
+    --popover: 240 6% 8%;
+    --secondary: 240 4% 11%;
 
-    /* Border - Border, Input: Deep Purple Lines */
-    --border: 280 30% 20%;
-    --input: 280 30% 20%;
+    /* Border - Border, Input: Zinc borders #1f1f23 / #27272a */
+    --border: 240 4% 14%;
+    --input: 240 4% 14%;
 
     /* Muted - Muted: Secondary backgrounds */
-    --muted: 280 30% 15%;
-    --muted-foreground: 270 20% 70%;
+    --muted: 240 4% 10%;
+    --muted-foreground: 240 5% 65%;
 
-    /* Text - Foreground: Off-white */
-    --foreground: 0 0% 100%;
-    --card-foreground: 0 0% 100%;
-    --popover-foreground: 0 0% 100%;
-    --secondary-foreground: 0 0% 100%;
+    /* Text - Foreground: Zinc-50 #fafafa */
+    --foreground: 0 0% 98%;
+    --card-foreground: 0 0% 98%;
+    --popover-foreground: 0 0% 98%;
+    --secondary-foreground: 240 5% 91%;
 
-    /* Primary remains the same Electric Purple */
-    --primary: 281 98% 42%;
-    --primary-light: 281 100% 63%;
+    /* Primary: Blue #3b82f6 (from mockups) */
+    --primary: 217 91% 60%;
+    --primary-light: 199 89% 48%;
     --primary-foreground: 0 0% 100%;
-    --ring: 281 98% 42%;
+    --ring: 217 91% 60%;
 
     /* Accent - Interactive states */
-    --accent: 280 40% 20%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 240 4% 11%;
+    --accent-foreground: 0 0% 98%;
 
     /* Semantic */
     --destructive: 0 84% 60%;
