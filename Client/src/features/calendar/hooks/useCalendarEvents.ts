@@ -155,9 +155,7 @@ export function useCalendarEvents({
           },
         );
       }
-      // Note: We skip invalidateQueries here to preserve our client-side priority/tags
-      // which would be lost on a fresh fetch until backend supports them.
-      // queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     },
     onError: async (error, _variables, context) => {
       if (context?.previousData) {

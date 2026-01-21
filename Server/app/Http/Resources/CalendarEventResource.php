@@ -33,6 +33,9 @@ final class CalendarEventResource extends JsonResource
             'end_time' => $endTime?->toIso8601String(),
             'status' => $this->status,
             'type' => $this->type,
+            'priority' => ($this->metadata ?? [])['priority'] ?? null,
+            'tags' => ($this->metadata ?? [])['tags'] ?? [],
+            'description' => ($this->metadata ?? [])['description'] ?? null,
             'auto_save_enabled' => $this->auto_save_enabled,
             'metadata' => $this->when(
                 $request->query('include_metadata') === 'true',

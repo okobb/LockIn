@@ -29,7 +29,11 @@ final class CalendarEventService extends BaseService
             'start_time' => $this->toUtc($data['start_time']),
             'end_time' => $this->toUtc($data['end_time']),
             'type' => $data['type'] ?? 'deep_work',
-            'metadata' => isset($data['description']) ? ['description' => $data['description']] : null,
+            'metadata' => array_filter([
+                'description' => $data['description'] ?? null,
+                'tags' => $data['tags'] ?? null,
+                'priority' => $data['priority'] ?? null,
+            ], fn($value) => !is_null($value)),
         ]);
     }
 
@@ -56,9 +60,19 @@ final class CalendarEventService extends BaseService
             $updateData['type'] = $data['type'];
         }
 
-        if (isset($data['description'])) {
+        if (isset($data['description']) || isset($data['tags']) || isset($data['priority'])) {
             $metadata = $event->metadata ?? [];
-            $metadata['description'] = $data['description'];
+            
+            if (isset($data['description'])) {
+                $metadata['description'] = $data['description'];
+            }
+            if (isset($data['tags'])) {
+                $metadata['tags'] = $data['tags'];
+            }
+            if (isset($data['priority'])) {
+                $metadata['priority'] = $data['priority'];
+            }
+            
             $updateData['metadata'] = $metadata;
         }
 
