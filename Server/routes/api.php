@@ -38,6 +38,7 @@ Route::get('integrations/callback/{provider}', [IntegrationController::class, 'c
 
 // Protected Routes
 Route::middleware('auth:api')->group(function () {
+    Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('email/resend', [AuthController::class, 'resendVerification'])
         ->middleware(['throttle:6,1']) // Limit to 6 requests per minute

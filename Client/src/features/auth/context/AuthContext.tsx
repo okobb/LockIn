@@ -32,26 +32,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-
-        // Refresh valid user data in background
-        if (parsedUser.id) {
-          auth
-            .getUser(parsedUser.id)
-            .then((res) => {
-              const fresh = res.data;
-              setUser(fresh);
-              localStorage.setItem("user", JSON.stringify(fresh));
-            })
-            .catch((err) => {
-              console.error("Background user refresh failed", err);
-            });
-        }
+        setUser(JSON.parse(storedUser));
       } catch (e) {
         console.error("Failed to parse user from storage", e);
         localStorage.removeItem("user");
       }
+    }
+
+    // Refresh user data if we have a token
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      auth
+        .getMe()
+        .then((res) => {
+          const fresh = res.data;
+          setUser(fresh);
+          localStorage.setItem("user", JSON.stringify(fresh));
+        })
+        .catch((err) => {
+          console.error("Background user refresh failed", err);
+        });
     }
   }, []);
 
@@ -71,16 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    if (!user?.id) return;
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken) return;
     try {
-      const response = await auth.getUser(user.id);
+      const response = await auth.getMe();
       const freshUser = response.data;
       setUser(freshUser);
       localStorage.setItem("user", JSON.stringify(freshUser));
     } catch (e) {
       console.error("Manual refresh user failed", e);
     }
-  }, [user?.id]);
+  }, []);
 
   const value = useMemo(
     () => ({

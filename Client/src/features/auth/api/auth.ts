@@ -51,4 +51,8 @@ export const auth = {
   getUser: async (id: number) => {
     return client.get<{ data: User }>(`/users/${id}`);
   },
+
+  getMe: async () => {
+    return client.get<{ data: User }>("/auth/me");
+  },
 };
