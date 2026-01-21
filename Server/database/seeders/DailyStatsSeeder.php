@@ -15,12 +15,12 @@ class DailyStatsSeeder extends Seeder
     public function run(): void
     {
         // Get the first user or create one
-        $user = User::first();
+        $user = User::query()->where('email', 'okobrosli2@gmail.com')->first();
         
         if (!$user) {
             $user = User::factory()->create([
-                'name' => 'Test User',
-                'email' => 'test@example.com',
+                'name' => 'Omar Kobrosli',
+                'email' => 'okobrosli2@gmail.com',
             ]);
         }
 
@@ -28,7 +28,7 @@ class DailyStatsSeeder extends Seeder
         $startOfWeek = now()->startOfWeek();
         $endOfWeek = now()->endOfWeek();
         
-        DailyStat::where('user_id', $user->id)
+        DailyStat::query()->where('user_id', $user->id)
             ->whereBetween('date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
             ->delete();
 

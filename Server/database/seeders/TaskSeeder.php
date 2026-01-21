@@ -11,12 +11,12 @@ class TaskSeeder extends Seeder
 {
     public function run()
     {
-        $user = User::first();
+        $user = User::query()->where('email', 'okobrosli2@gmail.com')->first();
         
         if (!$user) {
             $user = User::factory()->create([
-                'name' => 'Test User',
-                'email' => 'test@example.com',
+                'name' => 'Omar Kobrosli',
+                'email' => 'okobrosli2@gmail.com',
             ]);
         }
 
@@ -60,7 +60,7 @@ class TaskSeeder extends Seeder
                 'description' => 'Clean up technical debt',
                 'priority' => 4,
                 'status' => 'done',
-                'completed_at' => Carbon::parse('2024-03-20 14:30:00'),
+                'completed_at' => now()->subDays(2),
                 'estimated_minutes' => 90,
             ]
         ];
