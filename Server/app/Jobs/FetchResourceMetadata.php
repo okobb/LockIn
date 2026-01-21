@@ -60,8 +60,6 @@ class FetchResourceMetadata implements ShouldQueue
                  $content = $urlMetadata->fetchContent($this->resource->url);
                  if ($content) {
                      $updateData['content_text'] = $content;
-                     
-                     ProcessResourceEmbedding::dispatch($this->resource);
                  }
              }
         }
@@ -84,8 +82,19 @@ class FetchResourceMetadata implements ShouldQueue
             $updateData['estimated_time_minutes'] = $time;
         }
 
+        // Video Transcript Extraction
+        if ($currentType === $videoType && empty($this->resource->content_text) && !isset($updateData['content_text'])) {
+             $transcript = $videoMetadata->getTranscript($this->resource->url);
+             if ($transcript) {
+                 $updateData['content_text'] = $transcript;
+             }
+        }
+
         if (!empty($updateData)) {
             $this->resource->update($updateData);
+            if (isset($updateData['content_text'])) {
+                ProcessResourceEmbedding::dispatch($this->resource);
+            }
         }
 
         // Refresh model to get latest data from above update

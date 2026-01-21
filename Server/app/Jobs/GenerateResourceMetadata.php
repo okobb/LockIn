@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\KnowledgeResource;
 use App\Services\AIService;
+use App\Services\DocumentParserService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -19,7 +20,10 @@ class GenerateResourceMetadata implements ShouldQueue
         public KnowledgeResource $resource
     ) {}
 
-    public function handle(AIService $aiService): void
+    public function handle(
+        AIService $aiService,
+        DocumentParserService $documentParser
+    ): void
     {
         // Skip if we already have detailed metadata or if resource is invalid
         if ($this->resource->summary && !empty($this->resource->tags)) {
@@ -28,13 +32,14 @@ class GenerateResourceMetadata implements ShouldQueue
 
         $content = '';
         if ($this->resource->file_path && Storage::disk('public')->exists($this->resource->file_path)) {
-            $extension = pathinfo($this->resource->file_path, PATHINFO_EXTENSION);
-            if (in_array(strtolower($extension), ['pdf', 'doc', 'docx', 'txt', 'md'])) {
-                if (in_array(strtolower($extension), ['txt', 'md'])) {
-                   $content = Storage::disk('public')->get($this->resource->file_path);
-                } else {
-                    $content = "File: " . $this->resource->title . " (Content extraction not implemented for this type yet)";
-                }
+            $content = $documentParser->parse($this->resource->file_path) ?? '';
+            
+            if (empty($content)) {
+                 $extension = pathinfo($this->resource->file_path, PATHINFO_EXTENSION);
+                 $content = "File: " . $this->resource->title . " (Content extraction not supported for .{$extension})";
+            } else {
+                $this->resource->update(['content_text' => $content]);
+                ProcessResourceEmbedding::dispatch($this->resource);
             }
         } elseif ($this->resource->url) {
             $content = $this->resource->content_text ?? "URL: " . $this->resource->url;

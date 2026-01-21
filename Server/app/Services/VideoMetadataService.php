@@ -87,6 +87,65 @@ class VideoMetadataService
         return $matches[1] ?? null;
     }
 
+    public function getTranscript(string $url): ?string
+    {
+        if (!Str::contains($url, ['youtube.com', 'youtu.be'])) {
+            return null;
+        }
+
+        $videoId = $this->extractYouTubeId($url);
+        if (!$videoId) return null;
+
+        return Cache::remember("youtube_transcript_{$videoId}", now()->addDays(7), function () use ($videoId) {
+            try {
+                $response = Http::withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept-Language' => 'en-US,en;q=0.9',
+                ])->get("https://www.youtube.com/watch?v={$videoId}");
+                
+                if ($response->failed()) return null;
+
+                $html = $response->body();
+                
+                // Extract player response
+                if (!preg_match('/ytInitialPlayerResponse\s*=\s*({.+?});/s', $html, $matches)) {
+                    return null;
+                }
+
+                $json = json_decode($matches[1], true);
+                $captionTracks = $json['captions']['playerCaptionsTracklistRenderer']['captionTracks'] ?? [];
+
+                if (empty($captionTracks)) return null;
+
+                // Prefer English, then first available
+                $trackUrl = $captionTracks[0]['baseUrl'];
+                foreach ($captionTracks as $track) {
+                    if (str_contains($track['languageCode'] ?? '', 'en')) {
+                        $trackUrl = $track['baseUrl'];
+                        break;
+                    }
+                }
+
+                // Fetch transcript XML
+                $transcriptResponse = Http::get($trackUrl);
+                if ($transcriptResponse->failed()) return null;
+
+                $xml = simplexml_load_string($transcriptResponse->body());
+                if (!$xml) return null;
+
+                $text = [];
+                foreach ($xml->text as $line) {
+                    $text[] = html_entity_decode((string)$line);
+                }
+
+                return implode(' ', $text);
+
+            } catch (\Exception $e) {
+                return null;
+            }
+        });
+    }
+
     private function parseIsoDuration(string $iso): int
     {
         try {
