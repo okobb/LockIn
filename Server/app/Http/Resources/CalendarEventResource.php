@@ -20,10 +20,11 @@ final class CalendarEventResource extends JsonResource
     public function toArray(Request $request): array
     {
         // Get user timezone, fallback to UTC
+        // Times are stored in UTC, so we just convert to user's timezone for display
         $userTimezone = $request->user()?->timezone ?? 'UTC';
         
-        $startTime = $this->start_time?->copy()->shiftTimezone('UTC')->setTimezone($userTimezone);
-        $endTime = $this->end_time?->copy()->shiftTimezone('UTC')->setTimezone($userTimezone);
+        $startTime = $this->start_time?->copy()->setTimezone($userTimezone);
+        $endTime = $this->end_time?->copy()->setTimezone($userTimezone);
         
         return [
             'id' => $this->id,

@@ -31,30 +31,105 @@ const TIMEZONE_OPTIONS = [
       { value: "America/Chicago", label: "Central Time (US & Canada)" },
       { value: "America/Denver", label: "Mountain Time (US & Canada)" },
       { value: "America/Los_Angeles", label: "Pacific Time (US & Canada)" },
+      { value: "America/Anchorage", label: "Alaska" },
+      { value: "Pacific/Honolulu", label: "Hawaii" },
+      { value: "America/Toronto", label: "Toronto" },
+      { value: "America/Vancouver", label: "Vancouver" },
+      { value: "America/Mexico_City", label: "Mexico City" },
+      { value: "America/Bogota", label: "Bogotá" },
+      { value: "America/Lima", label: "Lima" },
+      { value: "America/Santiago", label: "Santiago" },
+      { value: "America/Buenos_Aires", label: "Buenos Aires" },
       { value: "America/Sao_Paulo", label: "São Paulo" },
     ],
   },
   {
     group: "Europe",
     zones: [
-      { value: "Europe/London", label: "London" },
+      { value: "Europe/London", label: "London (GMT/BST)" },
+      { value: "Europe/Dublin", label: "Dublin" },
       { value: "Europe/Paris", label: "Paris" },
       { value: "Europe/Berlin", label: "Berlin" },
+      { value: "Europe/Amsterdam", label: "Amsterdam" },
+      { value: "Europe/Brussels", label: "Brussels" },
+      { value: "Europe/Madrid", label: "Madrid" },
+      { value: "Europe/Rome", label: "Rome" },
+      { value: "Europe/Zurich", label: "Zurich" },
+      { value: "Europe/Vienna", label: "Vienna" },
+      { value: "Europe/Prague", label: "Prague" },
+      { value: "Europe/Warsaw", label: "Warsaw" },
+      { value: "Europe/Stockholm", label: "Stockholm" },
+      { value: "Europe/Helsinki", label: "Helsinki" },
+      { value: "Europe/Athens", label: "Athens" },
       { value: "Europe/Bucharest", label: "Bucharest" },
+      { value: "Europe/Kyiv", label: "Kyiv" },
       { value: "Europe/Moscow", label: "Moscow" },
+      { value: "Europe/Istanbul", label: "Istanbul" },
     ],
   },
   {
-    group: "Asia & Pacific",
+    group: "Africa",
     zones: [
-      { value: "Asia/Dubai", label: "Dubai" },
-      { value: "Asia/Kolkata", label: "Mumbai, Kolkata" },
-      { value: "Asia/Singapore", label: "Singapore" },
-      { value: "Asia/Tokyo", label: "Tokyo" },
-      { value: "Australia/Sydney", label: "Sydney" },
+      { value: "Africa/Cairo", label: "Cairo" },
+      { value: "Africa/Casablanca", label: "Casablanca" },
+      { value: "Africa/Lagos", label: "Lagos" },
+      { value: "Africa/Johannesburg", label: "Johannesburg" },
+      { value: "Africa/Nairobi", label: "Nairobi" },
+      { value: "Africa/Algiers", label: "Algiers" },
+      { value: "Africa/Accra", label: "Accra" },
     ],
   },
-  { group: "Other", zones: [{ value: "UTC", label: "UTC" }] },
+  {
+    group: "Middle East",
+    zones: [
+      { value: "Asia/Jerusalem", label: "Jerusalem" },
+      { value: "Asia/Beirut", label: "Beirut" },
+      { value: "Asia/Riyadh", label: "Riyadh" },
+      { value: "Asia/Dubai", label: "Dubai" },
+      { value: "Asia/Qatar", label: "Qatar" },
+      { value: "Asia/Kuwait", label: "Kuwait" },
+      { value: "Asia/Tehran", label: "Tehran" },
+    ],
+  },
+  {
+    group: "Asia",
+    zones: [
+      { value: "Asia/Kolkata", label: "Mumbai, Kolkata, New Delhi" },
+      { value: "Asia/Dhaka", label: "Dhaka" },
+      { value: "Asia/Kathmandu", label: "Kathmandu" },
+      { value: "Asia/Karachi", label: "Karachi" },
+      { value: "Asia/Tashkent", label: "Tashkent" },
+      { value: "Asia/Almaty", label: "Almaty" },
+      { value: "Asia/Bangkok", label: "Bangkok" },
+      { value: "Asia/Ho_Chi_Minh", label: "Ho Chi Minh City" },
+      { value: "Asia/Jakarta", label: "Jakarta" },
+      { value: "Asia/Singapore", label: "Singapore" },
+      { value: "Asia/Kuala_Lumpur", label: "Kuala Lumpur" },
+      { value: "Asia/Manila", label: "Manila" },
+      { value: "Asia/Hong_Kong", label: "Hong Kong" },
+      { value: "Asia/Taipei", label: "Taipei" },
+      { value: "Asia/Shanghai", label: "Beijing, Shanghai" },
+      { value: "Asia/Seoul", label: "Seoul" },
+      { value: "Asia/Tokyo", label: "Tokyo" },
+    ],
+  },
+  {
+    group: "Australia & Pacific",
+    zones: [
+      { value: "Australia/Perth", label: "Perth" },
+      { value: "Australia/Adelaide", label: "Adelaide" },
+      { value: "Australia/Brisbane", label: "Brisbane" },
+      { value: "Australia/Sydney", label: "Sydney" },
+      { value: "Australia/Melbourne", label: "Melbourne" },
+      { value: "Pacific/Auckland", label: "Auckland" },
+      { value: "Pacific/Fiji", label: "Fiji" },
+      { value: "Pacific/Guam", label: "Guam" },
+    ],
+  },
+  {
+    group: "Other",
+    zones: [{ value: "UTC", label: "UTC (Coordinated Universal Time)" }],
+  },
 ];
 
 const GitHubIcon = () => (
@@ -148,7 +223,7 @@ export default function Settings() {
       });
       setAuth(
         { ...user, timezone: response.data.timezone },
-        localStorage.getItem("token") || ""
+        localStorage.getItem("token") || "",
       );
     } catch (error) {
       console.error("Failed to save timezone:", error);
@@ -172,7 +247,7 @@ export default function Settings() {
     <div
       className={cn(
         "flex flex-col sm:flex-row justify-between sm:items-center py-4 border-t border-border first:border-0 first:pt-0 gap-4 sm:gap-0",
-        className
+        className,
       )}
     >
       <div className="flex-1 pr-4">
@@ -269,7 +344,7 @@ export default function Settings() {
                   {availableIntegrations.map((config) => {
                     const connected = isConnected(
                       config.provider,
-                      config.service
+                      config.service,
                     );
                     const integration = getIntegration(config.provider);
                     const isProcessingDisconnect =
@@ -381,7 +456,7 @@ export default function Settings() {
                             ×
                           </button>
                         </span>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
