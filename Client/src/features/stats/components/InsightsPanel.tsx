@@ -33,7 +33,7 @@ export function InsightsPanel({ insights }: InsightsPanelProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="flex flex-col md:flex-row gap-4 w-full">
       {insights.map((insight, index) => {
         const Icon = iconMap[insight.icon] || TrendingUp;
 
@@ -51,7 +51,7 @@ export function InsightsPanel({ insights }: InsightsPanelProps) {
           <div
             key={index}
             className={cn(
-              "flex items-start gap-4 p-4 rounded-xl border bg-card/50 transition-all hover:bg-card hover:shadow-sm",
+              "flex-1 flex items-start gap-4 p-4 rounded-xl border bg-card/50 transition-all hover:bg-card hover:shadow-sm min-w-0",
               "border-border/50",
             )}
           >
@@ -70,11 +70,11 @@ export function InsightsPanel({ insights }: InsightsPanelProps) {
             >
               <Icon className="w-5 h-5" />
             </div>
-            <div>
-              <h4 className="font-semibold text-foreground bg-linear-to-r from-foreground to-foreground/70 bg-clip-text">
+            <div className="min-w-0">
+              <h4 className="font-semibold text-foreground bg-linear-to-r from-foreground to-foreground/70 bg-clip-text truncate">
                 {insight.title}
               </h4>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">
                 {insight.description}
               </p>
             </div>
