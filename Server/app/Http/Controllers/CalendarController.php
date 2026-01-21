@@ -98,6 +98,12 @@ final class CalendarController extends BaseController
             return $this->forbiddenResponse('You do not own this calendar event');
         }
 
+        // If it's an external event, don't delete it, just mark as dismissed
+        if ($event->external_id) {
+            $event->update(['is_dismissed' => true]);
+            return $this->successResponse(null, 'Event dismissed successfully');
+        }
+
         $this->calendarEventService->delete($event->id);
 
         return $this->successResponse(null, 'Event deleted successfully');

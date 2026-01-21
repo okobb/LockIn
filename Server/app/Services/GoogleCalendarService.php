@@ -71,7 +71,23 @@ final class GoogleCalendarService
         }
 
         $syncedEvents = collect();
+    
+        // Get all dismissed external IDs for this user
+        $dismissedExternalIds = CalendarEvent::query()
+            ->where('user_id', $userId)
+            ->where('is_dismissed', true)
+            ->whereNotNull('external_id')
+            ->pluck('external_id')
+            ->toArray();
+
         foreach ($googleEvents as $googleEvent) {
+            $externalId = $googleEvent['id'] ?? null;
+
+            // Skip if this event ID is in our dismissed list
+            if ($externalId && in_array($externalId, $dismissedExternalIds)) {
+                continue;
+            }
+
             $event = $this->calendarEventService->upsertFromGoogle($userId, $googleEvent);
             $syncedEvents->push($event);
         }

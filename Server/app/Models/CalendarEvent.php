@@ -22,6 +22,7 @@ class CalendarEvent extends Model
         'type',
         'auto_save_enabled',
         'metadata',
+        'is_dismissed',
     ];
 
     /**
@@ -34,6 +35,7 @@ class CalendarEvent extends Model
             'end_time' => 'datetime',
             'auto_save_enabled' => 'boolean',
             'metadata' => 'array',
+            'is_dismissed' => 'boolean',
         ];
     }
 

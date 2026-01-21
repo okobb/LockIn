@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import type { BacklogTask, CalendarBlock } from "../types/calendar";
 import { useCalendarNavigation } from "./useCalendarNavigation";
 import { useCalendarEvents } from "./useCalendarEvents";
 import { useTaskBacklog } from "../../tasks/hooks/useTaskBacklog";
-import { useIntegrations } from "../../settings/hooks/useIntegrations";
 import { useModal } from "../../../shared/context/ModalContext";
 import {
   WORK_END_HOUR,
@@ -57,16 +56,6 @@ export function useWeeklyPlanner() {
     syncCalendar,
   } = useCalendarEvents({ weekStart, weekEnd });
 
-  const { isConnected } = useIntegrations();
-  const hasSyncedRef = useRef(false);
-
-  // Auto-sync on mount if connected (only once)
-  useEffect(() => {
-    if (isConnected("google", "calendar") && !hasSyncedRef.current) {
-      hasSyncedRef.current = true;
-      syncCalendar();
-    }
-  }, [isConnected, syncCalendar]);
 
   const handleTaskDrop = useCallback(
     async (taskId: string, date: Date, hour: number) => {
