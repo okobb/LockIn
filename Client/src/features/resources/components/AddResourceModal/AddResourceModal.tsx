@@ -114,7 +114,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                   placeholder="https://..."
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="w-full bg-[#18181B] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
                 />
               </div>
             ) : (
@@ -140,7 +140,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-[#18181B] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
               />
             </div>
 
@@ -153,7 +153,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 placeholder="React, Design..."
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-                className="w-full bg-[#18181B] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
               />
             </div>
 
@@ -164,7 +164,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-                className="w-full bg-[#18181B] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 appearance-none"
+                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 appearance-none"
               >
                 <option value="">Select Level...</option>
                 <option value="beginner">Beginner</option>
@@ -183,7 +183,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
               placeholder="Add some context..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-[#18181B] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
+              className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 resize-none"
             />
           </div>
 
@@ -202,7 +202,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 (activeTab === "link" && !url) ||
                 (activeTab === "file" && !file)
               }
-              className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-purple-900/20"
+              className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createResource.isPending ? (
                 <>

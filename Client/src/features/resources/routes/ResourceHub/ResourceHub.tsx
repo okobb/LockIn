@@ -216,7 +216,7 @@ export const ResourceHub: React.FC = () => {
         <div className="sticky top-0 z-30 bg-[#0A0A0B]/80 backdrop-blur-md border-b border-white/5 px-8 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-semibold text-foreground">
                 Resource Hub
               </h1>
               <p className="text-sm text-zinc-400">
@@ -239,7 +239,7 @@ export const ResourceHub: React.FC = () => {
                   <button
                     onClick={handleBulkAddToSession}
                     disabled={!activeSession || isAddingToSession}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 rounded-lg text-xs font-medium border border-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-medium border border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isAddingToSession ? (
                       <Loader2 size={12} className="animate-spin" />
@@ -266,7 +266,7 @@ export const ResourceHub: React.FC = () => {
               )}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-all shadow-lg shadow-purple-900/20 cursor-pointer"
+                className="btn btn-primary"
               >
                 <Plus size={18} />
                 <span>Add Resource</span>
@@ -287,7 +287,7 @@ export const ResourceHub: React.FC = () => {
                 placeholder="Search resources..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#18181B] border border-white/5 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all text-zinc-200 placeholder:text-zinc-600"
+                className="w-full bg-secondary border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/50 transition-all text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
@@ -296,7 +296,7 @@ export const ResourceHub: React.FC = () => {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, type: e.target.value as any }))
               }
-              className="bg-[#18181B] border border-white/5 rounded-lg px-4 py-2.5 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all cursor-pointer min-w-[150px]"
+              className="bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring/50 transition-all cursor-pointer min-w-[150px]"
             >
               <option value="all">All Types</option>
               <option value="article">Article</option>
@@ -310,7 +310,7 @@ export const ResourceHub: React.FC = () => {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, difficulty: e.target.value as any }))
               }
-              className="bg-[#18181B] border border-white/5 rounded-lg px-4 py-2.5 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all cursor-pointer min-w-[150px]"
+              className="bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring/50 transition-all cursor-pointer min-w-[150px]"
             >
               <option value="all">All Difficulties</option>
               <option value="beginner">Beginner</option>
@@ -321,7 +321,7 @@ export const ResourceHub: React.FC = () => {
 
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="animate-spin text-purple-500" size={32} />
+              <Loader2 className="animate-spin text-primary" size={32} />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -348,7 +348,7 @@ export const ResourceHub: React.FC = () => {
                         difficulty: "all",
                       })
                     }
-                    className="text-purple-400 text-sm mt-2 hover:underline cursor-pointer"
+                    className="text-primary text-sm mt-2 hover:underline cursor-pointer"
                   >
                     Clear filters
                   </button>

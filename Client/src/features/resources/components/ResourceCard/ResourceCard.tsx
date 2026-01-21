@@ -91,8 +91,8 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
       className={cn(
         "group relative flex flex-col p-4 rounded-xl border transition-all duration-300 backdrop-blur-sm select-none",
         selected
-          ? "bg-purple-500/10 border-purple-500/50"
-          : "bg-[#121214]/50 border-white/5 hover:bg-[#121214] hover:border-white/10",
+          ? "bg-primary/10 border-primary/50"
+          : "bg-card/50 border-border hover:bg-card hover:border-border/80",
         isProcessing && "opacity-75 cursor-wait",
       )}
     >
@@ -104,14 +104,14 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
               className={cn(
                 "w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors mr-1",
                 selected
-                  ? "bg-purple-500 border-purple-500"
-                  : "border-zinc-600 hover:border-zinc-400 bg-transparent",
+                  ? "bg-primary border-primary"
+                  : "border-muted-foreground/50 hover:border-muted-foreground bg-transparent",
               )}
             >
               {selected && <Check size={12} className="text-white" />}
             </div>
           )}
-          <div className="p-2 rounded-lg bg-white/5 text-purple-400 ring-1 ring-white/10">
+          <div className="p-2 rounded-lg bg-muted text-primary ring-1 ring-border">
             <TypeIcon size={16} />
           </div>
           {resource.difficulty && (
@@ -125,7 +125,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             </span>
           )}
           {isProcessing && (
-            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-purple-400 bg-purple-400/10 border-purple-400/20">
+            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/20">
               <Loader2 size={10} className="animate-spin" />
               Processing
             </span>
@@ -147,7 +147,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         </button>
       </div>
 
-      <h3 className="text-sm font-medium text-zinc-100 mb-1 line-clamp-2 group-hover:text-purple-400 transition-colors">
+      <h3 className="text-sm font-medium text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors">
         {resource.title}
       </h3>
 
@@ -182,7 +182,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
               "w-2 h-2 rounded-full ring-2 ring-offset-2 ring-offset-[#121214] transition-all",
               resource.is_read
                 ? "bg-emerald-500 ring-emerald-500/20"
-                : "bg-zinc-700 ring-zinc-700/20 hover:bg-purple-500",
+                : "bg-muted-foreground/50 ring-muted-foreground/20 hover:bg-primary",
             )}
             title={resource.is_read ? "Mark as unread" : "Mark as read"}
           />
