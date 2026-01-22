@@ -78,3 +78,35 @@ func trainFromCSV(filepath string) error {
 	return nil
 }
 
+// Logic to handle incoming web requests
+func handleClassify(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req ClassificationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	words := strings.Fields(strings.ToLower(req.Message))
+	scores, _, _ := classifier.LogScores(words)
+	probs, _, _ := classifier.ProbScores(words)
+
+	isImportant := scores[0] > scores[1]
+	
+	resp := ClassificationResponse{
+		IsImportant: isImportant,
+		Confidence:  probs[0],
+		Tag:         string(ClassImportant),
+	}
+	if !isImportant {
+		resp.Tag = string(ClassNoise)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
