@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Traits\CachesData;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
 
 class ResourceHubService
 {
@@ -223,7 +224,7 @@ class ResourceHubService
                     default => null,
                 };
             }
-
+            
             return $query->paginate(20);
         });
     }
