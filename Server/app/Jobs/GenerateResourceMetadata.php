@@ -11,6 +11,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class GenerateResourceMetadata implements ShouldQueue
 {
@@ -52,7 +53,7 @@ class GenerateResourceMetadata implements ShouldQueue
         $metadata = $aiService->generateResourceMetadata($content, $this->resource->type);
 
         $this->resource->update([
-            'title' => $this->resource->title === $this->resource->url ? ($metadata['title'] ?? $this->resource->title) : $this->resource->title,
+            'title' => $this->resource->title === $this->resource->url ? Str::limit($metadata['title'] ?? $this->resource->title, 250, '') : $this->resource->title,
             'summary' => $metadata['summary'] ?? null,
             'difficulty' => $metadata['difficulty'] ?? 'beginner',
             'tags' => $metadata['tags'] ?? [],

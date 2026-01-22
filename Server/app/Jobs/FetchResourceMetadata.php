@@ -8,12 +8,12 @@ use App\Services\VideoMetadataService;
 use App\Services\AIService;
 use App\Jobs\ProcessResourceEmbedding;
 use Illuminate\Bus\Queueable;
-
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class FetchResourceMetadata implements ShouldQueue
 {
@@ -34,7 +34,7 @@ class FetchResourceMetadata implements ShouldQueue
         $updateData = [];
 
         if ($this->resource->title === $this->resource->url && !empty($metadata['title'])) {
-            $updateData['title'] = $metadata['title'];
+            $updateData['title'] = Str::limit($metadata['title'], 250, '');
         }
 
         if (empty($this->resource->summary) && !empty($metadata['description'])) {
@@ -76,7 +76,7 @@ class FetchResourceMetadata implements ShouldQueue
             $details = $videoMetadata->fetchDetails($this->resource->url);
             
             if ($details) {
-                $updateData['title'] = $details['title'];
+                $updateData['title'] = Str::limit($details['title'], 250, '');
                 $updateData['summary'] = $details['description'];
                 $updateData['thumbnail_url'] = $details['thumbnail_url'];
                 $time = $details['duration'];
