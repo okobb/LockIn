@@ -71,6 +71,9 @@ class ResourceHubService
             $jobs[] = new GenerateResourceTitle($resource);
         }
 
+        // Generate AI metadata (tags, difficulty, summary)
+        $jobs[] = new GenerateResourceMetadata($resource);
+        
         $jobs[] = new ProcessResourceEmbedding($resource);
 
         \Illuminate\Support\Facades\Bus::chain($jobs)->dispatch();

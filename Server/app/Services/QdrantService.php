@@ -12,14 +12,14 @@ class QdrantService
 {
     private Client $client;
     private string $baseUrl;
-    private string $apiKey;
+    private ?string $apiKey;
     private string $collectionName;
 
     public function __construct()
     {
-        $this->baseUrl = config('services.qdrant.host', env('QDRANT_URL', 'http://localhost:6333'));
-        $this->apiKey = config('services.qdrant.key', env('QDRANT_API_KEY', ''));
-        $this->collectionName = config('services.qdrant.collection', env('QDRANT_COLLECTION', 'knowledge_chunks'));
+        $this->baseUrl = config('services.qdrant.host') ?? env('QDRANT_URL', 'http://localhost:6333');
+        $this->apiKey = config('services.qdrant.key') ?? env('QDRANT_API_KEY');
+        $this->collectionName = config('services.qdrant.collection') ?? env('QDRANT_COLLECTION', 'knowledge_chunks');
 
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
