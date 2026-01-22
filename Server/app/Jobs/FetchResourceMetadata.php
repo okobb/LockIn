@@ -6,6 +6,7 @@ use App\Models\KnowledgeResource;
 use App\Services\UrlMetadataService;
 use App\Services\VideoMetadataService;
 use App\Services\AIService;
+use App\Jobs\ProcessResourceEmbedding;
 use Illuminate\Bus\Queueable;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -53,17 +54,48 @@ class FetchResourceMetadata implements ShouldQueue
              if (!empty($metadata['type'])) {
                  $updateData['type'] = $metadata['type'];
              }
+             
+             // Content Extraction
+             if (empty($this->resource->content_text)) {
+                 $content = $urlMetadata->fetchContent($this->resource->url);
+                 if ($content) {
+                     $updateData['content_text'] = $content;
+                 }
+             }
         }
         
         $currentType = $updateData['type'] ?? $this->resource->type;
 
-        // Calculate Time
         $time = null;
         $videoType = defined('RESOURCE_TYPE_VIDEO') ? RESOURCE_TYPE_VIDEO : 'video';
         $articleType = defined('RESOURCE_TYPE_ARTICLE') ? RESOURCE_TYPE_ARTICLE : 'article';
+        
+        $apiTags = [];
 
         if ($currentType === $videoType) {
-            $time = $videoMetadata->getDuration($this->resource->url);
+            $details = $videoMetadata->fetchDetails($this->resource->url);
+            
+            if ($details) {
+                $updateData['title'] = $details['title'];
+                $updateData['summary'] = $details['description'];
+                $updateData['thumbnail_url'] = $details['thumbnail_url'];
+                $time = $details['duration'];
+                
+                if (!empty($details['tags'])) {
+                    $apiTags = $details['tags'];
+                }
+            } else {
+                // Fallback (e.g. Vimeo just gets duration)
+                $time = $videoMetadata->getDuration($this->resource->url);
+            }
+
+            // Transcript logic
+            if (empty($this->resource->content_text) && !isset($updateData['content_text'])) {
+                 $transcript = $videoMetadata->getTranscript($this->resource->url);
+                 if ($transcript) {
+                     $updateData['content_text'] = $transcript;
+                 }
+            }
         } elseif ($currentType === $articleType) {
             // 5 mins default
             $time = 5; 
@@ -74,7 +106,15 @@ class FetchResourceMetadata implements ShouldQueue
         }
 
         if (!empty($updateData)) {
+            if (!empty($apiTags) && empty($this->resource->tags)) {
+                $updateData['tags'] = $apiTags;
+            }
+
             $this->resource->update($updateData);
+
+            if (isset($updateData['content_text'])) {
+                ProcessResourceEmbedding::dispatch($this->resource);
+            }
         }
 
         // Refresh model to get latest data from above update

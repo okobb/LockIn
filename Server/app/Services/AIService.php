@@ -119,4 +119,32 @@ class AIService
 
         return $this->getJson($messages, ['temperature' => 0.3]);
     }
+
+    /**
+     * Perform OCR on an image using GPT-4o.
+     */
+    public function ocr(string $path): string
+    {
+        $imageUrl = $path;
+        
+        // If local file, encode to base64
+        if (file_exists($path)) {
+            $data = file_get_contents($path);
+            $type = pathinfo($path, PATHINFO_EXTENSION);
+            $base64 = base64_encode($data);
+            $imageUrl = "data:image/{$type};base64,{$base64}";
+        }
+
+        $messages = [
+            [
+                'role' => 'user',
+                'content' => [
+                    ['type' => 'text', 'text' => 'Transcribe all text from this image exactly as it appears. If there is no text, return empty string.'],
+                    ['type' => 'image_url', 'image_url' => ['url' => $imageUrl]],
+                ],
+            ],
+        ];
+
+        return trim($this->chat($messages, ['model' => 'gpt-4o', 'max_tokens' => 4000]));
+    }
 }
