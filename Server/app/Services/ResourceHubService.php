@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Traits\CachesData;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
 
 class ResourceHubService
 {
@@ -71,6 +72,9 @@ class ResourceHubService
             $jobs[] = new GenerateResourceTitle($resource);
         }
 
+        // Generate AI metadata (tags, difficulty, summary)
+        $jobs[] = new GenerateResourceMetadata($resource);
+        
         $jobs[] = new ProcessResourceEmbedding($resource);
 
         \Illuminate\Support\Facades\Bus::chain($jobs)->dispatch();
@@ -220,7 +224,7 @@ class ResourceHubService
                     default => null,
                 };
             }
-
+            
             return $query->paginate(20);
         });
     }
