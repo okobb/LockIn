@@ -61,7 +61,6 @@ jobs:
       #  run: php artisan test
 
   build-and-push:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
