@@ -488,8 +488,8 @@ export function useCalendarEvents({
     [deleteMutation, queryClient, queryKey],
   );
 
-  const syncCalendar = useCallback(() => {
-    syncMutation.mutate();
+  const syncCalendar = useCallback(async () => {
+    return syncMutation.mutateAsync();
   }, [syncMutation]);
 
   return {
