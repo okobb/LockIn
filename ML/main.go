@@ -43,3 +43,38 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+func trainFromCSV(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return err
+	}
+
+	classifier = bayesian.NewClassifier(ClassImportant, ClassNoise)
+
+	for i, record := range records {
+		if i == 0 {
+			continue 
+		}
+
+		text := strings.ToLower(record[0])
+		label := record[1]
+
+		words := strings.Fields(text)
+
+		if label == "Important" {
+			classifier.Learn(words, ClassImportant)
+		} else {
+			classifier.Learn(words, ClassNoise)
+		}
+	}
+
+	return nil
+}
+
