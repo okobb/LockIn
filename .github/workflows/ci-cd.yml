@@ -114,6 +114,6 @@ jobs:
           key: ${{ secrets.KEY }}
           script: |
             cd /var/www/LockIn
-            docker-compose pull
-            docker-compose up -d --remove-orphans
-            docker-compose exec -T laravel php artisan migrate --force
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker compose exec -T laravel php artisan migrate --force
