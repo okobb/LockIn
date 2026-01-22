@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 
 class ClassificationController extends BaseController
 {
+    public function __construct(
+        private readonly \App\Services\ClassificationService $classificationService
+    ) {}
+
     /**
      * Classify a message as Important or Noise.
      */
@@ -18,9 +22,12 @@ class ClassificationController extends BaseController
             'message' => 'required|string|max:2000',
         ]);
 
-        return $this->successResponse([
-            'message' => $validated['message'],
-            'status'  => 'pending_classification',
-        ], 'Message received for classification');
+        $result = $this->classificationService->classify($validated['message']);
+
+        if (!$result) {
+            return $this->errorResponse('Failed to classify message. Service may be unavailable.', 503);
+        }
+
+        return $this->successResponse($result, 'Classification successful');
     }
 }
