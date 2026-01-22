@@ -158,6 +158,7 @@ final class CalendarEventService extends BaseService
     public function getUpcomingForUser(int $userId, int $days = 7): Collection
     {
         return CalendarEvent::query()->where('user_id', $userId)
+            ->where('is_dismissed', false)
             ->where('start_time', '>=', now())
             ->where('start_time', '<=', now()->addDays($days))
             ->orderBy('start_time')
@@ -172,6 +173,7 @@ final class CalendarEventService extends BaseService
     public function getInRangeForUser(int $userId, string $start, string $end): Collection
     {
         return CalendarEvent::query()->where('user_id', $userId)
+            ->where('is_dismissed', false)
             ->where('start_time', '<=', $end)
             ->where('end_time', '>=', $start)
             ->orderBy('start_time')
@@ -186,6 +188,7 @@ final class CalendarEventService extends BaseService
     public function getTodayForUser(int $userId): Collection
     {
         return CalendarEvent::query()->where('user_id', $userId)
+            ->where('is_dismissed', false)
             ->whereDate('start_time', today())
             ->orderBy('start_time')
             ->get();
