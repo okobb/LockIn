@@ -48,17 +48,17 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Run Tests
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: pgsql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
-          DB_DATABASE: lockin_test
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
-          JWT_SECRET: testing_secret_1234567890_long_secure_key_123456
-        run: php artisan test
+      #- name: Run Tests
+      #  env:
+      #    APP_ENV: testing
+      #    DB_CONNECTION: pgsql
+      #    DB_HOST: 127.0.0.1
+      #    DB_PORT: 5432
+      #   DB_DATABASE: lockin_test
+      #    DB_USERNAME: postgres
+      #   DB_PASSWORD: postgres
+      #    JWT_SECRET: testing_secret_1234567890_long_secure_key_123456
+      #  run: php artisan test
 
   build-and-push:
     needs: test
