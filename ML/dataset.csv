@@ -236,3 +236,44 @@ text,label
 "Im going to restart the server manually",Noise
 "API is returning empty responses",Important
 "I made a typo in the variable name",Noise
+"Urgent meeting with the team about the outage",Important
+"Emergency meeting scheduled for production incident",Important
+"Critical stakeholder meeting about security breach",Important
+"Urgent: need everyone in the war room now",Important
+"Urgent fix required for checkout flow",Important
+"Urgent: client data exposed, need immediate action",Important
+"Urgent PR review needed before deploy",Important
+"Meeting to discuss weekend plans",Noise
+"Team lunch meeting at noon",Noise
+"Casual meeting to brainstorm ideas",Noise
+"Sync meeting pushed to tomorrow",Noise
+"ASAP: fix the broken pipeline",Important
+"ASAP: customer cannot complete signup",Important
+"High priority: resolve billing discrepancy",Important
+"Priority 1: authentication service down",Important
+"Blocker: cannot merge to main branch",Important
+"Blocker: tests failing on CI",Important
+"Action required: SSL cert expiring tonight",Important
+"Action required: approve deployment to prod",Important
+"FYI: updated the README",Noise
+"FYI: new coffee machine in kitchen",Noise
+"Heads up: office closed Monday",Noise
+"Reminder: submit expense reports",Noise
+"Team outing next Friday!",Noise
+"Who wants to join for yoga?",Noise
+"Great job on the release!",Noise
+"Welcome to the new intern!",Noise
+"Immediate attention: memory leak in production",Important
+"Immediate: rollback needed for last deploy",Important
+"Critical bug in payment processing",Important
+"Major incident: API gateway unresponsive",Important
+"Severity 1: complete service outage",Important
+"P0: customers seeing blank pages",Important
+"Anyone free for a quick call?",Noise
+"Let me know when you have a sec",Noise
+"No rush but can you review this?",Noise
+"When you get a chance, check the docs",Noise
+"Low priority: update the changelog",Noise
+"Minor: typo in the footer",Noise
+"Quick question about the design",Noise
+"Just curious, what stack do you use?",Noise

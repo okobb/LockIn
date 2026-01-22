@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ClassificationController;
 use App\Http\Controllers\ContextSnapshotController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationController;
@@ -115,7 +116,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('stats/insights', [StatsController::class, 'insights'])->name('stats.insights');
 
     // ML Classification
-    Route::post('classify', [\App\Http\Controllers\ClassificationController::class, 'classify'])->name('classify');
+    Route::post('classify', [ClassificationController::class, 'classify'])->name('classify');
 });
 
 // Public Signed Routes
