@@ -1,0 +1,238 @@
+text,label
+"CRITICAL: Production database is locked again",Important
+"Anyone want to grab sushi for lunch?",Noise
+"AWS EC2 instance i-0348 is unresponsive",Important
+"Did you see the game last night?",Noise
+"Client A is reporting a 500 error on the checkout page",Important
+"Happy birthday to Sarah in HR!",Noise
+"Laravel migration failed on staging",Important
+"Is the coffee machine broken again?",Noise
+"Deploy to production failed: rollback initiated",Important
+"I'll be AFK for 30 mins walking the dog",Noise
+"React build failing due to dependency conflict",Important
+"Hey does anyone have a spare charger?",Noise
+"Urgent: API latency is over 5 seconds",Important
+"Thinking of learning React this weekend, any tips?",Noise
+"Server disk space usage at 98%",Important
+"Who is up for drinks after work?",Noise
+"Security alert: unusual login detected on root account",Important
+"My brain is throwing a 500 error today lol",Noise
+"Please review PR #402 immediately, hotfix",Important
+"What time is the all-hands meeting?",Noise
+"ELB health checks are failing for the main app",Important
+"I love how Laravel handles routing, it's so clean",Noise
+"Client says they can't login, getting 403",Important
+"Did you catch that typo in the readme?",Noise
+"Redis connection timed out",Important
+"Ordering pizza, who wants in?",Noise
+"SSL certificate expires in 2 hours",Important
+"Just pushed a fix for the typo",Noise
+"The AWS bill is huge this month, yikes",Noise
+"Memory leak detected in the worker node",Important
+"I need a vacation ASAP",Noise
+"Kubernetes pod stuck in CrashLoopBackOff",Important
+"Has anyone seen my blue mug?",Noise
+"Database replication lag is increasing",Important
+"Good morning everyone!",Noise
+"Fatal error in the payment gateway integration",Important
+"Are we still on for the 2pm sync?",Noise
+"Nginx is down on load balancer 2",Important
+"Wow that React documentary was cool",Noise
+"Client B cannot upload files, server error",Important
+"Should we deploy the party poppers for the launch?",Noise
+"S3 bucket permissions are too open, fix ASAP",Important
+"Can someone let me in? Forgot my badge",Noise
+"Backend service is unreachable",Important
+"Is it Friday yet?",Noise
+"Root partition full on db-01",Important
+"Did you see the new AWS feature announced?",Noise
+"High error rate detected in the logs",Important
+"Going to grab a coffee, back in 10",Noise
+"DNS resolution failing for internal services",Important
+"I wish I could deploy a fix for my sleep schedule",Noise
+"Jenkins build #55 failed",Important
+"Anyone playing video games tonight?",Noise
+"User reports session dropping randomly",Important
+"Nice job on the presentation!",Noise
+"React component rendering blank page on mobile",Important
+"Is the AC set to arctic mode?",Noise
+"Critical vulnerability found in package.json",Important
+"Lunch?",Noise
+"500 Internal Server Error on the landing page",Important
+"Lol that meme is hilarious",Noise
+"Staging environment is down",Important
+"Can you share the Zoom link?",Noise
+"API rate limit exceeded for key client",Important
+"Running late, traffic is terrible",Noise
+"Transaction logs are filling up fast",Important
+"How was your weekend?",Noise
+"Automated backup failed to complete",Important
+"I'm going to learn AWS certification next month",Noise
+"Firewall blocking legitimate traffic from EU",Important
+"Do we have any snacks left in the kitchen?",Noise
+"Latency spike in the US-East region",Important
+"Just saw a dog outside the office, so cute",Noise
+"Unable to SSH into the bastion host",Important
+"What's for lunch today?",Noise
+"Database deadlocks detected",Important
+"Can you review my code when you have a sec?",Noise
+"New Relic alerting on high CPU usage",Important
+"Happy hour at 5?",Noise
+"Payment webhook failing with 400 bad request",Important
+"I'm so tired of these AWS ads",Noise
+"Elasticsearch cluster status is red",Important
+"Anyone want to play ping pong?",Noise
+"Cron job didn't run last night",Important
+"Is the wifi slow for anyone else?",Noise
+"Customer data not syncing to CRM",Important
+"Heading out early today, see ya",Noise
+"Script error causing infinite loop",Important
+"Did you watch the new marvel movie?",Noise
+"Docker container exited with code 137",Important
+"I need to restart my computer, brb",Noise
+"Production build is broken",Important
+"Nice weather today",Noise
+"Segfault in the image processing module",Important
+"Where are the meeting notes?",Noise
+"Load average is critical on app server",Important
+"I think I left my jacket in the meeting room",Noise
+"SQL injection attempt blocked",Important
+"Congrats on the engagement!",Noise
+"Frontend not connecting to backend socket",Important
+"Can I borrow a pen?",Noise
+"Exception thrown in main thread",Important
+"Does anyone have gum?",Noise
+"NullPointerException in the billing service",Important
+"Are we doing secret santa this year?",Noise
+"API Gateway throwing 502 Bad Gateway",Important
+"My cat stepped on my keyboard",Noise
+"Verify the checksum for the new release",Important
+"Don't forget to submit your timesheets",Noise
+"Cluster autoscaler failing to launch nodes",Important
+"I am building a fortress of sparkling water cans",Noise
+"Data corruption in the user table",Important
+"Does this font look okay to you?",Noise
+"DDOS attack suspected on port 80",Important
+"Running to the store, need anything?",Noise
+"Environment variables missing in production",Important
+"Happy Monday!",Noise
+"Kafka consumer lag is growing",Important
+"Who baked these cookies? They are amazing",Noise
+"System requires manual reboot",Important
+"Looking for a gym buddy",Noise
+"Patch pending for zero-day vulnerability",Important
+"Can we reschedule the standup?",Noise
+"Filesystem read-only error",Important
+"I have a dentist appointment at 3",Noise
+"Worker process terminated unexpectedly",Important
+"Did you see the news?",Noise
+"Invalid API token usage spike",Important
+"Thinking of buying a new monitor",Noise
+"Timeout waiting for lock",Important
+"Is anyone using the whiteboard?",Noise
+"Heap memory out of space",Important
+"Let's grab a beer later",Noise
+"Service discovery failed",Important
+"My headphones just died",Noise
+"Queue depth critical",Important
+"Check out this funny video",Noise
+"Unable to mount EBS volume",Important
+"Is there any cake left?",Noise
+"Application crashing on startup",Important
+"Drafting the fantasy football league",Noise
+"Token expired for service account",Important
+"I need more coffee",Noise
+"Master node is down",Important
+"Working from home tomorrow",Noise
+"Response time degradation detected",Important
+"Can you sign for my package?",Noise
+"Buffer overflow vulnerability",Important
+"Anyone good with Photoshop?",Noise
+"Connection refused on port 3306",Important
+"Just posted in the general channel",Noise
+"Cache miss rate is too high",Important
+"I'm bringing donuts tomorrow",Noise
+"Feature flag configuration error",Important
+"Is the printer working?",Noise
+"Integration test suite failed",Important
+"Looking for podcast recommendations",Noise
+"Log rotation failed",Important
+"My laptop is making a weird noise",Noise
+"Cross-site scripting vulnerability found",Important
+"Anyone want to split a cab?",Noise
+"Dependency installation failed",Important
+"Are you free for a quick chat?",Noise
+"Cannot resolve hostname",Important
+"I lost my keys",Noise
+"Out of inodes on /var",Important
+"Happy Friday!",Noise
+"Process killed by OOM killer",Important
+"Did you watch the keynote?",Noise
+"Certificate chain invalid",Important
+"I'm on a diet starting now",Noise
+"SMTP server not responding",Important
+"Can I use your charger?",Noise
+"Unexpected token in JSON response",Important
+"Let's go to that burger place",Noise
+"User permission escalation detected",Important
+"I forgot my password again",Noise
+"Variable undefined in line 42",Important
+"Did you get my email?",Noise
+"Gateway timeout on the payment API",Important
+"Nice haircut!",Noise
+"Undefined index in the array",Important
+"Traffic is crazy this morning",Noise
+"Git merge conflict in master",Important
+"Can you water my plants?",Noise
+"Hard drive failure imminent",Important
+"I'm feeling under the weather",Noise
+"Stack overflow in the recursion function",Important
+"Did you see the slack update?",Noise
+"Microservice A cannot talk to Microservice B",Important
+"I'm hungry",Noise
+"Please investigate the server logs",Important
+"Let's brainstorm this afternoon",Noise
+"Access denied for user 'admin'",Important
+"Anyone seen my glasses?",Noise
+"Syntax error in configuration file",Important
+"I love this song",Noise
+"Server 3 is overheating",Important
+"Meeting in 5 minutes",Noise
+"Data loss detected in backup",Important
+"Can you hold the elevator?",Noise
+"Network partition detected",Important
+"I need a nap",Noise
+"Too many open files",Important
+"Did you finish the book?",Noise
+"Zookeeper ensemble is unstable",Important
+"Let's meet at the coffee shop",Noise
+"Corrupt index in the database",Important
+"I'm taking a half day",Noise
+"Segmentation fault in the core dump",Important
+"Have a good weekend!",Noise
+"Endpoint not found",Important
+"Are you coming to the party?",Noise
+"Invalid signature on the JWT",Important
+"I like your shirt",Noise
+"Thread deadlock in the application",Important
+"Can you review this non-urgent doc?",Noise
+"System load is over 50.0",Important
+"Anyone handle the office playlist?",Noise
+"Request timed out after 30000ms",Important
+"I spilled coffee on my desk",Noise
+"Database went away",Important
+"Who is the admin for the fantasy league?",Noise
+"React is just a library not a framework right?",Noise
+"Deploying the new plants to the window sill",Noise
+"My AWS sticker fell off my laptop",Noise
+"Is the 500 error code for server or client?",Noise
+"I promise I won't break production lol",Noise
+"Client is coming to visit the office next week",Noise
+"I'm studying for my AWS solutions architect exam",Noise
+"Laravel is written in PHP right?",Noise
+"Can you check this merge request?",Noise
+"Can you check this hotfix merge request?",Important
+"Server is behaving weirdly",Important
+"Im going to restart the server manually",Noise
+"API is returning empty responses",Important
+"I made a typo in the variable name",Noise
