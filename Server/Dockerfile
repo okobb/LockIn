@@ -1,10 +1,6 @@
-# ============================================
-# Laravel Production Dockerfile (Optimized)
-# ============================================
-
 FROM php:8.2-cli-alpine
 
-# Install system dependencies (Alpine uses apk, not apt)
+# Install system dependencies
 RUN apk add --no-cache \
     git \
     curl \
@@ -36,26 +32,20 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         zip \
         opcache
 
-# Cleanup build dependencies to reduce image size
+# Cleanup build dependencies
 RUN apk del $PHPIZE_DEPS linux-headers \
     && rm -rf /var/cache/apk/*
 
-# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy composer files first for better caching
 COPY composer.json composer.lock ./
 
-# Install dependencies without dev packages
 RUN composer install --no-interaction --no-dev --optimize-autoloader --no-scripts
 
-# Copy application code
 COPY . .
 
-# Run composer scripts after copying all files
 RUN composer dump-autoload --optimize
 
 # Create storage directories if they don't exist and set permissions
@@ -66,8 +56,6 @@ RUN mkdir -p storage/framework/sessions \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Expose port 80 for the built-in PHP server
 EXPOSE 80
 
-# Start Laravel's built-in server
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=80"]
