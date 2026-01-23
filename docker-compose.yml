@@ -75,6 +75,14 @@ services:
     networks:
       - lockin-network
 
+  ml:
+    image: ghcr.io/${GITHUB_REPOSITORY_LOWER}/ml:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - lockin-network
+
 volumes:
   n8n_data:
 
