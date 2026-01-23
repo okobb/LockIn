@@ -1,6 +1,6 @@
 services:
   laravel:
-    image: ghcr.io/${GITHUB_REPOSITORY_LOWER}/laravel:latest
+    image: okobb/lockin-laravel:latest
     restart: always
     ports:
       - "80:80"
@@ -70,13 +70,14 @@ services:
       - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD}
       - N8N_API_SECRET=${N8N_API_SECRET}
       - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
+      - DB_POSTGRESDB_SCHEMA=n8n
     volumes:
       - ./n8n_data:/home/node/.n8n
     networks:
       - lockin-network
 
   ml:
-    image: ghcr.io/${GITHUB_REPOSITORY_LOWER}/ml:latest
+    image: okobb/lockin-ml:latest
     restart: always
     ports:
       - "8080:8080"
