@@ -1,35 +1,44 @@
-FROM php:8.2-cli
+# ============================================
+# Laravel Production Dockerfile (Optimized)
+# ============================================
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+FROM php:8.2-cli-alpine
+
+# Install system dependencies (Alpine uses apk, not apt)
+RUN apk add --no-cache \
     git \
     curl \
     libpng-dev \
-    libonig-dev \
+    oniguruma-dev \
     libxml2-dev \
     zip \
     unzip \
-    libpq-dev \
+    postgresql-dev \
     libzip-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
-    libicu-dev \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    freetype-dev \
+    libjpeg-turbo-dev \
+    icu-dev \
+    linux-headers \
+    $PHPIZE_DEPS
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd
-RUN docker-php-ext-install -j$(nproc) \
-    pdo_pgsql \
-    pgsql \
-    mbstring \
-    exif \
-    pcntl \
-    bcmath \
-    intl \
-    soap \
-    zip \
-    opcache
+    && docker-php-ext-install -j$(nproc) \
+        gd \
+        pdo_pgsql \
+        pgsql \
+        mbstring \
+        exif \
+        pcntl \
+        bcmath \
+        intl \
+        soap \
+        zip \
+        opcache
+
+# Cleanup build dependencies to reduce image size
+RUN apk del $PHPIZE_DEPS linux-headers \
+    && rm -rf /var/cache/apk/*
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -49,9 +58,13 @@ COPY . .
 # Run composer scripts after copying all files
 RUN composer dump-autoload --optimize
 
-# Set permissions for Laravel storage and cache
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Create storage directories if they don't exist and set permissions
+RUN mkdir -p storage/framework/sessions \
+    storage/framework/views \
+    storage/framework/cache \
+    bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 # Expose port 80 for the built-in PHP server
 EXPOSE 80
