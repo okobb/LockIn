@@ -3,3 +3,4 @@ ngrok.exe
 start.bat
 .github
 docker-compose.override.yml
+n8n_data
