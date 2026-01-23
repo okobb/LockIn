@@ -79,7 +79,7 @@ class RAGService
                 'chunk_type' => $data['type'] ?? 'text',
                 'token_count' => $data['token_count'],
                 'chunk_metadata' => json_encode($data['metadata'] ?? []),
-                'is_embedded' => true,
+                'is_embedded' => 't',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

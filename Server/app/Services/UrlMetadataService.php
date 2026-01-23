@@ -14,7 +14,10 @@ class UrlMetadataService
     {
         try {
             /** @var Response $response */
-            $response = Http::timeout(5)->get($url);
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            ])->timeout(30)->get($url);
             
             if ($response->failed()) {
                 return $this->getFallbackMetadata($url);
@@ -92,7 +95,10 @@ class UrlMetadataService
     {
         try {
             /** @var \Illuminate\Http\Client\Response $response */
-            $response = Http::timeout(10)->get($url);
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            ])->timeout(30)->get($url);
             
             if ($response->failed()) {
                 return null;
