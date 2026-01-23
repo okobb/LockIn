@@ -238,6 +238,7 @@ jobs:
                   - DB_POSTGRESDB_PASSWORD=\${DB_PASSWORD}
                   - N8N_API_SECRET=\${N8N_API_SECRET}
                   - N8N_WEBHOOK_SECRET=\${N8N_WEBHOOK_SECRET}
+                  - DB_POSTGRESDB_SCHEMA=n8n
                 volumes:
                   - ./n8n_data:/home/node/.n8n
                 networks:
