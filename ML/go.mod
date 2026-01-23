@@ -1,5 +1,5 @@
 module lockin-ML
 
-go 1.25.6
+go 1.22
 
 require github.com/jbrukh/bayesian v1.1.0
