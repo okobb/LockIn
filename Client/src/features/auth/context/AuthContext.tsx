@@ -21,23 +21,27 @@ interface AuthState {
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        console.error("Failed to parse user from storage", e);
+        return null;
+      }
+    }
+    return null;
+  });
+
   const [token, setToken] = useState<string | null>(() => {
     const t = localStorage.getItem("token");
-    console.log("AuthProvider initializing. Raw token:", t);
     return t === "null" || t === "undefined" ? null : t;
   });
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user from storage", e);
-        localStorage.removeItem("user");
-      }
-    }
+    // Refresh user data if we have a token
 
     // Refresh user data if we have a token
     const storedToken = localStorage.getItem("token");

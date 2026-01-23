@@ -59,8 +59,6 @@ class ResourceHubService
             'user_id' => $userId,
             'source_domain' => $domain,
             'type' => $type,
-            'is_read' => false,
-            'is_archived' => false,
         ], $overrides));
 
         // Chain Jobs
@@ -111,8 +109,6 @@ class ResourceHubService
     {
         $resource = KnowledgeResource::create(array_merge($data, [
             'user_id' => $userId,
-            'is_read' => false,
-            'is_archived' => false,
         ]));
 
         if ($shouldGenerateTitle) {
@@ -182,50 +178,45 @@ class ResourceHubService
     }
     public function getResources(int $userId, array $filters = []): LengthAwarePaginator
     {
-        // Use tags for invalidation, or unique key based on filters
-        $key = "resources:list:{$userId}:" . md5(json_encode($filters));
+        $query = KnowledgeResource::query()
+            ->where('user_id', $userId)
+            ->orderBy('is_favorite', 'desc')
+            ->orderBy('created_at', 'desc');
 
-        return Cache::tags(["resources:{$userId}"])->remember($key, now()->addMinutes(10), function () use ($userId, $filters) {
-            $query = KnowledgeResource::query()
-                ->where('user_id', $userId)
-                ->orderBy('is_favorite', 'desc')
-                ->orderBy('created_at', 'desc');
+        if (!empty($filters['search'])) {
+            $term = $filters['search'];
+            $query->where(function (Builder $q) use ($term) {
+                $q->where('title', 'like', "%{$term}%")
+                ->orWhere('tags', 'like', "%{$term}%")
+                ->orWhere('notes', 'like', "%{$term}%");
+            });
+        }
 
-            if (!empty($filters['search'])) {
-                $term = $filters['search'];
-                $query->where(function (Builder $q) use ($term) {
-                    $q->where('title', 'like', "%{$term}%")
-                    ->orWhere('tags', 'like', "%{$term}%")
-                    ->orWhere('notes', 'like', "%{$term}%");
-                });
+        if (!empty($filters['type']) && $filters['type'] !== 'all') {
+            if (is_array($filters['type'])) {
+                $query->whereIn('type', $filters['type']);
+            } else {
+                $query->where('type', $filters['type']);
             }
+        }
 
-            if (!empty($filters['type']) && $filters['type'] !== 'all') {
-                if (is_array($filters['type'])) {
-                    $query->whereIn('type', $filters['type']);
-                } else {
-                    $query->where('type', $filters['type']);
-                }
+        if (!empty($filters['difficulty']) && $filters['difficulty'] !== 'all') {
+            if (is_array($filters['difficulty'])) {
+                $query->whereIn('difficulty', $filters['difficulty']);
+            } else {
+                $query->where('difficulty', $filters['difficulty']);
             }
+        }
 
-            if (!empty($filters['difficulty']) && $filters['difficulty'] !== 'all') {
-                if (is_array($filters['difficulty'])) {
-                    $query->whereIn('difficulty', $filters['difficulty']);
-                } else {
-                    $query->where('difficulty', $filters['difficulty']);
-                }
-            }
-
-            if (!empty($filters['status'])) {
-                match ($filters['status']) {
-                    'unread' => $query->where('is_read', false),
-                    'read' => $query->where('is_read', true),
-                    'favorites' => $query->where('is_favorite', true),
-                    default => null,
-                };
-            }
-            
-            return $query->paginate(20);
-        });
+        if (!empty($filters['status'])) {
+            match ($filters['status']) {
+                'unread' => $query->whereBoolean('is_read', false),
+                'read' => $query->whereBoolean('is_read', true),
+                'favorites' => $query->whereBoolean('is_favorite', true),
+                default => null,
+            };
+        }
+        
+        return $query->paginate(20);
     }
 }

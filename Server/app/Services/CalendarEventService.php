@@ -90,64 +90,72 @@ final class CalendarEventService extends BaseService
     }
 
     /**
-     * Create or update a calendar event from Google API response.
+     * Batch upsert Google Calendar events.
+     * 
+     * @param array<int, array<string, mixed>> $googleEvents
+     * @return int Number of events synced
      */
-    public function upsertFromGoogle(int $userId, array $googleEvent): CalendarEvent
+    public function batchUpsertFromGoogle(int $userId, array $googleEvents): int
     {
-        $externalId = $googleEvent['id'] ?? null;
+        if (empty($googleEvents)) {
+            return 0;
+        }
 
-        $googleEvent['tags'] = ['Google Calendar'];
+        $now = now();
+        $upsertData = [];
 
-        $startTime = $this->parseGoogleDateTime($googleEvent['start'] ?? []);
-        $endTime = $this->parseGoogleDateTime($googleEvent['end'] ?? []);
+        foreach ($googleEvents as $googleEvent) {
+            $externalId = $googleEvent['id'] ?? null;
+            if (!$externalId) {
+                continue;
+            }
 
-        $startTimeUtc = $startTime?->setTimezone('UTC')->toDateTimeString();
-        $endTimeUtc = $endTime?->setTimezone('UTC')->toDateTimeString();
+            $startTime = $this->parseGoogleDateTime($googleEvent['start'] ?? []);
+            $endTime = $this->parseGoogleDateTime($googleEvent['end'] ?? []);
 
-        $type = $this->determineEventType($googleEvent);
+            $startTimeUtc = $startTime?->setTimezone('UTC')->toDateTimeString();
+            $endTimeUtc = $endTime?->setTimezone('UTC')->toDateTimeString();
+            $type = $this->determineEventType($googleEvent);
 
-        if ($externalId === null) {
-            return $this->create([
+            $upsertData[] = [
                 'user_id' => $userId,
+                'external_id' => $externalId,
                 'source' => 'google',
                 'title' => $googleEvent['summary'] ?? 'Untitled Event',
                 'start_time' => $startTimeUtc,
                 'end_time' => $endTimeUtc,
                 'status' => $googleEvent['status'] ?? 'confirmed',
                 'type' => $type,
-                'metadata' => $googleEvent,
-            ]);
+                'metadata' => json_encode($googleEvent), 
+                'is_dismissed' => 'f', 
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
 
-        $existing = CalendarEvent::query()->where('user_id', $userId)
-            ->where('external_id', $externalId)
-            ->first();
-
-        if ($existing) {
-            $existing->update([
-                'source' => 'google',
-                'title' => $googleEvent['summary'] ?? $existing->title,
-                'start_time' => $startTimeUtc,
-                'end_time' => $endTimeUtc,
-                'status' => $googleEvent['status'] ?? $existing->status,
-                'type' => $type,
-                'metadata' => $googleEvent,
-            ]);
-
-            return $existing->fresh();
+        if (empty($upsertData)) {
+            return 0;
         }
 
-        return $this->create([
-            'user_id' => $userId,
-            'external_id' => $externalId,
-            'source' => 'google',
-            'title' => $googleEvent['summary'] ?? 'Untitled Event',
-            'start_time' => $startTimeUtc,
-            'end_time' => $endTimeUtc,
-            'status' => $googleEvent['status'] ?? 'confirmed',
-            'type' => $type,
-            'metadata' => $googleEvent,
-        ]);
+        CalendarEvent::upsert(
+            $upsertData, 
+            ['external_id', 'user_id'], 
+            ['title', 'start_time', 'end_time', 'status', 'type', 'metadata', 'updated_at'] 
+        );
+
+        return count($upsertData);
+    }
+
+    /**
+     * Create or update a calendar event from Google API response.
+     */
+    public function upsertFromGoogle(int $userId, array $googleEvent): CalendarEvent
+    {
+        $this->batchUpsertFromGoogle($userId, [$googleEvent]);
+        
+        return CalendarEvent::query()->where('user_id', $userId)
+            ->where('external_id', $googleEvent['id'])
+            ->firstOrFail();
     }
 
     /**
@@ -158,7 +166,7 @@ final class CalendarEventService extends BaseService
     public function getUpcomingForUser(int $userId, int $days = 7): Collection
     {
         return CalendarEvent::query()->where('user_id', $userId)
-            ->where('is_dismissed', false)
+            ->whereBoolean('is_dismissed', false)
             ->where('start_time', '>=', now())
             ->where('start_time', '<=', now()->addDays($days))
             ->orderBy('start_time')
@@ -173,7 +181,7 @@ final class CalendarEventService extends BaseService
     public function getInRangeForUser(int $userId, string $start, string $end): Collection
     {
         return CalendarEvent::query()->where('user_id', $userId)
-            ->where('is_dismissed', false)
+            ->whereBoolean('is_dismissed', false)
             ->where('start_time', '<=', $end)
             ->where('end_time', '>=', $start)
             ->orderBy('start_time')
@@ -188,7 +196,7 @@ final class CalendarEventService extends BaseService
     public function getTodayForUser(int $userId): Collection
     {
         return CalendarEvent::query()->where('user_id', $userId)
-            ->where('is_dismissed', false)
+            ->whereBoolean('is_dismissed', false)
             ->whereDate('start_time', today())
             ->orderBy('start_time')
             ->get();
