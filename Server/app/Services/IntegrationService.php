@@ -75,9 +75,11 @@ final class IntegrationService extends BaseService
      */
     public function getForUser(User $user): Collection
     {
-        return Integration::query()->where('user_id', $user->id)
-            ->where('is_active', true)
-            ->get();
+        return Cache::tags(["user:{$user->id}:integrations"])->remember("integrations:{$user->id}", 3600, function () use ($user) {
+            return Integration::query()->where('user_id', $user->id)
+                ->whereBoolean('is_active', true)
+                ->get();
+        });
     }
 
     /**
@@ -87,7 +89,7 @@ final class IntegrationService extends BaseService
     {
         return Integration::query()->where('user_id', $user->id)
             ->where('provider', $provider)
-            ->where('is_active', true)
+            ->whereBoolean('is_active', true)
             ->exists();
     }
 
@@ -104,10 +106,12 @@ final class IntegrationService extends BaseService
      */
     public function getActiveIntegration(int $userId, string $provider): ?Integration
     {
-        return Integration::query()->where('user_id', $userId)
-            ->where('provider', $provider)
-            ->where('is_active', true)
-            ->first();
+        return Cache::tags(["user:{$userId}:integrations"])->remember("integration:{$userId}:{$provider}", 3600, function () use ($userId, $provider) {
+            return Integration::query()->where('user_id', $userId)
+                ->where('provider', $provider)
+                ->whereBoolean('is_active', true)
+                ->first();
+        });
     }
 
     /**

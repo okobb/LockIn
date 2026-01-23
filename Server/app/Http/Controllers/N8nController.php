@@ -39,7 +39,7 @@ final class N8nController extends BaseController
     public function activeIntegrations(): JsonResponse
     {
         $integrations = Integration::query()
-            ->where('is_active', '=', true)
+            ->whereBoolean('is_active', true)
             ->select(['user_id', 'provider', 'provider_id', 'scopes'])
             ->get()
             ->groupBy('user_id')
@@ -61,6 +61,7 @@ final class N8nController extends BaseController
      */
     public function syncCalendar(int $userId): JsonResponse
     {
+        set_time_limit(300); // Increase timeout to 5 minutes
         try {
             $result = $this->googleCalendarService->syncEventsForUser($userId);
 
