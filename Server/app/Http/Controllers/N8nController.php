@@ -39,7 +39,7 @@ final class N8nController extends BaseController
     public function activeIntegrations(): JsonResponse
     {
         $integrations = Integration::query()
-            ->whereRaw('is_active = TRUE')
+            ->whereBoolean('is_active', true)
             ->select(['user_id', 'provider', 'provider_id', 'scopes'])
             ->get()
             ->groupBy('user_id')
