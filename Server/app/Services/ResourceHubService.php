@@ -218,9 +218,9 @@ class ResourceHubService
 
             if (!empty($filters['status'])) {
                 match ($filters['status']) {
-                    'unread' => $query->where('is_read', false),
-                    'read' => $query->where('is_read', true),
-                    'favorites' => $query->where('is_favorite', true),
+                    'unread' => $query->whereBoolean('is_read', false),
+                    'read' => $query->whereBoolean('is_read', true),
+                    'favorites' => $query->whereBoolean('is_favorite', true),
                     default => null,
                 };
             }

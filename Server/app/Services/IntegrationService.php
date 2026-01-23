@@ -76,7 +76,7 @@ final class IntegrationService extends BaseService
     public function getForUser(User $user): Collection
     {
         return Integration::query()->where('user_id', $user->id)
-            ->where('is_active', true)
+            ->whereBoolean('is_active', true)
             ->get();
     }
 
@@ -87,7 +87,7 @@ final class IntegrationService extends BaseService
     {
         return Integration::query()->where('user_id', $user->id)
             ->where('provider', $provider)
-            ->where('is_active', true)
+            ->whereBoolean('is_active', true)
             ->exists();
     }
 
@@ -106,7 +106,7 @@ final class IntegrationService extends BaseService
     {
         return Integration::query()->where('user_id', $userId)
             ->where('provider', $provider)
-            ->where('is_active', true)
+            ->whereBoolean('is_active', true)
             ->first();
     }
 

@@ -10,6 +10,7 @@ use App\Models\Integration;
 use App\Services\Traits\UsesIntegrationTokens;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 require_once __DIR__ . '/../consts.php';
 
@@ -70,32 +71,33 @@ final class GoogleCalendarService
             throw $e;
         }
 
-        $syncedEvents = collect();
+        $syncedEventsCount = 0;
     
         // Get all dismissed external IDs for this user
         $dismissedExternalIds = CalendarEvent::query()
             ->where('user_id', $userId)
-            ->where('is_dismissed', true)
+            ->whereBoolean('is_dismissed', true)
             ->whereNotNull('external_id')
             ->pluck('external_id')
             ->toArray();
 
-        foreach ($googleEvents as $googleEvent) {
-            $externalId = $googleEvent['id'] ?? null;
+        // Filter out dismissed events
+        $eventsToSync = collect($googleEvents)->filter(function ($event) use ($dismissedExternalIds) {
+            $externalId = $event['id'] ?? null;
+            return $externalId && !in_array($externalId, $dismissedExternalIds);
+        })->values()->all();
 
-            // Skip if this event ID is in our dismissed list
-            if ($externalId && in_array($externalId, $dismissedExternalIds)) {
-                continue;
-            }
-
-            $event = $this->calendarEventService->upsertFromGoogle($userId, $googleEvent);
-            $syncedEvents->push($event);
+        if (!empty($eventsToSync)) {
+            $syncedEventsCount = $this->calendarEventService->batchUpsertFromGoogle($userId, $eventsToSync);
         }
     
         $integration->update(['last_synced_at' => now()]);
+        
+        // Fetch fresh events to return
+        $syncedEvents = $this->calendarEventService->getUpcomingForUser($userId, 30);
 
         return [
-            'synced' => $syncedEvents->count(),
+            'synced' => $syncedEventsCount,
             'events' => $syncedEvents,
         ];
     }
@@ -111,7 +113,7 @@ final class GoogleCalendarService
         ?Carbon $from = null,
         ?Carbon $to = null
     ): array {
-        $from ??= now()->subDays(30)->startOfDay();
+        $from ??= now()->subDays(7)->startOfDay();
         $to ??= now()->addDays(30)->endOfDay();
 
         $allEvents = [];
@@ -139,6 +141,7 @@ final class GoogleCalendarService
 
             $data = $response->json();
             $items = $data['items'] ?? [];
+            Log::info('Fetched Google Events Page', ['count' => count($items), 'nextPage' => isset($data['nextPageToken'])]);
             $allEvents = array_merge($allEvents, $items);
             
             $pageToken = $data['nextPageToken'] ?? null;

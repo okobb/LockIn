@@ -126,6 +126,9 @@ final class CalendarController extends BaseController
             );
         } catch (ServiceException $e) {
             return $this->handleServiceException($e);
+        } catch (\Throwable $e) {
+            Log::error('Calendar Sync Failed: ' . $e->getMessage());
+            return $this->errorResponse('Failed to sync calendar. Please try again later.', 500);
         }
     }
 
