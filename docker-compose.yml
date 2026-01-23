@@ -1,78 +1,36 @@
 services:
-  postgres:
-    image: pgvector/pgvector:pg16
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_DATABASE}
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    networks:
-      - lockin-network
-
   laravel:
-    build:
-      context: ./Server
-      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_REPOSITORY_LOWER}/laravel:latest
     restart: always
+    ports:
+      - "80:80"
     environment:
       APP_ENV: production
       APP_DEBUG: false
       APP_URL: ${APP_URL}
       DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
       DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PASSWORD: null
-      REDIS_PORT: 6379
-      QDRANT_HOST: qdrant
+      CACHE_DRIVER: database
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      QDRANT_HOST: ${QDRANT_HOST}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
     volumes:
       - ./Server/storage:/var/www/html/storage
-    depends_on:
-      - postgres
-      - redis
     networks:
       - lockin-network
-
-  nginx:
-    image: nginx:alpine
-    restart: always
-    ports:
-      - "80:80"
-    volumes:
-      - ./Server/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./Server/public:/var/www/html/public
-    depends_on:
-      - laravel
-    networks:
-      - lockin-network
-
-  react:
-    build:
-      context: ./Client
-      dockerfile: Dockerfile
-    restart: always
-    ports:
-      - "3000:80"
-    networks:
-      - lockin-network
-
-  go_service:
-    build:
-      context: ./ML
-      dockerfile: Dockerfile
-    restart: always
-    ports:
-      - "8080:8080"
-    networks:
-      - lockin-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   n8n:
     image: docker.n8n.io/n8nio/n8n
@@ -84,46 +42,20 @@ services:
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_HOST=${DB_HOST}
+      - DB_POSTGRESDB_PORT=${DB_PORT:-5432}
       - DB_POSTGRESDB_DATABASE=${DB_DATABASE}
       - DB_POSTGRESDB_USER=${DB_USERNAME}
       - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD}
       - N8N_API_SECRET=${N8N_API_SECRET}
       - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
-    links:
-      - postgres
     volumes:
       - ./n8n_data:/home/node/.n8n
     networks:
       - lockin-network
 
-  qdrant:
-    image: qdrant/qdrant:latest
-    restart: always
-    ports:
-      - "6333:6333"
-      - "6334:6334"
-    volumes:
-      - ./qdrant_data:/qdrant/storage
-    networks:
-      - lockin-network
-
-  redis:
-    image: redis:alpine
-    restart: always
-    ports:
-      - "6379:6379"
-    volumes:
-      - ./redis_data:/data
-    networks:
-      - lockin-network
-
 volumes:
-  postgres_data:
   n8n_data:
-  qdrant_data:
-  redis_data:
 
 networks:
   lockin-network:
