@@ -73,4 +73,8 @@ return [
         'key' => env('QDRANT_API_KEY'),
         'collection' => env('QDRANT_COLLECTION', 'knowledge_chunks'),
     ],
+
+    'ml' => [
+        'url' => env('ML_URL', 'http://ml:8080'),
+    ],
 ];
