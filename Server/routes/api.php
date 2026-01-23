@@ -19,6 +19,12 @@ use App\Http\Controllers\UserController;
 use App\Http\Middleware\N8nAuthMiddleware;
 use Illuminate\Support\Facades\Route;
 
+// Health Check
+Route::get('health', function () {
+    return response()->json(['status' => 'ok']);
+});
+
+
 // Public Auth Routes
 Route::post('login', [AuthController::class, 'login'])->name('login');
 Route::post('register', [AuthController::class, 'register'])->name('register');
