@@ -1,9 +1,8 @@
 for me
 ngrok.exe
 start.bat
-.github
 docker-compose.override.yml
 n8n_data
-ci.yml
 docker-compose-example.yml
 Dockerfile
+production.env
