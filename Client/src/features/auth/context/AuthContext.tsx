@@ -41,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Refresh user data if we have a token
 
     // Refresh user data if we have a token
     const storedToken = localStorage.getItem("token");
