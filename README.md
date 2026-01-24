@@ -22,3 +22,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## System Design
 
 <img src="./readme/system_design.png"/>
+
+## Entity Relationship Diagram
+
+<img src="./readme/ERD.svg"/>
