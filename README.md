@@ -26,3 +26,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Entity Relationship Diagram
 
 <img src="./readme/ERD.svg"/>
+
+## n8n Workflows
+
+<img src="./readme/n8n.png"/>
