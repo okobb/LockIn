@@ -24,6 +24,9 @@ class UpdateCalendarEventRequest extends FormRequest
             'end_time'    => ['sometimes', 'date', 'after:start_time'],
             'type'        => ['sometimes', 'string', 'in:deep_work,meeting,external'],
             'description' => ['nullable', 'string'],
+            'priority'    => ['nullable', 'string', 'in:high,medium,low,urgent'],
+            'tags'        => ['nullable', 'array'],
+            'tags.*'      => ['string'],
         ];
     }
 }
