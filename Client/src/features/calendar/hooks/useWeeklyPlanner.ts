@@ -99,7 +99,7 @@ export function useWeeklyPlanner() {
 
       if (checkOverlap(startTime, endTime)) {
         await modal.open({
-          type: "warning",
+          type: "error",
           title: "Schedule Conflict",
           message: "This time slot overlaps with an existing block.",
         });

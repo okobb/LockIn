@@ -353,6 +353,26 @@ export function useCalendarEvents({
         calculatedStartISO: newStart.toISOString(),
       });
 
+      if (checkOverlap(newStart, newEnd, blockId)) {
+        await modal.open({
+          type: "error",
+          title: "Schedule Conflict",
+          message: "This time slot overlaps with an existing block.",
+        });
+        return;
+      }
+
+      const endHour = newEnd.getHours() + newEnd.getMinutes() / 60;
+
+      if (endHour > CALENDAR_END_HOUR) {
+        await modal.open({
+          type: "error",
+          title: "Schedule Conflict",
+          message: "Cannot move blocks past 9 PM.",
+        });
+        return;
+      }
+
       await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
 
       const previousData =
@@ -376,38 +396,6 @@ export function useCalendarEvents({
           };
         },
       );
-
-      if (checkOverlap(newStart, newEnd, blockId)) {
-        const confirmed = await modal.open({
-          type: "warning",
-          title: "Schedule Conflict",
-          message: "This time slot overlaps with an existing block.",
-        });
-
-        if (!confirmed) {
-          // Revert to snapshot - but first cancel any new queries that may have started
-          await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
-          if (previousData) {
-            queryClient.setQueryData(queryKey, previousData);
-          }
-          return;
-        }
-      }
-
-      // Check if the block ends after work hours or calendar limit
-      const endHour = newEnd.getHours() + newEnd.getMinutes() / 60;
-
-      if (endHour > CALENDAR_END_HOUR) {
-        await modal.open({
-          type: "error",
-          title: "Schedule Conflict",
-          message: "Cannot move blocks past 9 PM.",
-        });
-        // Revert UI by invalidating
-        await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
-        if (previousData) queryClient.setQueryData(queryKey, previousData);
-        return;
-      }
 
       if (isOvertime(endHour)) {
         setPendingMoveState({
