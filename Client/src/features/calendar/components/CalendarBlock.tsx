@@ -97,7 +97,7 @@ const CalendarBlock = memo(
                 {block.tags?.map((tag) => (
                   <span
                     key={tag}
-                    className="text-[8px] px-1 rounded-sm bg-[hsl(217_91%_60%/0.15)] text-[hsl(217_91%_60%)]"
+                    className="text-[8px] px-1 rounded-sm bg-background/20 text-foreground/90 border border-foreground/10"
                   >
                     {tag}
                   </span>
