@@ -37,6 +37,8 @@ export interface FocusSession {
   id: number;
   title: string;
   task_id?: number;
+  status?: string;
+  ended_at?: string | null;
   context_snapshot?: {
     browser_state: Array<{ title: string; url: string }>;
     quality_score?: number;
