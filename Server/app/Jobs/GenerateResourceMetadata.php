@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\KnowledgeResource;
 use App\Services\AIService;
 use App\Services\DocumentParserService;
+use App\Jobs\ProcessResourceEmbedding;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -42,7 +43,6 @@ class GenerateResourceMetadata implements ShouldQueue
                  $content = "File: " . $this->resource->title . " (Content extraction not supported for .{$extension})";
             } else {
                 $this->resource->update(['content_text' => $content]);
-                ProcessResourceEmbedding::dispatch($this->resource);
             }
         } elseif ($this->resource->url) {
             $content = $this->resource->content_text ?? "URL: " . $this->resource->url;
@@ -61,5 +61,9 @@ class GenerateResourceMetadata implements ShouldQueue
             'tags' => array_map(fn($t) => ucwords(trim($t)), $metadata['tags'] ?? []),
             'estimated_time_minutes' => $metadata['estimated_minutes'] ?? $this->resource->estimated_time_minutes,
         ]);
+
+        if (!empty($content) || !empty($this->resource->content_text)) {
+            ProcessResourceEmbedding::dispatch($this->resource);
+        }
     }
 }
