@@ -34,6 +34,7 @@ export function useWeeklyPlanner() {
     addBacklogTask,
     removeBacklogTask,
     completeTask,
+    scheduleTask,
   } = useTaskBacklog();
 
   const {
@@ -113,7 +114,7 @@ export function useWeeklyPlanner() {
         return;
       }
 
-      removeBacklogTask(taskId);
+      scheduleTask(taskId, startTime.toISOString(), endTime.toISOString());
 
       // Add block to calendar (async with optimistic update)
       const newBlock: CalendarBlock = {
@@ -124,11 +125,12 @@ export function useWeeklyPlanner() {
         type: "deep_work",
         priority: task.priority,
         tags: task.tags,
+        task_id: Number(taskId),
       };
 
       addBlock(newBlock);
     },
-    [backlogTasks, checkOverlap, addBlock, removeBacklogTask, modal],
+    [backlogTasks, checkOverlap, addBlock, scheduleTask, modal],
   );
 
   const returnToBacklog = useCallback(

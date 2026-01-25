@@ -245,14 +245,19 @@ final class GitHubService
             $fullPr = $fullPrResponse->json();
 
             // Skip if task already exists 
-            /** @var bool $exists */
-            $exists = Task::query()
+            /** @var Task|null $existingTask */
+            $existingTask = Task::withTrashed()
                 ->where('external_id', '=', $externalId)
                 ->where('user_id', '=', $userId)
-                ->exists();
+                ->first();
 
-            if ($exists) {
-                Log::info("GitHub Sync: Task already exists for PR #{$pr['number']} ({$externalId})");
+            if ($existingTask) {
+                if ($existingTask->trashed()) {
+                    $existingTask->restore();
+                    Log::info("GitHub Sync: Restored trashed task for PR #{$pr['number']} ({$externalId})");
+                } else {
+                    Log::info("GitHub Sync: Task already exists for PR #{$pr['number']} ({$externalId})");
+                }
                 continue;
             }
 

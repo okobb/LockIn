@@ -34,6 +34,7 @@ final class CalendarEventResource extends JsonResource
             'status' => $this->status,
             'type' => $this->type,
             'priority' => ($this->metadata ?? [])['priority'] ?? null,
+            'task_id' => ($this->metadata ?? [])['task_id'] ?? null,
             'tags' => ($this->metadata ?? [])['tags'] ?? [],
             'description' => ($this->metadata ?? [])['description'] ?? null,
             'auto_save_enabled' => $this->auto_save_enabled,

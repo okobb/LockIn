@@ -4,6 +4,7 @@ export interface BacklogTask {
   priority?: "high" | "low" | "urgent" | "medium";
   estimatedMinutes: number;
   tags?: string[];
+  task_id?: number;
 }
 
 export interface CalendarBlock {
@@ -14,6 +15,7 @@ export interface CalendarBlock {
   type: "deep_work" | "meeting" | "external";
   priority?: "high" | "low" | "urgent" | "medium";
   tags?: string[];
+  task_id?: number;
 }
 
 export interface CapacityStats {
@@ -35,6 +37,7 @@ export interface CalendarEvent {
   external_id: string | null;
   priority?: "high" | "low" | "urgent" | "medium";
   tags?: string[];
+  task_id?: number;
 }
 
 export interface CreateBlockData {
@@ -45,6 +48,7 @@ export interface CreateBlockData {
   description?: string;
   priority?: "high" | "low" | "urgent" | "medium";
   tags?: string[];
+  task_id?: number;
 }
 
 export interface UpdateBlockData {
