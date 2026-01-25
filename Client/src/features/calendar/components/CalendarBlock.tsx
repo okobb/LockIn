@@ -29,6 +29,7 @@ const CalendarBlock = memo(
     const startTime = new Date(block.start_time);
 
     const handleDelete = (e: React.MouseEvent) => {
+      console.log("Delete clicked for block:", block.id);
       e.stopPropagation();
       onDelete?.(block.id);
     };

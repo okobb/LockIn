@@ -172,6 +172,7 @@ class StatsService
     public function setWeeklyGoal(int $userId, int $targetMinutes): void
     {
         $this->userService->setWeeklyGoal($userId, $targetMinutes);
+        Cache::forget("stats:weekly:{$userId}");
     }
 
     /**

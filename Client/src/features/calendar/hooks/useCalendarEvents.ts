@@ -453,10 +453,13 @@ export function useCalendarEvents({
 
   const removeBlock = useCallback(
     async (blockId: string) => {
+      console.log("Attempting to delete block:", blockId);
       // Check if this is a temp ID (negative number) - skip API call if so
       const numericId = Number(blockId);
-      if (!isNaN(numericId) && numericId < 0) {
-        // Temp block - just remove from cache without calling API
+      // Check if this is a temp ID (negative number OR non-numeric string like "block-123")
+      // If so, just remove from cache without calling API
+      if (isNaN(numericId) || numericId < 0) {
+        console.log("Deleting temp/local block from cache:", blockId);
         queryClient.setQueryData<CalendarEventsResponse>(
           queryKey,
           (old: CalendarEventsResponse | undefined) => {
