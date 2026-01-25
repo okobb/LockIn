@@ -123,6 +123,9 @@ Route::middleware('auth:api')->group(function () {
 
     // ML Classification
     Route::post('classify', [ClassificationController::class, 'classify'])->name('classify');
+
+    // AI Global Assistant
+    Route::post('ai/chat', [\App\Http\Controllers\AIController::class, 'chat'])->name('ai.chat');
 });
 
 // Public Signed Routes

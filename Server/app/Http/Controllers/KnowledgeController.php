@@ -12,7 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class KnowledgeController extends Controller
+class KnowledgeController extends BaseController
 {
     public function __construct(
         private RAGService $ragService
@@ -31,7 +31,7 @@ class KnowledgeController extends Controller
             });
         }
 
-        return response()->json($query->paginate(20));
+        return $this->successResponse($query->paginate(20));
     }
 
     public function store(StoreKnowledgeRequest $request): JsonResponse
@@ -41,14 +41,14 @@ class KnowledgeController extends Controller
             userId: (int) Auth::id()
         );
 
-        return response()->json($resource, 201);
+        return $this->createdResponse($resource);
     }
 
     public function search(Request $request): JsonResponse
     {
         $query = $request->input('q');
         if (empty($query)) {
-            return response()->json([]);
+            return $this->successResponse([]);
         }
 
         $results = $this->ragService->search(
@@ -57,27 +57,38 @@ class KnowledgeController extends Controller
             limit: 10
         );
 
-        return response()->json($results);
+        return $this->successResponse($results);
     }
 
     public function destroy(KnowledgeResource $knowledge): JsonResponse
     {
         if ($knowledge->user_id !== Auth::id()) {
-            abort(403);
+            return $this->forbiddenResponse();
         }
 
         $this->ragService->deleteResource($knowledge);
 
-        return response()->json(null, 204);
+        return $this->noContentResponse();
     }
 
     public function ask(AskKnowledgeRequest $request): JsonResponse
     {
-        $result = $this->ragService->ask(
+        $result = $this->ragService->chat(
             userId: (int) Auth::id(),
             question: $request->input('question')
         );
 
-        return response()->json($result);
+        if (isset($result['type']) && $result['type'] === 'error') {
+             return $this->successResponse([
+                'answer' => $result['content'],
+                'sources' => [],
+                'blocked' => true
+             ]);
+        }
+
+        return $this->successResponse([
+            'answer' => $result['content'],
+            'sources' => $result['sources'] ?? []
+        ]);
     }
 }
