@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ChatRequest;
-use App\Services\RAGService;
+use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
 class AIController extends BaseController
 {
     public function __construct(
-        private RAGService $ragService
+        private ChatService $chatService
     ) {}
 
     /**
@@ -23,12 +23,25 @@ class AIController extends BaseController
      */
     public function chat(ChatRequest $request): JsonResponse
     {
-        $response = $this->ragService->chat(
+        $response = $this->chatService->processMessage(
             userId: (int) Auth::id(),
-            question: $request->validated('message'),
-            activeContextId: $request->validated('active_context_id')
+            messageContent: $request->validated('message'),
+            activeContextId: $request->validated('active_context_id') ? (int) $request->validated('active_context_id') : null
         );
 
         return $this->successResponse($response);
+    }
+    
+    /**
+     * Get the chat history for a specific thread.
+     *
+     * @param int $threadId
+     * @return JsonResponse
+     */
+    public function getHistory(int $threadId): JsonResponse
+    {
+        $data = $this->chatService->getThreadHistory($threadId, (int) Auth::id());
+
+        return $this->successResponse($data);
     }
 }
