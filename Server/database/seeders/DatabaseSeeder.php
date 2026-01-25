@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TaskSeeder::class,
             DailyStatsSeeder::class,
+            ContextSeeder::class,
         ]);
     }
 }

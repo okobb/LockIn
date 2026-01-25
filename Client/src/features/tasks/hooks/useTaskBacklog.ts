@@ -175,6 +175,21 @@ export function useTaskBacklog() {
     },
   });
 
+  const completeMutation = useMutation({
+    mutationFn: (id: number) => tasks.complete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: async (error) => {
+      console.error("Complete task failed:", error);
+      await modal.open({
+        type: "error",
+        title: "Complete Failed",
+        message: "Failed to complete task. Please try again.",
+      });
+    },
+  });
+
   const toggleBacklog = useCallback(() => {
     setIsBacklogCollapsed((prev) => !prev);
   }, []);
@@ -191,7 +206,7 @@ export function useTaskBacklog() {
       };
       createMutation.mutate(payload);
     },
-    [createMutation]
+    [createMutation],
   );
 
   const updateBacklogTask = useCallback(
@@ -203,14 +218,14 @@ export function useTaskBacklog() {
 
       updateMutation.mutate({ id: Number(taskId), data: updateData });
     },
-    [updateMutation]
+    [updateMutation],
   );
 
   const removeBacklogTask = useCallback(
     (taskId: string) => {
       deleteMutation.mutate(Number(taskId));
     },
-    [deleteMutation]
+    [deleteMutation],
   );
 
   const scheduleTask = useCallback(
@@ -221,12 +236,19 @@ export function useTaskBacklog() {
         end: endTime,
       });
     },
-    [scheduleMutation]
+    [scheduleMutation],
+  );
+
+  const completeTask = useCallback(
+    (taskId: string) => {
+      completeMutation.mutate(Number(taskId));
+    },
+    [completeMutation],
   );
 
   const backlogTasks = useMemo(
     () => (data?.data ?? []).map(toBacklogTask),
-    [data]
+    [data],
   );
 
   return {
@@ -238,6 +260,7 @@ export function useTaskBacklog() {
     addBacklogTask,
     updateBacklogTask,
     removeBacklogTask,
+    completeTask,
     scheduleTask,
   };
 }

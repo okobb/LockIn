@@ -89,6 +89,7 @@ export default function WeeklyPlanner() {
     syncCalendar,
     isSyncing,
     removeBacklogTask: removeBacklogTaskHook,
+    completeTask,
   } = useWeeklyPlanner();
 
   const filteredBacklogTasks = useMemo(() => {
