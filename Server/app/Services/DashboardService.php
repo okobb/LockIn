@@ -88,9 +88,10 @@ final class DashboardService
                 ->where('start_time', '>=', now())
                 ->orderBy('start_time')
                 ->limit($limit)
-                ->get(['id', 'start_time', 'end_time', 'title', 'type'])
+                ->get(['id', 'start_time', 'end_time', 'title', 'type', 'metadata'])
                 ->map(fn($event) => [
                     'id' => (string) $event->id,
+                    'taskId' => ($event->metadata ?? [])['task_id'] ?? null,
                     'time' => Carbon::parse($event->start_time)->format('H:i'),
                     'title' => $event->title,
                     'meta' => Carbon::parse($event->start_time)->diffInMinutes(Carbon::parse($event->end_time)) . ' min',
