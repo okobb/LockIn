@@ -11,6 +11,7 @@ interface TabData {
   favIconUrl?: string;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 const Popup = () => {
   const [tabs, setTabs] = useState<TabData[]>([]);
   const [error, setError] = useState<string | null>(null);

@@ -1,72 +1,120 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Trash2, Send } from "lucide-react";
+import { X, Trash2, Send, Check, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "../../../shared/components/UI/Button";
 import { Card } from "../../../shared/components/UI/Card";
 import { Input } from "../../../shared/components/UI/Input";
 import { cn } from "../../../lib/utils";
+import { ai, type Source, type ToolCallData } from "../api/ai";
+import {
+  tasks,
+  type CreateTaskData,
+  type UpdateTaskData,
+} from "../../tasks/api/tasks";
+import { useToast } from "../../../shared/context/ToastContext";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  type?: "message" | "tool_call" | "error";
+  sources?: Source[];
+  tool_call?: ToolCallData & { executed?: boolean };
 }
 
 export function GlobalChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "1",
+      id: "welcome",
       role: "assistant",
       content:
-        "Hello! I'm your Lock In Assistant. How can I help you stay focused today?",
-    },
-    {
-      id: "2",
-      role: "user",
-      content: "I need to check my schedule for tomorrow.",
-    },
-    {
-      id: "3",
-      role: "assistant",
-      content:
-        "You have a Focus Session at 9:00 AM and a Team Sync at 2:00 PM.",
+        "Hello! I'm your Lock In Assistant. I can help you manage your tasks and find information.",
     },
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current && isOpen) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isLoading]);
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
+  const handleSend = async () => {
+    if (!inputValue.trim() || isLoading) return;
 
-    // Add user message
-    const newMessage: Message = {
+    const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
       content: inputValue,
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
+    setIsLoading(true);
 
-    // Simulate AI response for UI testing
-    setTimeout(() => {
+    try {
+      const response = await ai.chat(userMsg.content);
+      const data = response;
+
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.content,
+        type: data.type,
+        sources: data.sources,
+        tool_call: data.tool_call,
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: Date.now().toString(),
           role: "assistant",
-          content:
-            "This is a dummy response. Backend integration coming in Phase 2!",
+          content: "Sorry, something went wrong. Please try again.",
+          type: "error",
         },
       ]);
-    }, 1000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToolConfirm = async (
+    messageId: string,
+    toolCall: { name: string; args: Record<string, unknown> },
+  ) => {
+    try {
+      if (toolCall.name === "create_task") {
+        await tasks.create(toolCall.args as unknown as CreateTaskData);
+        toast("success", "Task created successfully");
+      } else if (toolCall.name === "update_task") {
+        await tasks.update(
+          toolCall.args.task_id as number,
+          toolCall.args.fields as UpdateTaskData,
+        );
+        toast("success", "Task updated successfully");
+      } else if (toolCall.name === "complete_task") {
+        await tasks.complete(toolCall.args.task_id as number);
+        toast("success", "Task completed successfully");
+      }
+
+      // Update message to remove pending state
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId && m.tool_call
+            ? { ...m, tool_call: { ...m.tool_call, executed: true } }
+            : m,
+        ),
+      );
+    } catch {
+      toast("error", "Failed to execute action");
+    }
   };
 
   const handleClear = () => {
@@ -75,11 +123,11 @@ export function GlobalChat() {
 
   return (
     <>
-      {/* Floating Action Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(!isOpen)}
           size="icon"
+          aria-label="Toggle Global Chat"
           className={cn(
             "h-14 w-14 rounded-full shadow-lg transition-transform duration-300 hover:scale-105",
             isOpen && "rotate-90 scale-0 opacity-0",
@@ -87,13 +135,12 @@ export function GlobalChat() {
         >
           <img
             src="/Project logo.png"
-            alt="Logo"
+            alt="Lock In Assistant"
             className="h-10 w-10 object-contain"
           />
         </Button>
       </div>
 
-      {/* Main Chat Window */}
       <div
         className={cn(
           "fixed bottom-6 right-6 z-50 flex w-[400px] flex-col overflow-hidden rounded-lg border bg-background shadow-2xl transition-all duration-300 ease-in-out",
@@ -104,7 +151,6 @@ export function GlobalChat() {
         style={{ height: "600px" }}
       >
         <Card className="flex h-full flex-col border-0 shadow-none">
-          {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/50">
             <div className="flex items-center gap-2">
               <img
@@ -136,7 +182,6 @@ export function GlobalChat() {
             </div>
           </div>
 
-          {/* Message List */}
           <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-4 space-y-4 bg-background/50"
@@ -144,9 +189,9 @@ export function GlobalChat() {
             {messages.length === 0 && (
               <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground p-4">
                 <img
-                  src="/logo.png"
+                  src="/Project logo.png"
                   alt="Logo"
-                  className="h-8 w-8 mb-2 opacity-20"
+                  className="h-12 w-12 mb-2 opacity-20 object-contain"
                 />
                 <p className="text-sm">No messages yet.</p>
                 <p className="text-xs">
@@ -159,22 +204,78 @@ export function GlobalChat() {
               <div
                 key={msg.id}
                 className={cn(
-                  "flex w-full",
-                  msg.role === "user" ? "justify-end" : "justify-start",
+                  "flex w-full flex-col gap-2",
+                  msg.role === "user" ? "items-end" : "items-start",
                 )}
               >
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm",
+                    "max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm",
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground rounded-tr-none"
                       : "bg-muted text-muted-foreground rounded-tl-none",
                   )}
                 >
-                  {msg.content}
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
+
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {msg.sources.map((source, idx) => (
+                        <span
+                          key={idx}
+                          title={source.content}
+                          className="inline-flex items-center rounded-full bg-background/50 px-2 py-0.5 text-[10px] font-medium opacity-80 cursor-help"
+                        >
+                          📄 Source {idx + 1}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {msg.type === "tool_call" &&
+                  msg.tool_call &&
+                  !msg.tool_call.executed && (
+                    <Card className="max-w-[85%] border-primary/20 bg-primary/5 p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-full bg-primary/10 p-1.5 text-primary">
+                          <AlertCircle className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {msg.tool_call.display?.summary ||
+                              "Action Required"}
+                          </p>
+                          <div className="mt-2 flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                msg.tool_call &&
+                                handleToolConfirm(msg.id, msg.tool_call)
+                              }
+                            >
+                              <Check className="mr-1 h-3 w-3" />
+                              {msg.tool_call.display?.confirm_text || "Confirm"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+                {msg.type === "tool_call" && msg.tool_call?.executed && (
+                  <div className="text-xs text-muted-foreground flex items-center gap-1 ml-2">
+                    <Check className="h-3 w-3 text-green-500" /> Action
+                    completed
+                  </div>
+                )}
               </div>
             ))}
+
+            {isLoading && (
+              <div className="flex items-center gap-2 text-muted-foreground text-xs ml-2">
+                <Loader2 className="h-3 w-3 animate-spin" /> Thinking...
+              </div>
+            )}
           </div>
 
           {/* Input Area */}
@@ -193,7 +294,11 @@ export function GlobalChat() {
                 className="flex-1"
                 autoFocus
               />
-              <Button type="submit" size="icon" disabled={!inputValue.trim()}>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!inputValue.trim() || isLoading}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </form>
