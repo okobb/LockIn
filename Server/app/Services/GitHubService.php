@@ -251,16 +251,6 @@ final class GitHubService
                 ->where('user_id', '=', $userId)
                 ->first();
 
-            if ($existingTask) {
-                if ($existingTask->trashed()) {
-                    $existingTask->restore();
-                    Log::info("GitHub Sync: Restored trashed task for PR #{$pr['number']} ({$externalId})");
-                } else {
-                    Log::info("GitHub Sync: Task already exists for PR #{$pr['number']} ({$externalId})");
-                }
-                continue;
-            }
-
             $prFilesResponse = $this->authenticatedGet(
                 $integration,
                 $repoUrl . '/pulls/' . $pr['number'] . '/files',
@@ -269,6 +259,28 @@ final class GitHubService
             );
             $prFiles = $this->formatChanges($prFilesResponse->json());
 
+            if ($existingTask) {
+                if ($existingTask->trashed()) {
+                    $existingTask->restore();
+                }
+
+                $existingTask->update([
+                    'source_metadata' => [
+                        'repo' => $fullPr['base']['repo']['name'] ?? 'Unknown',
+                        'number' => $fullPr['number'],
+                        'branch' => $fullPr['head']['ref'] ?? 'unknown',
+                        'state' => $fullPr['state'],
+                        'additions' => $fullPr['additions'] ?? 0,
+                        'deletions' => $fullPr['deletions'] ?? 0,
+                        'sender' => $fullPr['user']['login'] ?? 'Unknown',
+                        'files' => array_column($prFiles, 'file'),
+                    ]
+                ]);
+                
+                Log::info("GitHub Sync: Updated metadata for task PR #{$pr['number']} ({$externalId})");
+                continue;
+            }
+
             $task = $taskService->createFromWebhookPayload([
                 'title' => $pr['title'] ?? 'Review PR',
                 'description' => $this->formatPRDescription($pr),
@@ -276,16 +288,14 @@ final class GitHubService
                 'source_link' => $pr['html_url'] ?? null,
                 'external_id' => $externalId,
                 'priority' => 'normal',
-                'source_metadata' => [
-                    'repo' => $fullPr['base']['repo']['name'] ?? 'Unknown',
-                    'number' => $fullPr['number'],
-                    'branch' => $fullPr['head']['ref'] ?? 'unknown',
-                    'state' => $fullPr['state'],
-                    'additions' => $fullPr['additions'] ?? 0,
-                    'deletions' => $fullPr['deletions'] ?? 0,
-                    'sender' => $fullPr['user']['login'] ?? 'Unknown',
-                    'files' => array_column($prFiles, 'file'),
-                ]
+                'repo' => $fullPr['base']['repo']['name'] ?? 'Unknown',
+                'number' => $fullPr['number'],
+                'branch' => $fullPr['head']['ref'] ?? 'unknown',
+                'state' => $fullPr['state'],
+                'additions' => $fullPr['additions'] ?? 0,
+                'deletions' => $fullPr['deletions'] ?? 0,
+                'sender' => $fullPr['user']['login'] ?? 'Unknown',
+                'files' => array_column($prFiles, 'file'),
             ], $user);
 
             $createdTasks[] = [

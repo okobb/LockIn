@@ -21,13 +21,11 @@ final class GitController extends BaseController
     public function show(FocusSession $session): JsonResponse
     {
         $task = Task::withTrashed()->find($session->task_id);
+        $repo = $task?->source_metadata['repo'] ?? $task?->source_metadata['source_metadata']['repo'] ?? null;
         
-        // If no task or no source metadata, return empty state (not a git task)
-        if (!$task || empty($task->source_metadata['repo'])) {
+        if (!$repo) {
             return $this->successResponse(null);
         }
-
-        $repo = $task->source_metadata['repo'];
         
         try {
             $changes = $this->gitHubService->getUncommittedChanges($repo, $session->user_id);
@@ -35,10 +33,10 @@ final class GitController extends BaseController
             $isEmpty = empty($changes) || (isset($changes['status']) && $changes['status'] === 'empty');
             if ($isEmpty && $task->source_type === 'github_pr') {
                 return $this->successResponse([
-                    'branch' => $task->source_metadata['branch'] ?? 'unknown',
-                    'files_changed' => $task->source_metadata['files'] ?? [],
-                    'additions' => $task->source_metadata['additions'] ?? 0,
-                    'deletions' => $task->source_metadata['deletions'] ?? 0,
+                    'branch' => $task->source_metadata['branch'] ?? $task->source_metadata['source_metadata']['branch'] ?? 'unknown',
+                    'files_changed' => $task->source_metadata['files'] ?? $task->source_metadata['source_metadata']['files'] ?? [],
+                    'additions' => $task->source_metadata['additions'] ?? $task->source_metadata['source_metadata']['additions'] ?? 0,
+                    'deletions' => $task->source_metadata['deletions'] ?? $task->source_metadata['source_metadata']['deletions'] ?? 0,
                     'repo' => $repo
                 ]);
             }
