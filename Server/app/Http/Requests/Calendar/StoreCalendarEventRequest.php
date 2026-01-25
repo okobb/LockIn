@@ -24,6 +24,7 @@ class StoreCalendarEventRequest extends FormRequest
             'priority'    => ['nullable', 'string', 'in:high,medium,low,urgent'],
             'tags'        => ['nullable', 'array'],
             'tags.*'      => ['string'],
+            'task_id'     => ['nullable', 'integer', 'exists:tasks,id'],
         ];
     }
 }

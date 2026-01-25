@@ -113,6 +113,7 @@ export function useCalendarEvents({
             description: newBlockData.description || null,
             priority: newBlockData.priority,
             tags: newBlockData.tags,
+            task_id: newBlockData.task_id,
             source: "manual",
             external_id: null,
           };
@@ -290,6 +291,7 @@ export function useCalendarEvents({
         priority: block.priority,
         // @ts-ignore - API needs to support these fields
         tags: block.tags,
+        task_id: block.task_id,
       };
       createMutation.mutate(createData);
     },

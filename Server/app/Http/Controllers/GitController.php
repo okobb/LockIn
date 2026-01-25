@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\FocusSession;
+use App\Models\Task;
 use App\Services\GitHubService;
 use Illuminate\Http\JsonResponse;
 
@@ -19,7 +20,7 @@ final class GitController extends BaseController
      */
     public function show(FocusSession $session): JsonResponse
     {
-        $task = $session->task;
+        $task = Task::withTrashed()->find($session->task_id);
         
         // If no task or no source metadata, return empty state (not a git task)
         if (!$task || empty($task->source_metadata['repo'])) {
@@ -27,12 +28,12 @@ final class GitController extends BaseController
         }
 
         $repo = $task->source_metadata['repo'];
-        $repoOwner = $task->source_metadata['owner'] ?? null; 
         
         try {
             $changes = $this->gitHubService->getUncommittedChanges($repo, $session->user_id);
             
-            if (empty($changes) && $task->source_type === 'github_pr') {
+            $isEmpty = empty($changes) || (isset($changes['status']) && $changes['status'] === 'empty');
+            if ($isEmpty && $task->source_type === 'github_pr') {
                 return $this->successResponse([
                     'branch' => $task->source_metadata['branch'] ?? 'unknown',
                     'files_changed' => $task->source_metadata['files'] ?? [],
@@ -40,6 +41,9 @@ final class GitController extends BaseController
                     'deletions' => $task->source_metadata['deletions'] ?? 0,
                     'repo' => $repo
                 ]);
+            }
+            if ($isEmpty) {
+                return $this->successResponse(null);
             }
 
             // Format for frontend
