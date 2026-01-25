@@ -39,6 +39,8 @@ import { Textarea } from "../../../shared/components/UI/Textarea";
 import { Input } from "../../../shared/components/UI/Input";
 import { QualityScoreBadge } from "../../../shared/components/QualityScoreBadge/QualityScoreBadge";
 import { useSessionContext } from "../context/SessionContext";
+import { EndSessionModal } from "../components/EndSessionModal";
+import { tasks } from "../../tasks/api/tasks";
 
 interface FocusState {
   taskId?: number;
@@ -57,13 +59,14 @@ export default function FocusMode() {
   const { open } = useModal();
   const { activeSession, updateSession, clearSession } = useSessionContext();
 
+  // Force HMR update
   const locationState = location.state as FocusState | null;
-
   const activeState = locationState || activeSession;
 
   const { session, setSession } = useFocusSession(activeState);
 
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
+  const [isEndSessionModalOpen, setIsEndSessionModalOpen] = useState(false);
 
   // Track which session we've initialized for to detect navigation changes
   const lastInitializedSession = useRef<string | null>(null);
@@ -300,6 +303,31 @@ export default function FocusMode() {
       setIsNoteHydrated(true);
     }
   }, [session, isNoteHydrated]);
+
+  const handleCompleteTask = async () => {
+    if (activeState?.taskId) {
+      try {
+        await tasks.complete(activeState.taskId);
+      } catch (err) {
+        console.error("Failed to complete task", err);
+      }
+    } else if (session?.task_id) {
+      try {
+        await tasks.complete(session.task_id);
+      } catch (err) {
+        console.error("Failed to complete task", err);
+      }
+    }
+
+    clearSession();
+
+    navigate("/dashboard");
+    open({
+      type: "success",
+      title: "Mission Complete",
+      message: "Task completed successfully.",
+    });
+  };
 
   const handleLockIn = () => {
     const payloadSessionId = session?.id || (activeState as any)?.sessionId;
@@ -720,9 +748,9 @@ export default function FocusMode() {
                 <Button
                   size="lg"
                   className="h-12 rounded-full px-8 shadow-lg shadow-primary/20 hover:shadow-primary/40 text-sm font-semibold bg-primary hover:bg-primary/90 transition-all active:scale-95"
-                  onClick={handleLockIn}
+                  onClick={() => setIsEndSessionModalOpen(true)}
                 >
-                  <Save className="w-4 h-4 mr-2" /> Lock In Context
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> End Session
                 </Button>
               </div>
             </div>
@@ -737,6 +765,7 @@ export default function FocusMode() {
               : "w-[380px] opacity-100",
           )}
         >
+          {/* ... (Sidebar Content) ... */}
           <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -872,6 +901,14 @@ export default function FocusMode() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
+
+        <EndSessionModal
+          isOpen={isEndSessionModalOpen}
+          onClose={() => setIsEndSessionModalOpen(false)}
+          onComplete={handleCompleteTask}
+          onPause={handleLockIn}
+          title={activeState.title}
+        />
       </main>
     </div>
   );
