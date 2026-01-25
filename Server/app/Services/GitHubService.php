@@ -138,7 +138,7 @@ final class GitHubService
             'additions' => $fullPr['additions'] ?? 0,
             'deletions' => $fullPr['deletions'] ?? 0,
             'sender' => $fullPr['user']['login'] ?? 'Unknown',
-            'files' => array_column($prFiles, 'file'),
+            'files' => $prFiles,
         ];
     }
 
