@@ -814,38 +814,43 @@ export default function FocusMode() {
               </div>
             </div>
 
-            {activeGitState && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Branch</span>
-                    <Badge
-                      variant="outline"
-                      className="border-purple-500/30 text-purple-400 font-mono bg-purple-500/10"
-                    >
-                      {activeGitState.branch}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">File</span>
-                    <span className="font-mono text-foreground/80">
-                      {activeGitState.files_changed[0]}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-xs font-mono border-t border-purple-500/20 pt-3">
-                    <div className="flex items-center gap-1.5 text-emerald-500">
-                      <Plus className="w-3 h-3" />
-                      <span>{activeGitState.additions} additions</span>
+            {activeGitState &&
+              (activeGitState.additions > 0 ||
+                activeGitState.deletions > 0 ||
+                activeGitState.files_changed.length > 0) && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-4">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Branch</span>
+                      <Badge
+                        variant="outline"
+                        className="border-purple-500/30 text-purple-400 font-mono bg-purple-500/10"
+                      >
+                        {activeGitState.branch || "unknown"}
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-1.5 text-red-500">
-                      <div className="w-3 h-px bg-current" />
-                      <span>{activeGitState.deletions} deletions</span>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        Files Changed
+                      </span>
+                      <span className="font-mono text-foreground/80">
+                        {activeGitState.files_changed.length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs font-mono border-t border-purple-500/20 pt-3">
+                      <div className="flex items-center gap-1.5 text-emerald-500">
+                        <Plus className="w-3 h-3" />
+                        <span>{activeGitState.additions} additions</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-red-500">
+                        <div className="w-3 h-px bg-current" />
+                        <span>{activeGitState.deletions} deletions</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div className="space-y-4">
               <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">

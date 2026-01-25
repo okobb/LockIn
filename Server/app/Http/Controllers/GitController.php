@@ -20,6 +20,24 @@ final class GitController extends BaseController
      */
     public function show(FocusSession $session): JsonResponse
     {
+        $session->load(['contextSnapshot']);
+
+        if ($session->contextSnapshot) {
+            $snapshot = $session->contextSnapshot;
+            $hasGitData = !empty($snapshot->repository_source) || !empty($snapshot->git_branch);
+            
+            if ($hasGitData) {
+                 return $this->successResponse([
+                    'branch' => $snapshot->git_branch ?? 'unknown',
+                    'files_changed' => $snapshot->git_files_changed ?? [],
+                    'additions' => $snapshot->git_additions ?? 0,
+                    'deletions' => $snapshot->git_deletions ?? 0,
+                    'repo' => $snapshot->repository_source ?? 'Unknown',
+                    'source' => 'snapshot' 
+                ]);
+            }
+        }
+
         $task = Task::withTrashed()->find($session->task_id);
         $repo = $task?->source_metadata['repo'] ?? $task?->source_metadata['source_metadata']['repo'] ?? null;
         
@@ -44,7 +62,6 @@ final class GitController extends BaseController
                 return $this->successResponse(null);
             }
 
-            // Format for frontend
             return $this->successResponse([
                 'branch' => $task->source_metadata['branch'] ?? 'unknown',
                 'files_changed' => array_column($changes, 'file'),

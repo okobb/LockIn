@@ -24,6 +24,8 @@ class ContextSnapshot extends Model
         'git_diff_blob',
         'git_branch',
         'git_last_commit',
+        'git_additions',
+        'git_deletions',
         'repository_source',
         'git_files_changed',
         'browser_state',
@@ -46,6 +48,8 @@ class ContextSnapshot extends Model
     {
         return [
             'git_files_changed' => 'array',
+            'git_additions' => 'integer',
+            'git_deletions' => 'integer',
             'browser_state' => 'array',
             'ide_state' => 'array',
             'ai_resume_checklist' => 'array',

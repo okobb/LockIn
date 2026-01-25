@@ -151,7 +151,7 @@ final class ContextSnapshotService extends BaseService
     public function createForTask(Task $task, array $gitData): ContextSnapshot
     {
         return $this->executeInTransaction(function () use ($task, $gitData) {
-            $snapshot = $this->create([
+            $data = [
                 'user_id' => $task->user_id,
                 'focus_session_id' => null,
                 'title' => $task->title,
@@ -159,9 +159,22 @@ final class ContextSnapshotService extends BaseService
                 'git_branch' => $gitData['branch'] ?? null,
                 'repository_source' => $gitData['repo'] ?? null,
                 'git_files_changed' => $gitData['files'] ?? [],
+                'git_additions' => $gitData['additions'] ?? 0,
+                'git_deletions' => $gitData['deletions'] ?? 0,
                 'git_diff_blob' => null, 
                 'quality_score' => 50,
-            ]);
+            ];
+
+            // Deduplication: Update existing if available
+            if ($task->context_snapshot_id) {
+                $existing = ContextSnapshot::find($task->context_snapshot_id, ['*']);
+                if ($existing) {
+                    $existing->update($data);
+                    return $existing;
+                }
+            }
+
+            $snapshot = $this->create($data);
 
             $task->update(['context_snapshot_id' => $snapshot->id]);
 
