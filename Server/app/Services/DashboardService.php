@@ -10,6 +10,7 @@ use App\Models\Task;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class DashboardService
@@ -130,10 +131,7 @@ final class DashboardService
             ->where('user_id', '=', $userId)
             ->where('type', '=', 'deep_work')
             ->whereDate('start_time', $date)
-            ->get()
-            ->sum(function ($event) {
-                return Carbon::parse($event->start_time)->diffInMinutes(Carbon::parse($event->end_time));
-            });
+            ->sum(DB::raw('EXTRACT(EPOCH FROM (end_time - start_time)) / 60'));
     }
 
     private function mapSourceToTag(?string $source): string
