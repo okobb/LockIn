@@ -29,6 +29,7 @@ const CalendarBlock = memo(
     const startTime = new Date(block.start_time);
 
     const handleDelete = (e: React.MouseEvent) => {
+      console.log("Delete clicked for block:", block.id);
       e.stopPropagation();
       onDelete?.(block.id);
     };
@@ -43,19 +44,23 @@ const CalendarBlock = memo(
 
           "backdrop-blur-md shadow-sm",
 
-          // Block type backgrounds - using semantic colors from palette
-          blockType === "deep-work" &&
-            "bg-[hsl(217_91%_60%/0.5)] border-[hsl(217_91%_60%/0.6)] hover:bg-[hsl(217_91%_60%/0.6)]",
-          blockType === "meeting" &&
-            "bg-[hsl(0_84%_60%/0.5)] border-[hsl(0_84%_60%/0.6)] hover:bg-[hsl(0_84%_60%/0.6)]",
-          blockType === "external" &&
-            "bg-[hsl(38_92%_50%/0.5)] border-[hsl(38_92%_50%/0.6)] hover:bg-[hsl(38_92%_50%/0.6)]",
-
-          // Priority borders - using semantic colors
-          block.priority === "urgent" && "border-l-[hsl(0_84%_60%)]",
-          block.priority === "high" && "border-l-[hsl(38_92%_50%)]",
-          block.priority === "medium" && "border-l-[hsl(217_91%_60%)]",
-          block.priority === "low" && "border-l-[hsl(240_5%_65%)]",
+          // Priority-based coloring (overrides type if present)
+          block.priority === "urgent"
+            ? "bg-[hsl(0_84%_60%/0.5)] border-[hsl(0_84%_60%)] hover:bg-[hsl(0_84%_60%/0.6)]"
+            : block.priority === "high"
+              ? "bg-[hsl(38_92%_50%/0.5)] border-[hsl(38_92%_50%)] hover:bg-[hsl(38_92%_50%/0.6)]"
+              : block.priority === "medium"
+                ? "bg-[hsl(217_91%_60%/0.5)] border-[hsl(217_91%_60%)] hover:bg-[hsl(217_91%_60%/0.6)]"
+                : block.priority === "low"
+                  ? "bg-[hsl(240_5%_65%/0.5)] border-[hsl(240_5%_65%)] hover:bg-[hsl(240_5%_65%/0.6)]"
+                  : // Fallback to Type-based coloring
+                    blockType === "deep-work"
+                    ? "bg-[hsl(217_91%_60%/0.5)] border-[hsl(217_91%_60%/0.6)] hover:bg-[hsl(217_91%_60%/0.6)]"
+                    : blockType === "meeting"
+                      ? "bg-[hsl(0_84%_60%/0.5)] border-[hsl(0_84%_60%/0.6)] hover:bg-[hsl(0_84%_60%/0.6)]"
+                      : blockType === "external"
+                        ? "bg-[hsl(38_92%_50%/0.5)] border-[hsl(38_92%_50%/0.6)] hover:bg-[hsl(38_92%_50%/0.6)]"
+                        : "bg-[hsl(217_91%_60%/0.5)] border-[hsl(217_91%_60%/0.6)]", // Default catch-all
         )}
         style={style}
         draggable
@@ -93,7 +98,7 @@ const CalendarBlock = memo(
                 {block.tags?.map((tag) => (
                   <span
                     key={tag}
-                    className="text-[8px] px-1 rounded-sm bg-[hsl(217_91%_60%/0.15)] text-[hsl(217_91%_60%)]"
+                    className="text-[8px] px-1 rounded-sm bg-background/20 text-foreground/90 border border-foreground/10"
                   >
                     {tag}
                   </span>

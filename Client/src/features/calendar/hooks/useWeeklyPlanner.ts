@@ -88,7 +88,13 @@ export function useWeeklyPlanner() {
 
       // Check against CALENDAR_END_HOUR
       const endHour = endTime.getHours() + endTime.getMinutes() / 60;
-      if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
+      const isNextDay = endTime.getDate() !== startTime.getDate();
+
+      if (
+        absoluteHour >= CALENDAR_END_HOUR ||
+        (isNextDay && endHour > 0) || 
+        (!isNextDay && endHour > CALENDAR_END_HOUR)
+      ) {
         await modal.open({
           type: "error",
           title: "Schedule Conflict",
@@ -99,7 +105,7 @@ export function useWeeklyPlanner() {
 
       if (checkOverlap(startTime, endTime)) {
         await modal.open({
-          type: "warning",
+          type: "error",
           title: "Schedule Conflict",
           message: "This time slot overlaps with an existing block.",
         });
@@ -232,8 +238,12 @@ export function useWeeklyPlanner() {
       title: string,
       type: "deep_work" | "meeting" | "external",
       durationMinutes: number,
+      dateOverride?: Date,
+      hourOverride?: number,
     ) => {
-      const { date, hour } = createBlockState;
+      const date = dateOverride || createBlockState.date;
+      const hour = hourOverride ?? createBlockState.hour;
+
       if (!date || hour === null) return;
 
       const startTime = new Date(date);
@@ -245,7 +255,13 @@ export function useWeeklyPlanner() {
       endTime.setMinutes(startTime.getMinutes() + durationMinutes);
 
       const endHour = endTime.getHours() + endTime.getMinutes() / 60;
-      if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
+      const isNextDay = endTime.getDate() !== startTime.getDate();
+
+      if (
+        absoluteHour >= CALENDAR_END_HOUR ||
+        (isNextDay && endHour > 0) || 
+        (!isNextDay && endHour > CALENDAR_END_HOUR)
+      ) {
         await modal.open({
           type: "error",
           title: "Schedule Conflict",
@@ -256,7 +272,7 @@ export function useWeeklyPlanner() {
 
       if (checkOverlap(startTime, endTime)) {
         await modal.open({
-          type: "warning",
+          type: "error",
           title: "Schedule Conflict",
           message: "This time slot overlaps with an existing block.",
         });

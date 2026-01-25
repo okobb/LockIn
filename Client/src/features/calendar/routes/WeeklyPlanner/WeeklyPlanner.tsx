@@ -145,6 +145,7 @@ export default function WeeklyPlanner() {
   };
 
   const onDeleteBlock = async (id: string) => {
+    console.log("onDeleteBlock called for:", id);
     const confirmed = await modal.open({
       type: "confirm",
       title: "Delete Block",
@@ -152,9 +153,12 @@ export default function WeeklyPlanner() {
       confirmText: "Delete",
       cancelText: "Cancel",
     });
+    console.log("Delete confirmed:", confirmed);
 
     if (confirmed) {
+      console.log("Calling removeBlock...", id);
       await removeBlock(id);
+      console.log("removeBlock completed");
       closeEditModal();
       toast("success", "Block deleted successfully");
     }

@@ -6,3 +6,4 @@ n8n_data
 docker-compose-example.yml
 Dockerfile
 production.env
+production-docker-compose.yml

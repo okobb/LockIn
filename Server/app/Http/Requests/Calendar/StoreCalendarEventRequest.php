@@ -21,6 +21,9 @@ class StoreCalendarEventRequest extends FormRequest
             'end_time'    => ['required', 'date', 'after:start_time'],
             'type'        => ['nullable', 'string', 'in:deep_work,meeting,external'],
             'description' => ['nullable', 'string'],
+            'priority'    => ['nullable', 'string', 'in:high,medium,low,urgent'],
+            'tags'        => ['nullable', 'array'],
+            'tags.*'      => ['string'],
         ];
     }
 }

@@ -12,13 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("
-            DELETE FROM calendar_events a USING calendar_events b
-            WHERE a.id < b.id
-            AND a.user_id = b.user_id
-            AND a.external_id = b.external_id
-            AND a.external_id IS NOT NULL
-        ");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("
+                DELETE FROM calendar_events a USING calendar_events b
+                WHERE a.id < b.id
+                AND a.user_id = b.user_id
+                AND a.external_id = b.external_id
+                AND a.external_id IS NOT NULL
+            ");
+        }
 
         Schema::table('calendar_events', function (Blueprint $table) {
             $table->unique(['user_id', 'external_id']);
