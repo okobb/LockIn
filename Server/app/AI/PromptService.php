@@ -124,6 +124,7 @@ class PromptService
     {
         $context = $variables['context'] ?? '';
         $question = $variables['question'] ?? '';
+        $history = $variables['history'] ?? [];
 
         $messages = [
             ['role' => 'system', 'content' => self::RAG_SYSTEM_INSTRUCTIONS],
@@ -138,6 +139,11 @@ class PromptService
                 'role' => 'assistant',
                 'content' => "I've reviewed the reference material and I'm ready to answer questions based on it.",
             ];
+        }
+
+        // Append conversation history
+        if (!empty($history) && is_array($history)) {
+            $messages = array_merge($messages, $history);
         }
 
         $messages[] = ['role' => 'user', 'content' => "Question: {$question}"];

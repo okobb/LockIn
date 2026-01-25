@@ -96,13 +96,19 @@ class RAGService
     /**
      * Semantic search for a user with re-ranking.
      */
-    public function search(int $userId, string $query, int $limit = 5): array
+    public function search(int $userId, string $query, ?int $contextId = null, int $limit = 5): array
     {
         $queryVector = $this->embedder->embed($query);
         $minScore = config('rag.min_relevance_score', 0.5);
 
         $fetchLimit = min($limit * 2, config('rag.max_context_chunks', 10));
-        $results = $this->qdrant->search($queryVector, ['user_id' => $userId], $fetchLimit);
+
+        $filters = ['user_id' => $userId];
+        if ($contextId) {
+            $filters['context_id'] = $contextId;
+        }
+
+        $results = $this->qdrant->search($queryVector, $filters, $fetchLimit);
         
         $rankedResults = collect($results)
             ->filter(fn($item) => ($item['score'] ?? 0) >= $minScore)
@@ -134,10 +140,11 @@ class RAGService
      *
      * @param int $userId
      * @param string $question
-     * @param string|null $activeContextId
+     * @param int|null $activeContextId
+     * @param array $history
      * @return array
      */
-    public function chat(int $userId, string $question, ?string $activeContextId = null): array
+    public function chat(int $userId, string $question, ?int $activeContextId = null, array $history = []): array
     {
         // Security Check
         $processed = $this->prompts->process($question);
@@ -152,7 +159,7 @@ class RAGService
 
         // Retrieve RAG Context
         $maxChunks = config('rag.max_chunks', 5);
-        $chunks = $this->search($userId, $sanitizedQuestion, limit: $maxChunks);
+        $chunks = $this->search($userId, $sanitizedQuestion, $activeContextId, limit: $maxChunks);
         $contextString = collect($chunks)->pluck('content')->implode("\n---\n");
 
         // Build System Prompt with Context
@@ -160,7 +167,8 @@ class RAGService
             'context' => $contextString ?: "No specific knowledge base context found.",
             'user_id' => $userId,
             'current_date' => now()->toDayDateTimeString(),
-            'active_context_id' => $activeContextId ?? 'none',
+            'active_context_id' => (string) ($activeContextId ?? 'none'),
+            'history' => $history,
         ];
 
         // Define Tools
