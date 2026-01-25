@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\DailyStat;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -87,6 +88,12 @@ final class TaskService extends BaseService
     {
         if (isset($data['status']) && $data['status'] === 'done' && $task->status !== 'done') {
             $data['completed_at'] = now();
+            
+            // Increment daily stats
+           DailyStat::query()->updateOrCreate(
+                ['user_id' => $task->user_id, 'date' => now()->toDateString()],
+                ['tasks_completed' => \Illuminate\Support\Facades\DB::raw('tasks_completed + 1')]
+            );
         }
 
         $task->update($data);
