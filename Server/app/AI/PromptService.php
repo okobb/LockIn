@@ -45,10 +45,10 @@ class PromptService
 
     private const METADATA_GENERATION_INSTRUCTIONS = <<<'EOT'
         Analyze the provided learning resource content and generate metadata in JSON format.
-        Return ONLY the raw JSON object with the following keys:
+        Return ONLY the raw JSON object with the following keys (All tags and difficulties must be capitalized):
         - title: A clear, descriptive title (string)
         - summary: A 2-3 sentence summary of the main points (string)
-        - difficulty: One of "beginner", "intermediate", "advanced" (string)
+        - difficulty: One of "Beginner", "Intermediate", "Advanced" (string)
         - tags: Array of 3-5 relevant topic keywords (array of strings)
         - estimated_minutes: Estimated time to read/watch in minutes (integer)
     EOT;

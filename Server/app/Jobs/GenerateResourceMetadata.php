@@ -17,6 +17,8 @@ class GenerateResourceMetadata implements ShouldQueue
 {
     use Queueable, Dispatchable, InteractsWithQueue, SerializesModels;
 
+    public $timeout = 180;
+
     public function __construct(
         public KnowledgeResource $resource
     ) {}
@@ -55,8 +57,8 @@ class GenerateResourceMetadata implements ShouldQueue
         $this->resource->update([
             'title' => $this->resource->title === $this->resource->url ? Str::limit($metadata['title'] ?? $this->resource->title, 250, '') : $this->resource->title,
             'summary' => $metadata['summary'] ?? null,
-            'difficulty' => $metadata['difficulty'] ?? 'beginner',
-            'tags' => $metadata['tags'] ?? [],
+            'difficulty' => ucfirst(strtolower($metadata['difficulty'] ?? 'Beginner')),
+            'tags' => array_map(fn($t) => ucwords(trim($t)), $metadata['tags'] ?? []),
             'estimated_time_minutes' => $metadata['estimated_minutes'] ?? $this->resource->estimated_time_minutes,
         ]);
     }

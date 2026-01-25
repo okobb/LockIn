@@ -16,6 +16,8 @@ class GenerateResourceTitle implements ShouldQueue
     use Queueable;
     use Dispatchable, InteractsWithQueue, SerializesModels;
 
+    public $timeout = 180;
+
     public function __construct(
         public KnowledgeResource $resource
     ) {}

@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
 class FetchResourceMetadata implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    
+    public $timeout = 180;
 
     public function __construct(
         public KnowledgeResource $resource
@@ -128,7 +130,9 @@ class FetchResourceMetadata implements ShouldQueue
                 $prompt .= "Type: " . $this->resource->type . "\n\n";
                 $prompt .= "1. Generate 3-5 relevant tags (comma separated, lowercase).\n";
                 $prompt .= "2. Estimate difficulty level (beginner, intermediate, advanced).\n";
-                $prompt .= "Format: Tags: [tag1, tag2]\nDifficulty: [level]";
+                $prompt .= "1. Generate 3-5 relevant tags (comma separated, Title Case Camel Case not required, just capitalized words).\n";
+                $prompt .= "2. Estimate difficulty level (Beginner, Intermediate, Advanced).\n";
+                $prompt .= "Format: Tags: [Tag1, Tag2]\nDifficulty: [Level]";
 
                 $response = $aiService->chat([
                     ['role' => 'system', 'content' => 'You are a metadata classifier for a developer resource library.'],
@@ -140,12 +144,12 @@ class FetchResourceMetadata implements ShouldQueue
                 $difficulty = null;
 
                 if (preg_match('/Tags:\s*\[(.*?)\]/i', $response, $matches)) {
-                    $tags = array_map('trim', explode(',', $matches[1]));
+                    $tags = array_map(fn($t) => ucwords(trim($t)), explode(',', $matches[1]));
                 }
                 
                 if (preg_match('/Difficulty:\s*\[(.*?)\]/i', $response, $matches)) {
-                    $diff = strtolower(trim($matches[1]));
-                    if (in_array($diff, ['beginner', 'intermediate', 'advanced'])) {
+                    $diff = ucfirst(strtolower(trim($matches[1])));
+                    if (in_array($diff, ['Beginner', 'Intermediate', 'Advanced'])) {
                         $difficulty = $diff;
                     }
                 }
