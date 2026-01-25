@@ -198,7 +198,7 @@ final class DashboardService
 
         // Fallback: try to get from related incoming message
         if (!$sender) {
-            $message = $task->incomingMessages()->first();
+            $message = $task->incomingMessages->first();
             if ($message && $message->sender_info) {
                 $sender = $message->sender_info;
             }
