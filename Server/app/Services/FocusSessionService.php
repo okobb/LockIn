@@ -94,9 +94,9 @@ final class FocusSessionService extends BaseService
             $restoredContext = (bool) $prevSession;
 
             if (!$restoredContext && !empty($validated['task_id'])) {
-                $task = Task::find($validated['task_id']);
+                $task = Task::find($validated['task_id'], ['*']);
                 if ($task && $task->context_snapshot_id) {
-                    $taskSnapshot = ContextSnapshot ::find($task->context_snapshot_id);
+                    $taskSnapshot = ContextSnapshot::find($task->context_snapshot_id, ['*']);
                     if ($taskSnapshot) {
                          app(ContextSnapshotService::class)->forkSnapshot($taskSnapshot, $session);
                          $session->refresh();
