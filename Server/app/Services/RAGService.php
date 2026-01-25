@@ -16,7 +16,8 @@ class RAGService
         private EmbeddingService $embedder,
         private QdrantService $qdrant,
         private AIService $aiService,
-        private PromptService $prompts
+        private PromptService $prompts,
+        private ToolService $toolService
     ) {}
 
     public function createResource(array $data, int $userId): KnowledgeResource
@@ -129,46 +130,75 @@ class RAGService
     }
 
     /**
-     * Ask a question using the RAG pipeline with security checks.
+     * Chat with the assistant using RAG context and Tools.
      *
-     * @return array{answer: string, sources: array, blocked?: bool}
+     * @param int $userId
+     * @param string $question
+     * @param string|null $activeContextId
+     * @return array
      */
-    public function ask(int $userId, string $question): array
+    public function chat(int $userId, string $question, ?string $activeContextId = null): array
     {
-        // Security: Process through PromptService
+        // Security Check
         $processed = $this->prompts->process($question);
-        
         if ($processed['blocked']) {
             return [
-                'answer' => "I'm sorry, but I can't process that request. Please rephrase your question.",
+                'type' => 'error',
+                'content' => "I'm sorry, but I can't process that request.",
                 'sources' => [],
-                'blocked' => true,
             ];
         }
-
         $sanitizedQuestion = $processed['sanitized'];
 
-        // Retrieve relevant chunks
+        // Retrieve RAG Context
         $maxChunks = config('rag.max_chunks', 5);
         $chunks = $this->search($userId, $sanitizedQuestion, limit: $maxChunks);
-        
         $contextString = collect($chunks)->pluck('content')->implode("\n---\n");
 
-        if (empty($contextString)) {
+        // Build System Prompt with Context
+        $systemContext = [
+            'context' => $contextString ?: "No specific knowledge base context found.",
+            'user_id' => $userId,
+            'current_date' => now()->toDayDateTimeString(),
+            'active_context_id' => $activeContextId ?? 'none',
+        ];
+
+        // Define Tools
+        $tools = $this->toolService->getTaskTools();
+
+        // Call AI Service
+        $messages = $this->prompts->build('chat_with_tools', array_merge($systemContext, ['question' => $sanitizedQuestion]));
+        $response = $this->aiService->chatWithTools($messages, $tools);
+
+        // Format Response
+        if (!empty($response['tool_calls'])) {
+            $toolCall = $response['tool_calls'][0];
+            $function = $toolCall['function'];
+            $args = json_decode($function['arguments'], true);
+            $name = $function['name'];
+
+            // Generate friendly display text
+            $displayMap = [
+                'create_task' => ['summary' => "Create task: " . ($args['title'] ?? 'New Task'), 'confirm_text' => 'Create Task'],
+                'update_task' => ['summary' => "Update task " . ($args['task_id'] ?? ''), 'confirm_text' => 'Update Task'],
+                'complete_task' => ['summary' => "Complete task " . ($args['task_id'] ?? ''), 'confirm_text' => 'Complete Task'],
+            ];
+
             return [
-                'answer' => "I couldn't find any relevant information in your knowledge base to answer that.",
-                'sources' => [],
+                'type' => 'tool_call',
+                'content' => $response['content'] ?? "I can help with that.",
+                'sources' => $chunks,
+                'tool_call' => [
+                    'name' => $name,
+                    'args' => $args,
+                    'display' => $displayMap[$name] ?? ['summary' => 'Execute Action', 'confirm_text' => 'Confirm'],
+                ]
             ];
         }
 
-        $messages = $this->prompts->build('rag_qa', [
-            'context' => $contextString,
-            'question' => $sanitizedQuestion,
-        ]);
-        $answer = $this->aiService->chat($messages);
-
         return [
-            'answer' => $answer,
+            'type' => 'message',
+            'content' => $response['content'] ?? "I'm not sure.",
             'sources' => $chunks,
         ];
     }
