@@ -33,6 +33,7 @@ export function useWeeklyPlanner() {
     updateBacklogTask,
     addBacklogTask,
     removeBacklogTask,
+    completeTask,
   } = useTaskBacklog();
 
   const {
@@ -92,7 +93,7 @@ export function useWeeklyPlanner() {
 
       if (
         absoluteHour >= CALENDAR_END_HOUR ||
-        (isNextDay && endHour > 0) || 
+        (isNextDay && endHour > 0) ||
         (!isNextDay && endHour > CALENDAR_END_HOUR)
       ) {
         await modal.open({
@@ -259,7 +260,7 @@ export function useWeeklyPlanner() {
 
       if (
         absoluteHour >= CALENDAR_END_HOUR ||
-        (isNextDay && endHour > 0) || 
+        (isNextDay && endHour > 0) ||
         (!isNextDay && endHour > CALENDAR_END_HOUR)
       ) {
         await modal.open({
@@ -331,6 +332,7 @@ export function useWeeklyPlanner() {
     updateBacklogTask,
     addBacklogTask,
     removeBacklogTask,
+    completeTask,
     updateCalendarBlock,
 
     pendingMoveState,

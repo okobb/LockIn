@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\KnowledgeResource;
 use App\Services\AIService;
 use App\Services\DocumentParserService;
+use App\Jobs\ProcessResourceEmbedding;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 class GenerateResourceMetadata implements ShouldQueue
 {
     use Queueable, Dispatchable, InteractsWithQueue, SerializesModels;
+
+    public $timeout = 180;
 
     public function __construct(
         public KnowledgeResource $resource
@@ -40,7 +43,6 @@ class GenerateResourceMetadata implements ShouldQueue
                  $content = "File: " . $this->resource->title . " (Content extraction not supported for .{$extension})";
             } else {
                 $this->resource->update(['content_text' => $content]);
-                ProcessResourceEmbedding::dispatch($this->resource);
             }
         } elseif ($this->resource->url) {
             $content = $this->resource->content_text ?? "URL: " . $this->resource->url;
@@ -55,9 +57,13 @@ class GenerateResourceMetadata implements ShouldQueue
         $this->resource->update([
             'title' => $this->resource->title === $this->resource->url ? Str::limit($metadata['title'] ?? $this->resource->title, 250, '') : $this->resource->title,
             'summary' => $metadata['summary'] ?? null,
-            'difficulty' => $metadata['difficulty'] ?? 'beginner',
-            'tags' => $metadata['tags'] ?? [],
+            'difficulty' => ucfirst(strtolower($metadata['difficulty'] ?? 'Beginner')),
+            'tags' => array_map(fn($t) => ucwords(trim($t)), $metadata['tags'] ?? []),
             'estimated_time_minutes' => $metadata['estimated_minutes'] ?? $this->resource->estimated_time_minutes,
         ]);
+
+        if (!empty($content) || !empty($this->resource->content_text)) {
+            ProcessResourceEmbedding::dispatch($this->resource);
+        }
     }
 }

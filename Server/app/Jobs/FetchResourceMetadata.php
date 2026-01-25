@@ -5,8 +5,7 @@ namespace App\Jobs;
 use App\Models\KnowledgeResource;
 use App\Services\UrlMetadataService;
 use App\Services\VideoMetadataService;
-use App\Services\AIService;
-use App\Jobs\ProcessResourceEmbedding;
+use App\Jobs\GenerateResourceMetadata;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -18,6 +17,8 @@ use Illuminate\Support\Str;
 class FetchResourceMetadata implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    
+    public $timeout = 180;
 
     public function __construct(
         public KnowledgeResource $resource
@@ -25,8 +26,7 @@ class FetchResourceMetadata implements ShouldQueue
 
     public function handle(
         UrlMetadataService $urlMetadata, 
-        VideoMetadataService $videoMetadata,
-        AIService $aiService
+        VideoMetadataService $videoMetadata
     ): void
     {
         $metadata = $urlMetadata->fetchMetadata($this->resource->url);
@@ -120,51 +120,6 @@ class FetchResourceMetadata implements ShouldQueue
         // Refresh model to get latest data from above update
         $this->resource->refresh();
 
-        if (empty($this->resource->tags) || empty($this->resource->difficulty)) {
-            try {
-                $prompt = "Analyze this resource and provide metadata relative to programming/productivity:\n";
-                $prompt .= "Title: " . $this->resource->title . "\n";
-                $prompt .= "Summary: " . ($this->resource->summary ?? 'N/A') . "\n";
-                $prompt .= "Type: " . $this->resource->type . "\n\n";
-                $prompt .= "1. Generate 3-5 relevant tags (comma separated, lowercase).\n";
-                $prompt .= "2. Estimate difficulty level (beginner, intermediate, advanced).\n";
-                $prompt .= "Format: Tags: [tag1, tag2]\nDifficulty: [level]";
-
-                $response = $aiService->chat([
-                    ['role' => 'system', 'content' => 'You are a metadata classifier for a developer resource library.'],
-                    ['role' => 'user', 'content' => $prompt]
-                ]);
-
-                // Simple parsing
-                $tags = [];
-                $difficulty = null;
-
-                if (preg_match('/Tags:\s*\[(.*?)\]/i', $response, $matches)) {
-                    $tags = array_map('trim', explode(',', $matches[1]));
-                }
-                
-                if (preg_match('/Difficulty:\s*\[(.*?)\]/i', $response, $matches)) {
-                    $diff = strtolower(trim($matches[1]));
-                    if (in_array($diff, ['beginner', 'intermediate', 'advanced'])) {
-                        $difficulty = $diff;
-                    }
-                }
-
-                $aiUpdates = [];
-                if (empty($this->resource->tags) && !empty($tags)) {
-                    $aiUpdates['tags'] = $tags;
-                }
-                if (empty($this->resource->difficulty) && $difficulty) {
-                    $aiUpdates['difficulty'] = $difficulty;
-                }
-                
-                if (!empty($aiUpdates)) {
-                    $this->resource->update($aiUpdates);
-                }
-
-            } catch (\Exception $e) {
-                Log::warning("AI Metadata generation failed: " . $e->getMessage());
-            }
-        }
+        GenerateResourceMetadata::dispatch($this->resource);
     }
 }

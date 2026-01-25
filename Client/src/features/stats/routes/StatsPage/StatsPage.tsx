@@ -25,6 +25,7 @@ import { WeeklyChart } from "../../components/WeeklyChart";
 import { GoalProgress } from "../../components/GoalProgress";
 import { StreakDisplay } from "../../components/StreakDisplay";
 import { InsightsPanel } from "../../components/InsightsPanel";
+import { StatsPageSkeleton } from "../../components/StatsPageSkeleton";
 
 export default function StatsPage() {
   const { open } = useModal();
@@ -103,9 +104,7 @@ export default function StatsPage() {
           </header>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
+            <StatsPageSkeleton />
           ) : stats ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

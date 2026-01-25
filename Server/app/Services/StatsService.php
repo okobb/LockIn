@@ -125,7 +125,10 @@ class StatsService
             
             $activeDates = DailyStat::query()
                 ->where('user_id', $userId)
-                ->where('flow_time_min', '>', 0)
+                ->where(function ($query) {
+                    $query->where('flow_time_min', '>', 0)
+                          ->orWhere('tasks_completed', '>', 0);
+                })
                 ->whereDate('date', '<=', $today)
                 ->orderBy('date', 'desc')
                 ->pluck('date')

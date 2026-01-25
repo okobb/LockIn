@@ -10,6 +10,7 @@ use App\Models\Task;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class DashboardService
@@ -25,13 +26,13 @@ final class DashboardService
             $today = Carbon::today();
 
             $tasksDone = Task::query()
-                ->where('user_id', '=', $userId)
+                ->where('user_id', '=', $userId, 'and')
                 ->where('status', '=', 'done')
                 ->whereDate('completed_at', $today)
                 ->count();
 
             $deepWorkBlocks = CalendarEvent::query()
-                ->where('user_id', '=', $userId)
+                ->where('user_id', '=', $userId, 'and')
                 ->where('type', '=', 'deep_work')
                 ->whereDate('start_time', $today)
                 ->count();
@@ -56,7 +57,7 @@ final class DashboardService
     public function getPriorityTasks(int $userId, int $limit = 5): Collection
     {
         return Task::query()
-            ->where('user_id', '=', $userId)
+            ->where('user_id', '=', $userId, 'and')
             ->whereIn('status', ['open', 'in_progress'])
             ->where('priority', '<=', 2)
             ->orderBy('priority', 'asc')
@@ -82,12 +83,12 @@ final class DashboardService
     {
         return Cache::remember("dashboard:events:{$userId}", now()->addMinutes(1), function () use ($userId, $limit) {
             return CalendarEvent::query()
-                ->where('user_id', '=', $userId)
+                ->where('user_id', '=', $userId, 'and')
                 ->whereDate('start_time', Carbon::today())
                 ->where('start_time', '>=', now())
                 ->orderBy('start_time')
                 ->limit($limit)
-                ->get()
+                ->get(['id', 'start_time', 'end_time', 'title', 'type'])
                 ->map(fn($event) => [
                     'id' => (string) $event->id,
                     'time' => Carbon::parse($event->start_time)->format('H:i'),
@@ -104,12 +105,12 @@ final class DashboardService
     public function getCommunications(int $userId, int $limit = 5): Collection
     {
         return IncomingMessage::query()
-            ->where('user_id', '=', $userId)
+            ->where('user_id', '=', $userId, 'and')
             ->whereIn('status', ['pending', 'processed'])
             ->orderBy('urgency_score', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
-            ->get()
+            ->get(['id', 'provider', 'sender_info', 'channel_info', 'content_raw', 'created_at', 'urgency_score'])
             ->map(fn($msg) => [
                 'id' => (string) $msg->id,
                 'source' => $this->mapProviderToSource($msg->provider),
@@ -127,13 +128,10 @@ final class DashboardService
     private function calculateDeepWorkMinutes(int $userId, Carbon $date): int
     {
         return (int) CalendarEvent::query()
-            ->where('user_id', '=', $userId)
+            ->where('user_id', '=', $userId, 'and')
             ->where('type', '=', 'deep_work')
             ->whereDate('start_time', $date)
-            ->get()
-            ->sum(function ($event) {
-                return Carbon::parse($event->start_time)->diffInMinutes(Carbon::parse($event->end_time));
-            });
+            ->sum(DB::raw('EXTRACT(EPOCH FROM (end_time - start_time)) / 60'));
     }
 
     private function mapSourceToTag(?string $source): string
@@ -198,7 +196,7 @@ final class DashboardService
 
         // Fallback: try to get from related incoming message
         if (!$sender) {
-            $message = $task->incomingMessages()->first();
+            $message = $task->incomingMessages->first();
             if ($message && $message->sender_info) {
                 $sender = $message->sender_info;
             }

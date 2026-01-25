@@ -104,7 +104,7 @@ final class FocusSessionService extends BaseService
         $query = FocusSession::query()->where('user_id', $userId)
             ->where('status', '!=', 'active')
             ->with(['contextSnapshot.checklistItems', 'task'])
-            ->orderBy('ended_at', 'desc');
+            ->orderBy('created_at', 'desc');
             
         if (!empty($filters['search'])) {
             $query->where('title', 'ILIKE', "%{$filters['search']}%");
@@ -156,15 +156,26 @@ final class FocusSessionService extends BaseService
     }
 
     /**
-     * Delete session and invalidate cache.
+     * Delete session by id and invalidate cache.
      */
-    public function deleteSession(FocusSession $session): void
+    public function delete(int|string $id): bool
     {
+        $session = $this->findOrFail($id);
+        
         if ($session->contextSnapshot) {
             $session->contextSnapshot->delete();
         }
         
         $session->delete();
         $this->clearUserStatsCache($session->user_id);
+        return true;
+    }
+
+    /**
+     * Clear the stats cache for a user.
+     */
+    public function clearUserStatsCache(int $userId): void
+    {
+        Cache::forget("focus:stats:{$userId}");
     }
 }

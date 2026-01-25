@@ -9,6 +9,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string|null $file_path
+ * @property string $type
+ * @property int|null $estimated_time_minutes
+ * @property string $title
+ * @property string|null $url
+ * @property string|null $content_text
+ * @property string|null $summary
+ * @property array|null $tags
+ * @property string|null $difficulty
+ */
 class KnowledgeResource extends Model
 {
     use HasFactory;
