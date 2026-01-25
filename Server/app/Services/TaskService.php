@@ -179,11 +179,13 @@ final class TaskService extends BaseService
 
 
     /**
-     * Delete a task and invalidate cache.
+     * Delete a task by id and invalidate cache.
      */
-    public function deleteTask(Task $task): void
+    public function delete(int|string $id): bool
     {
+        $task = $this->findOrFail($id);
         $task->delete();
         $this->clearUserDashboardCache($task->user_id);
+        return true;
     }
 }
