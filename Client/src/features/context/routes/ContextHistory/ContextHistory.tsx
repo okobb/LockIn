@@ -341,7 +341,7 @@ export default function ContextHistory() {
                                   >
                                     {session.status === "completed"
                                       ? "Completed"
-                                      : "Abandoned"}
+                                      : "Incomplete"}
                                   </Badge>
                                 </div>
                               </div>

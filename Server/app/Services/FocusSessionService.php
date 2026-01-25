@@ -103,10 +103,6 @@ final class FocusSessionService extends BaseService
     {
         $query = FocusSession::query()->where('user_id', $userId)
             ->where('status', '!=', 'active')
-            ->where(function ($query) {
-                $query->where('status', 'completed')
-                      ->orWhereHas('contextSnapshot');
-            })
             ->with(['contextSnapshot.checklistItems', 'task'])
             ->orderBy('created_at', 'desc');
             
@@ -173,5 +169,13 @@ final class FocusSessionService extends BaseService
         $session->delete();
         $this->clearUserStatsCache($session->user_id);
         return true;
+    }
+
+    /**
+     * Clear the stats cache for a user.
+     */
+    public function clearUserStatsCache(int $userId): void
+    {
+        Cache::forget("focus:stats:{$userId}");
     }
 }

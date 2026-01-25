@@ -29,6 +29,7 @@ import {
   generateAIChecklist,
   toggleChecklistItem,
 } from "../api/focusApi";
+import { markSessionComplete } from "../../context/api/contextHistoryApi";
 
 import { cn } from "../../../shared/lib/utils";
 import { Button } from "../../../shared/components/UI/Button";
@@ -315,6 +316,16 @@ export default function FocusMode() {
         await tasks.complete(session.task_id);
       } catch (err) {
         console.error("Failed to complete task", err);
+      }
+    }
+
+    // Complete the focus session if it exists
+    const sessionId = session?.id || activeState?.sessionId;
+    if (sessionId) {
+      try {
+        await markSessionComplete(sessionId);
+      } catch (err) {
+        console.error("Failed to complete focus session", err);
       }
     }
 
