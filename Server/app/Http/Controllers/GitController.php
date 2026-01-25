@@ -32,6 +32,16 @@ final class GitController extends BaseController
         try {
             $changes = $this->gitHubService->getUncommittedChanges($repo, $session->user_id);
             
+            if (empty($changes) && $task->source_type === 'github_pr') {
+                return $this->successResponse([
+                    'branch' => $task->source_metadata['branch'] ?? 'unknown',
+                    'files_changed' => $task->source_metadata['files'] ?? [],
+                    'additions' => $task->source_metadata['additions'] ?? 0,
+                    'deletions' => $task->source_metadata['deletions'] ?? 0,
+                    'repo' => $repo
+                ]);
+            }
+
             // Format for frontend
             return $this->successResponse([
                 'branch' => $task->source_metadata['branch'] ?? 'unknown',

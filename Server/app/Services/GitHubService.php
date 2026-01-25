@@ -256,6 +256,14 @@ final class GitHubService
                 continue;
             }
 
+            $prFilesResponse = $this->authenticatedGet(
+                $integration,
+                $repoUrl . '/pulls/' . $pr['number'] . '/files',
+                ['per_page' => 100],
+                'Failed to fetch PR files'
+            );
+            $prFiles = $this->formatChanges($prFilesResponse->json());
+
             $task = $taskService->createFromWebhookPayload([
                 'title' => $pr['title'] ?? 'Review PR',
                 'description' => $this->formatPRDescription($pr),
@@ -271,6 +279,7 @@ final class GitHubService
                     'additions' => $fullPr['additions'] ?? 0,
                     'deletions' => $fullPr['deletions'] ?? 0,
                     'sender' => $fullPr['user']['login'] ?? 'Unknown',
+                    'files' => array_column($prFiles, 'file'),
                 ]
             ], $user);
 
