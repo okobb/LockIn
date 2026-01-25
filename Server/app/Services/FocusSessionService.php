@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\ContextSnapshot;
 use App\Models\FocusSession;
+use App\Models\Task;
 use Illuminate\Support\Facades\DB;
 use App\Traits\CachesData;
 use Illuminate\Support\Facades\Cache;
@@ -89,10 +91,24 @@ final class FocusSessionService extends BaseService
                 $prevSession?->context_snapshot_id
             );
 
+            $restoredContext = (bool) $prevSession;
+
+            if (!$restoredContext && !empty($validated['task_id'])) {
+                $task = Task::find($validated['task_id']);
+                if ($task && $task->context_snapshot_id) {
+                    $taskSnapshot = ContextSnapshot ::find($task->context_snapshot_id);
+                    if ($taskSnapshot) {
+                         app(ContextSnapshotService::class)->forkSnapshot($taskSnapshot, $session);
+                         $session->refresh();
+                         $restoredContext = true;
+                    }
+                }
+            }
+
             return [
                 'session' => $session,
                 'status' => 'started',
-                'restored_context' => (bool) $prevSession,
+                'restored_context' => $restoredContext,
             ];
         });
     }

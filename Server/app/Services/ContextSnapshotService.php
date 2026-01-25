@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\ContextSnapshot;
 use App\Models\FocusSession;
+use App\Models\Task;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -121,6 +122,51 @@ final class ContextSnapshotService extends BaseService
         $this->updateQualityScore($snapshot);
         
         return $snapshot->refresh();
+    }
+
+    /**
+     * Fork a snapshot for a new session.
+     */
+    public function forkSnapshot(ContextSnapshot $source, FocusSession $newSession): ContextSnapshot
+    {
+        return $this->executeInTransaction(function () use ($source, $newSession) {
+            $replica = $source->replicate([
+                'user_id', 'created_at', 'updated_at', 'id', 'focus_session_id', 'restored_at'
+            ]);
+            
+            $replica->user_id = $newSession->user_id;
+            $replica->focus_session_id = $newSession->id;
+            $replica->type = 'forked';
+            $replica->save();
+
+            $newSession->update(['context_snapshot_id' => $replica->id]);
+
+            return $replica;
+        });
+    }
+
+    /**
+     * Create a snapshot derived from a Task (e.g. from GitHub PR).
+     */
+    public function createForTask(Task $task, array $gitData): ContextSnapshot
+    {
+        return $this->executeInTransaction(function () use ($task, $gitData) {
+            $snapshot = $this->create([
+                'user_id' => $task->user_id,
+                'focus_session_id' => null,
+                'title' => $task->title,
+                'type' => 'manual',
+                'git_branch' => $gitData['branch'] ?? null,
+                'repository_source' => $gitData['repo'] ?? null,
+                'git_files_changed' => $gitData['files'] ?? [],
+                'git_diff_blob' => null, 
+                'quality_score' => 50,
+            ]);
+
+            $task->update(['context_snapshot_id' => $snapshot->id]);
+
+            return $snapshot;
+        });
     }
 
     private function createInitialSnapshot(FocusSession $session, array $data, ?UploadedFile $voiceFile): ContextSnapshot
