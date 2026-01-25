@@ -177,16 +177,40 @@ export function useTaskBacklog() {
 
   const completeMutation = useMutation({
     mutationFn: (id: number) => tasks.complete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["tasks"] });
+      const previousData = queryClient.getQueryData<TasksResponse>(queryKey);
+
+      queryClient.setQueryData<TasksResponse>(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: old.data
+            .map((task) =>
+              task.id === id ? { ...task, status: "done" as const } : task,
+            )
+            .filter((t) => t.status !== "done"),
+        };
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
-    onError: async (error) => {
+    onError: async (error, _id, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
       console.error("Complete task failed:", error);
       await modal.open({
         type: "error",
         title: "Complete Failed",
         message: "Failed to complete task. Please try again.",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 
