@@ -10,7 +10,6 @@ import {
   ChevronRight,
   GitBranch,
   FileText,
-  Save,
   Play,
   ArrowRight,
   Monitor,

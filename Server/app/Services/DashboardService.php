@@ -26,13 +26,13 @@ final class DashboardService
             $today = Carbon::today();
 
             $tasksDone = Task::query()
-                ->where('user_id', '=', $userId)
+                ->where('user_id', '=', $userId, 'and')
                 ->where('status', '=', 'done')
                 ->whereDate('completed_at', $today)
                 ->count();
 
             $deepWorkBlocks = CalendarEvent::query()
-                ->where('user_id', '=', $userId)
+                ->where('user_id', '=', $userId, 'and')
                 ->where('type', '=', 'deep_work')
                 ->whereDate('start_time', $today)
                 ->count();
@@ -57,7 +57,7 @@ final class DashboardService
     public function getPriorityTasks(int $userId, int $limit = 5): Collection
     {
         return Task::query()
-            ->where('user_id', '=', $userId)
+            ->where('user_id', '=', $userId, 'and')
             ->whereIn('status', ['open', 'in_progress'])
             ->where('priority', '<=', 2)
             ->orderBy('priority', 'asc')
@@ -83,7 +83,7 @@ final class DashboardService
     {
         return Cache::remember("dashboard:events:{$userId}", now()->addMinutes(1), function () use ($userId, $limit) {
             return CalendarEvent::query()
-                ->where('user_id', '=', $userId)
+                ->where('user_id', '=', $userId, 'and')
                 ->whereDate('start_time', Carbon::today())
                 ->where('start_time', '>=', now())
                 ->orderBy('start_time')
@@ -105,7 +105,7 @@ final class DashboardService
     public function getCommunications(int $userId, int $limit = 5): Collection
     {
         return IncomingMessage::query()
-            ->where('user_id', '=', $userId)
+            ->where('user_id', '=', $userId, 'and')
             ->whereIn('status', ['pending', 'processed'])
             ->orderBy('urgency_score', 'desc')
             ->orderBy('created_at', 'desc')
@@ -128,7 +128,7 @@ final class DashboardService
     private function calculateDeepWorkMinutes(int $userId, Carbon $date): int
     {
         return (int) CalendarEvent::query()
-            ->where('user_id', '=', $userId)
+            ->where('user_id', '=', $userId, 'and')
             ->where('type', '=', 'deep_work')
             ->whereDate('start_time', $date)
             ->sum(DB::raw('EXTRACT(EPOCH FROM (end_time - start_time)) / 60'));

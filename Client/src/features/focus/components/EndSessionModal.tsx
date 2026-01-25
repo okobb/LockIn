@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { CheckCircle2, Save, X, ArrowRight } from "lucide-react";
 import { cn } from "../../../shared/lib/utils";
 
@@ -50,7 +50,7 @@ export function EndSessionModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-in fade-in duration-200 backdrop-blur-sm p-4"
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-100 animate-in fade-in duration-200 backdrop-blur-sm p-4"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
