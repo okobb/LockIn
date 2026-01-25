@@ -88,7 +88,7 @@ final class DashboardService
                 ->where('start_time', '>=', now())
                 ->orderBy('start_time')
                 ->limit($limit)
-                ->get()
+                ->get(['id', 'start_time', 'end_time', 'title', 'type'])
                 ->map(fn($event) => [
                     'id' => (string) $event->id,
                     'time' => Carbon::parse($event->start_time)->format('H:i'),
@@ -110,7 +110,7 @@ final class DashboardService
             ->orderBy('urgency_score', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
-            ->get()
+            ->get(['id', 'provider', 'sender_info', 'channel_info', 'content_raw', 'created_at', 'urgency_score'])
             ->map(fn($msg) => [
                 'id' => (string) $msg->id,
                 'source' => $this->mapProviderToSource($msg->provider),
