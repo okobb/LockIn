@@ -27,6 +27,39 @@ class AIService
     }
 
     /**
+     * Send a structured chat request to the LLM with tool support.
+     *
+     * @param array<int, array> $messages
+     * @param array<int, array> $tools
+     * @param array $config
+     * @return array{content: ?string, tool_calls: array}
+     */
+    public function chatWithTools(array $messages, array $tools = [], array $config = []): array
+    {
+        $model = $config['model'] ?? 'gpt-4o-mini';
+        $temperature = $config['temperature'] ?? 0.7;
+
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+            'temperature' => $temperature,
+        ];
+
+        if (!empty($tools)) {
+            $payload['tools'] = $tools;
+            $payload['tool_choice'] = 'auto';
+        }
+
+        $response = $this->client->chat()->create($payload);
+        $message = $response->choices[0]->message;
+
+        return [
+            'content' => $message->content,
+            'tool_calls' => $message->toolCalls ?? [],
+        ];
+    }
+
+    /**
      * Send a chat request to the LLM.
      *
      * @param array<int, array{role: string, content: string}> $messages
@@ -35,16 +68,8 @@ class AIService
      */
     public function chat(array $messages, array $config = []): string
     {
-        $model = $config['model'] ?? 'gpt-4o-mini';
-        $temperature = $config['temperature'] ?? 0.7;
-        
-        $response = $this->client->chat()->create([
-            'model' => $model,
-            'messages' => $messages,
-            'temperature' => $temperature,
-        ]);
-
-        return $response->choices[0]->message->content ?? '';
+        $response = $this->chatWithTools($messages, [], $config);
+        return $response['content'] ?? '';
     }
 
     /**
