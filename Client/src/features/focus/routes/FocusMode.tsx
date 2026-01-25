@@ -819,12 +819,12 @@ export default function FocusMode() {
                 activeGitState.deletions > 0 ||
                 activeGitState.files_changed.length > 0) && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-4">
+                  <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-4">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Branch</span>
                       <Badge
                         variant="outline"
-                        className="border-purple-500/30 text-purple-400 font-mono bg-purple-500/10"
+                        className="border-blue-500/30 text-blue-400 font-mono bg-blue-500/10"
                       >
                         {activeGitState.branch || "unknown"}
                       </Badge>
@@ -835,35 +835,37 @@ export default function FocusMode() {
                         Changed Files ({activeGitState.files_changed.length})
                       </span>
                       <div className="space-y-1 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
-                        {activeGitState.files_changed.map((file: any, i) => (
-                          <div
-                            key={i}
-                            className="flex flex-col gap-1 p-2 rounded bg-card/40 border border-border/50 text-xs"
-                          >
+                        {activeGitState.files_changed.map((file: any, i) => {
+                          const filePath = file.file || file || "";
+                          const fileName = filePath.split("/").pop();
+                          return (
                             <div
-                              className="font-mono truncate"
-                              title={file.file || file}
+                              key={i}
+                              className="flex items-center gap-3 p-2 rounded bg-card/40 border border-border/50 text-xs group"
                             >
-                              {file.file || file}
-                            </div>
-                            {(file.additions !== undefined ||
-                              file.deletions !== undefined) && (
-                              <div className="flex items-center gap-3 opacity-80">
-                                <span className="text-emerald-500 flex items-center gap-0.5">
-                                  <Plus className="w-2 h-2" /> {file.additions}
+                              
+                              <div
+                                className="font-mono truncate text-foreground/90"
+                                title={filePath}
+                              >
+                                {fileName}
+                              </div>
+                              <div className="flex items-center gap-1.5 font-mono shrink-0 min-w-[60px]">
+                                <span className="text-emerald-500">
+                                  +{file.additions || 0}
                                 </span>
-                                <span className="text-red-500 flex items-center gap-0.5">
-                                  <div className="w-1.5 h-px bg-current" />{" "}
-                                  {file.deletions}
+                                <span className="text-red-500">
+                                  -{file.deletions || 0}
                                 </span>
                               </div>
-                            )}
-                          </div>
-                        ))}
+                            </div>
+                            
+                          );
+                        })}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs font-mono border-t border-purple-500/20 pt-3">
+                    <div className="flex items-center gap-4 text-xs font-mono border-t border-blue-500/20 pt-3">
                       <div className="flex items-center gap-1.5 text-emerald-500">
                         <Plus className="w-3 h-3" />
                         <span>{activeGitState.additions} additions</span>

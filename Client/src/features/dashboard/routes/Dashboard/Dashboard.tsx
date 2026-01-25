@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Play,
@@ -13,6 +13,7 @@ import {
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useSessionContext } from "../../../focus/context/SessionContext";
+import { getSession } from "../../../focus/api/focusApi";
 import { Button } from "../../../../shared/components/UI/Button";
 import { Card, CardContent } from "../../../../shared/components/UI/Card";
 import { cn } from "../../../../shared/lib/utils";
@@ -32,8 +33,26 @@ export default function NewDashboard() {
     isLoadingUpcoming,
   } = useDashboard();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { activeSession } = useSessionContext();
+  const { activeSession, clearSession } = useSessionContext();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeSession?.sessionId) {
+      getSession(activeSession.sessionId)
+        .then((session) => {
+          if (
+            session.status === "completed" ||
+            session.status === "abandoned" ||
+            session.ended_at
+          ) {
+            clearSession();
+          }
+        })
+        .catch(() => {
+          clearSession();
+        });
+    }
+  }, [activeSession?.sessionId, clearSession]);
 
   const handleResumeSession = () => {
     if (activeSession) {

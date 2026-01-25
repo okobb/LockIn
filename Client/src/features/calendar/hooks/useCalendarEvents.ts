@@ -377,9 +377,6 @@ export function useCalendarEvents({
 
       await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
 
-      const previousData =
-        queryClient.getQueryData<CalendarEventsResponse>(queryKey);
-
       queryClient.setQueryData<CalendarEventsResponse>(
         queryKey,
         (old: CalendarEventsResponse | undefined) => {

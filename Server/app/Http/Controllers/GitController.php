@@ -36,7 +36,25 @@ final class GitController extends BaseController
                     'source' => 'snapshot' 
                 ]);
             }
+        } else {
+             if ($session->task_id) {
+                 $task = Task::withTrashed()->find($session->task_id, ['*']);
+                 if ($task && $task->context_snapshot_id) {
+                      $snapshot = \App\Models\ContextSnapshot::find($task->context_snapshot_id, ['*']);
+                      if ($snapshot) {
+                            return $this->successResponse([
+                                'branch' => $snapshot->git_branch ?? 'unknown',
+                                'files_changed' => $snapshot->git_files_changed ?? [],
+                                'additions' => $snapshot->git_additions ?? 0,
+                                'deletions' => $snapshot->git_deletions ?? 0,
+                                'repo' => $snapshot->repository_source ?? 'Unknown',
+                                'source' => 'task_snapshot_fallback' 
+                            ]);
+                      }
+                 }
+             }
         }
+
 
         $task = Task::withTrashed()->find($session->task_id);
         $repo = $task?->source_metadata['repo'] ?? $task?->source_metadata['source_metadata']['repo'] ?? null;

@@ -16,10 +16,27 @@ const Popup = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const applyTheme = (isDark: boolean) => {
+      if (isDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    };
+
+    applyTheme(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => applyTheme(e.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
     // Fetch all tabs in the current window
     chrome.tabs.query({ currentWindow: true }, (result) => {
       setTabs(result);
     });
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
   const handleSaveContext = () => {
@@ -82,59 +99,65 @@ const Popup = () => {
   };
 
   return (
-    <div className="w-full h-full p-4 bg-app text-primary flex flex-col">
-      <header className="flex items-center justify-between mb-4 border-b border-border-default pb-2">
-        <h1 className="text-lg font-semibold flex items-center gap-2">
-          <Save className="w-5 h-5 text-primary" />
+    <div className="w-full h-full p-3 bg-background text-foreground flex flex-col font-sans">
+      <header className="flex items-center justify-between mb-3 border-b border-border pb-2">
+        <h1 className="text-base font-semibold flex items-center gap-2">
+          <Save className="w-4 h-4 text-primary" />
           Context Saver
         </h1>
-        <span className="text-xs text-text-muted bg-bg-card px-2 py-1 rounded">
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded border border-border/50">
           {tabs.length} Tabs
         </span>
       </header>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-500 text-sm flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>{error}</span>
+        <div className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-xs flex items-start gap-2">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span className="flex-1">{error}</span>
           <button
             onClick={() => setError(null)}
-            className="ml-auto text-red-500 hover:text-red-600"
+            className="text-destructive hover:text-destructive/80 transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto pr-1">
+      <div className="space-y-1 mb-3 flex-1 overflow-y-auto pr-1">
         {tabs.map((tab) => (
           <div
             key={tab.id}
-            className="group flex items-start gap-3 p-2 rounded-md hover:bg-bg-card-hover transition-colors border border-transparent hover:border-border-subtle"
+            className="group flex items-center gap-2 p-1.5 rounded-md hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50"
           >
             {tab.favIconUrl ? (
               <img
                 src={tab.favIconUrl}
                 alt=""
-                className="w-4 h-4 mt-1 opacity-80"
+                className="w-3.5 h-3.5 opacity-80"
               />
             ) : (
-              <ExternalLink className="w-4 h-4 mt-1 text-text-tertiary" />
+              <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" title={tab.title}>
+              <p
+                className="text-xs font-medium truncate leading-tight"
+                title={tab.title}
+              >
                 {tab.title}
               </p>
-              <p className="text-xs text-text-muted truncate" title={tab.url}>
+              <p
+                className="text-[10px] text-muted-foreground truncate leading-tight opacity-80"
+                title={tab.url}
+              >
                 {tab.url}
               </p>
             </div>
             <button
               onClick={() => tab.id && removeTab(tab.id)}
-              className="opacity-0 group-hover:opacity-100 p-1 hover:text-danger transition-all"
+              className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-destructive/10 hover:text-destructive rounded transition-all"
               title="Remove from context"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         ))}
@@ -142,9 +165,9 @@ const Popup = () => {
 
       <button
         onClick={handleSaveContext}
-        className="w-full btn btn-primary flex items-center justify-center gap-2 py-2"
+        className="w-full btn btn-primary flex items-center justify-center gap-2 py-1.5 text-xs h-8"
       >
-        <Save className="w-4 h-4" />
+        <Save className="w-3.5 h-3.5" />
         Start Context
       </button>
     </div>

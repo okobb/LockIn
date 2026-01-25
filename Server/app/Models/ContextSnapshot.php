@@ -44,21 +44,21 @@ class ContextSnapshot extends Model
     /**
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'git_files_changed' => 'array',
-            'git_additions' => 'integer',
-            'git_deletions' => 'integer',
-            'browser_state' => 'array',
-            'ide_state' => 'array',
-            'ai_resume_checklist' => 'array',
-            'voice_recorded_at' => 'datetime',
-            'voice_duration_sec' => 'integer',
-            'quality_score' => 'integer',
-            'restored_at' => 'datetime',
-        ];
-    }
+    /**
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'git_files_changed' => 'array',
+        'git_additions' => 'integer',
+        'git_deletions' => 'integer',
+        'browser_state' => 'array',
+        'ide_state' => 'array',
+        'ai_resume_checklist' => 'array',
+        'voice_recorded_at' => 'datetime',
+        'voice_duration_sec' => 'integer',
+        'quality_score' => 'integer',
+        'restored_at' => 'datetime',
+    ];
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
