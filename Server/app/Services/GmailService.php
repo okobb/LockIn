@@ -23,7 +23,8 @@ final class GmailService
 
     public function __construct(
         private readonly IntegrationService $integrationService,
-        private readonly IncomingMessageService $incomingMessageService
+        private readonly IncomingMessageService $incomingMessageService,
+        private readonly ClassificationService $classificationService
     ) {}
 
     /**
@@ -58,6 +59,16 @@ final class GmailService
             $content = "Subject: " . ($message['subject'] ?? 'No Subject') . "\n\n";
             $content .= $body ?: ($message['snippet'] ?? '');
 
+            $classification = $this->classificationService->classify($content);
+            $isImportant = $classification['is_important'] ?? true;
+            $confidence = $classification['confidence'] ?? 0.0;
+            $tag = $classification['tag'] ?? 'unknown';
+
+            $status = $isImportant ? 'pending' : 'skipped';
+            $decisionReason = $isImportant 
+                ? null 
+                : "ML classified as Noise ({$tag}, " . number_format($confidence * 100, 1) . "%)";
+
             $incomingMessage = $this->incomingMessageService->create([
                 'user_id' => $userId,
                 'provider' => 'gmail',
@@ -65,7 +76,9 @@ final class GmailService
                 'sender_info' => $message['from'] ?? 'Unknown',
                 'channel_info' => $message['subject'] ?? 'No Subject',
                 'content_raw' => $content,
-                'status' => 'pending',
+                'status' => $status,
+                'decision_reason' => $decisionReason,
+                'urgency_score' => $confidence,
                 'received_at' => now(),
             ]);
 

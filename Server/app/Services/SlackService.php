@@ -24,7 +24,8 @@ final class SlackService
 
     public function __construct(
         private readonly IntegrationService $integrationService,
-        private readonly IncomingMessageService $incomingMessageService
+        private readonly IncomingMessageService $incomingMessageService,
+        private readonly ClassificationService $classificationService
     ) {}
 
     /**
@@ -86,14 +87,32 @@ final class SlackService
                 continue;
             }
 
+            $content = $message['content_raw'] ?? '';
+            
+            if (strlen($content) < 5) {
+                continue; 
+            }
+
+            $classification = $this->classificationService->classify($content);
+            $isImportant = $classification['is_important'] ?? true; 
+            $confidence = $classification['confidence'] ?? 0.0;
+            $tag = $classification['tag'] ?? 'unknown';
+
+            $status = $isImportant ? 'pending' : 'skipped';
+            $decisionReason = $isImportant 
+                ? null 
+                : "ML classified as Noise ({$tag}, " . number_format($confidence * 100, 1) . "%)";
+
             $incomingMessage = $this->incomingMessageService->create([
                 'user_id' => $userId,
                 'provider' => 'slack',
                 'external_id' => $externalId,
-                'sender_info' => $message['user_name'] ?? $message['user'] ?? 'Unknown',
-                'channel_info' => $message['channel'] ?? null,
-                'content_raw' => $message['text'] ?? '',
-                'status' => 'pending',
+                'sender_info' => $message['sender_info'] ?? 'Unknown',
+                'channel_info' => $message['channel_info'] ?? null,
+                'content_raw' => $content,
+                'status' => $status,
+                'decision_reason' => $decisionReason,
+                'urgency_score' => $confidence,
                 'received_at' => now(),
             ]);
 
