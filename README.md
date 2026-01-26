@@ -56,39 +56,39 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## User Screens & Demos
 
-|                        Landing Dark                         |                        Landing Light                         |
+|                        Landing (Dark)                         |                        Landing (Light)                         |
 | :---------------------------------------------------------: | :----------------------------------------------------------: |
 | <img src="./readme/Screens/Landing Dark.gif" width="400" /> | <img src="./readme/Screens/Landing Light.gif" width="375" /> |
 
-|                        Onboarding                         |                        Dashboard Dark                         |
+|                        Onboarding                         |                        Dashboard (Dark)                         |
 | :-------------------------------------------------------: | :-----------------------------------------------------------: |
 | <img src="./readme/Screens/Onboarding.gif" width="400" /> | <img src="./readme/Screens/Dashboard dark.png" width="400" /> |
 
-|                        Dashboard Light                         |                        Dashboard with Items                         |
+|                        Dashboard (Light)                         |                        Dashboard (with Items)                         |
 | :------------------------------------------------------------: | :-----------------------------------------------------------------: |
 | <img src="./readme/Screens/Dashboard light.png" width="400" /> | <img src="./readme/Screens/Dashboard with items.png" width="400" /> |
 
-|                        Calendar                         |                        Calendar Empty                         |
+|                        Calendar (with Data)                         |                        Calendar (Empty)                         |
 | :-----------------------------------------------------: | :-----------------------------------------------------------: |
 | <img src="./readme/Screens/Calendar.gif" width="400" /> | <img src="./readme/Screens/Calendar Empty.png" width="400" /> |
 
-|                        Stats with Data                        |                        Stats Empty                         |
+|                        Stats (with Data)                        |                        Stats (Empty)                         |
 | :-----------------------------------------------------------: | :--------------------------------------------------------: |
 | <img src="./readme/Screens/Sats with data.png" width="400" /> | <img src="./readme/Screens/Stats Empty.png" width="400" /> |
 
-|                        Context History                         |                        Context History Empty                         |
+|                        Context History (with Data)                         |                        Context History (Empty)                         |
 | :------------------------------------------------------------: | :------------------------------------------------------------------: |
 | <img src="./readme/Screens/Context History.gif" width="400" /> | <img src="./readme/Screens/Context History Empty.png" width="400" /> |
 
-|                        Save Context                         |                        Resource Hub                         |
+|                        Save Context                         |                        Resource Hub (with Data)                         |
 | :---------------------------------------------------------: | :---------------------------------------------------------: |
 | <img src="./readme/Screens/Save Context.gif" width="400" /> | <img src="./readme/Screens/Resource Hub.png" width="400" /> |
 
-|                        Resource Hub Details                         |                        Resource Hub Empty                         |
+|                        Resource Hub (with Data)                         |                        Resource Hub (Empty)                         |
 | :-----------------------------------------------------------------: | :---------------------------------------------------------------: |
 | <img src="./readme/Screens/Resource Hub Details.png" width="400" /> | <img src="./readme/Screens/Resource Hub Empty.png" width="400" /> |
 
-| Image Resource Hub | AI chatbot |
+| Resource Hub (Image) | AI chatbot |
 | :----------------: | :----------------: |
 
 | <img src="./readme/Screens/Image Resource Hub.png" width="400" /> | <img src="./readme/Screens/AI chatbot.png" width="400" /> |
