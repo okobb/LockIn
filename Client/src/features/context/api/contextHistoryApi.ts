@@ -10,7 +10,10 @@ export interface ContextSnapshot {
   voice_duration_sec?: number;
   text_note?: string;
   git_branch?: string;
-  git_files_changed?: string[];
+  git_files_changed?: (
+    | string
+    | { file: string; additions: number; deletions: number }
+  )[];
   ai_resume_checklist?: Array<{
     text: string;
     source: string;

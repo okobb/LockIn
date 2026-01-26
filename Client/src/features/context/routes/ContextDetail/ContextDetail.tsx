@@ -34,10 +34,17 @@ export default function ContextDetail() {
   const { open, confirm } = useModal();
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Only use the state session if it has the context snapshot data we need
+  const locationState = location.state as { session?: FocusSessionHistory };
+  const initialSession =
+    locationState?.session && locationState.session.context_snapshot
+      ? locationState.session
+      : null;
+
   const [session, setSession] = useState<FocusSessionHistory | null>(
-    (location.state as any)?.session || null,
+    initialSession,
   );
-  const [isLoading, setIsLoading] = useState(!session);
+  const [isLoading, setIsLoading] = useState(!initialSession);
 
   // Fetch session if not passed via state
   useEffect(() => {
@@ -307,13 +314,15 @@ export default function ContextDetail() {
                         >
                           {snapshot.git_branch}
                         </Badge>
-                        {snapshot.git_files_changed && (
-                          <span className="text-sm text-muted-foreground">
-                            {snapshot.git_files_changed.length} files changed
-                          </span>
-                        )}
+                        {snapshot.git_files_changed &&
+                          Array.isArray(snapshot.git_files_changed) && (
+                            <span className="text-sm text-muted-foreground">
+                              {snapshot.git_files_changed.length} files changed
+                            </span>
+                          )}
                       </div>
                       {snapshot.git_files_changed &&
+                        Array.isArray(snapshot.git_files_changed) &&
                         snapshot.git_files_changed.length > 0 && (
                           <div className="space-y-2">
                             {snapshot.git_files_changed.map((file, i) => (
@@ -322,7 +331,17 @@ export default function ContextDetail() {
                                 className="flex items-center gap-2 p-2 bg-background/50 rounded text-xs font-mono text-muted-foreground"
                               >
                                 <FileCode className="w-3 h-3" />
-                                {file}
+                                {typeof file === "string" ? file : file.file}
+                                {typeof file !== "string" && (
+                                  <span className="ml-auto flex gap-2 text-[10px]">
+                                    <span className="text-green-500">
+                                      +{file.additions}
+                                    </span>
+                                    <span className="text-red-500">
+                                      -{file.deletions}
+                                    </span>
+                                  </span>
+                                )}
                               </div>
                             ))}
                           </div>

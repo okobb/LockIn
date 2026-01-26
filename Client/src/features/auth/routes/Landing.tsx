@@ -44,12 +44,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/20">
-      {/* Background Gradients */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] opacity-60 animate-pulse" />
-        <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] opacity-40" />
-      </div>
-
       {/* Navbar */}
       <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
@@ -198,55 +192,59 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="py-20 px-4 md:px-6 border-t border-border/40 bg-muted/30">
-          <div className="container mx-auto max-w-6xl">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Reclaim Your Cognitive State
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Developers lose significant time daily to productivity killers.
-                We solved them.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="group p-8 rounded-3xl bg-card border border-border/50 shadow-xs hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-300">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Layout className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Unified Briefing</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Wake up to exactly what needs your attention. AI filters Slack
-                  messages down to the blocking tasks that actually matter.
+        <section className="py-20 px-4 md:px-6">
+          <div className="container mx-auto max-w-6xl rounded-[2.5rem] bg-card/40 border border-border/50 p-8 md:p-16 shadow-2xl relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                  Reclaim Your Cognitive State
+                </h2>
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                  Developers lose significant time daily to productivity
+                  killers. We solved them.
                 </p>
               </div>
 
-              <div className="group p-8 rounded-3xl bg-card border border-border/50 shadow-xs hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-300">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <RotateCcw className="w-6 h-6" />
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="group p-8 rounded-3xl bg-card border border-border/50 shadow-xs hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Layout className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">
+                    Unified Briefing
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Wake up to exactly what needs your attention. AI filters
+                    Slack messages down to the blocking tasks that actually
+                    matter.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">
-                  Context Restoration
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Save your mental state with voice memos and git diffs. Resume
-                  deep work instantly with an AI-generated checklist.
-                </p>
-              </div>
 
-              <div className="group p-8 rounded-3xl bg-card border border-border/50 shadow-xs hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-300">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Brain className="w-6 h-6" />
+                <div className="group p-8 rounded-3xl bg-card border border-border/50 shadow-xs hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <RotateCcw className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">
+                    Context Restoration
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Save your mental state with voice memos and git diffs.
+                    Resume deep work instantly with an AI-generated checklist.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">
-                  Proactive Knowledge
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Stop Googling the same thing twice. Your "Senior Engineer" AI
-                  surfaces saved articles exactly when you need them.
-                </p>
+
+                <div className="group p-8 rounded-3xl bg-card border border-border/50 shadow-xs hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Brain className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">
+                    Proactive Knowledge
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Stop Googling the same thing twice. Your "Senior Engineer"
+                    AI surfaces saved articles exactly when you need them.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -265,11 +263,10 @@ export default function Landing() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 relative">
-              {/* Connector Line (Desktop) */}
-              <div className="hidden md:block absolute top-10 left-[16%] right-[16%] h-0.5 bg-linear-to-r from-transparent via-border to-transparent -z-10" />
+              <div className="hidden md:block absolute top-11 left-[16%] right-[16%] h-0.5 bg-linear-to-r from-transparent via-border to-transparent z-0" />
 
-              <div className="text-center relative bg-background p-4">
-                <div className="w-14 h-14 mx-auto rounded-full bg-card border border-border flex items-center justify-center text-xl font-mono font-bold text-primary mb-6 shadow-xs relative z-10">
+              <div className="text-center group p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 relative z-10">
+                <div className="w-14 h-14 mx-auto rounded-full bg-background border border-border/50 flex items-center justify-center text-xl font-mono font-bold text-primary mb-6 shadow-xs group-hover:scale-110 transition-transform">
                   1
                 </div>
                 <h3 className="text-lg font-semibold mb-2">
@@ -281,8 +278,8 @@ export default function Landing() {
                 </p>
               </div>
 
-              <div className="text-center relative bg-background p-4">
-                <div className="w-14 h-14 mx-auto rounded-full bg-card border border-border flex items-center justify-center text-xl font-mono font-bold text-primary mb-6 shadow-xs relative z-10">
+              <div className="text-center group p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 relative z-10">
+                <div className="w-14 h-14 mx-auto rounded-full bg-background border border-border/50 flex items-center justify-center text-xl font-mono font-bold text-primary mb-6 shadow-xs group-hover:scale-110 transition-transform">
                   2
                 </div>
                 <h3 className="text-lg font-semibold mb-2">
@@ -294,8 +291,8 @@ export default function Landing() {
                 </p>
               </div>
 
-              <div className="text-center relative bg-background p-4">
-                <div className="w-14 h-14 mx-auto rounded-full bg-card border border-border flex items-center justify-center text-xl font-mono font-bold text-primary mb-6 shadow-xs relative z-10">
+              <div className="text-center group p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 relative z-10">
+                <div className="w-14 h-14 mx-auto rounded-full bg-background border border-border/50 flex items-center justify-center text-xl font-mono font-bold text-primary mb-6 shadow-xs group-hover:scale-110 transition-transform">
                   3
                 </div>
                 <h3 className="text-lg font-semibold mb-2">
@@ -314,10 +311,6 @@ export default function Landing() {
         <section className="py-20 px-4">
           <div className="container mx-auto max-w-4xl">
             <div className="rounded-[2.5rem] bg-linear-to-b from-card to-background border border-primary/20 p-10 md:p-16 text-center relative overflow-hidden shadow-2xl">
-              {/* Abstract decoration */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-primary to-transparent opacity-50" />
-              <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-[80px]" />
-
               <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
                 Ready to stop context switching?
               </h2>
@@ -350,7 +343,11 @@ export default function Landing() {
       <footer className="border-t border-border/40 py-12 px-6 bg-muted/10">
         <div className="container mx-auto max-w-6xl text-center">
           <div className="flex items-center justify-center gap-2 mb-6 opacity-80 hover:opacity-100 transition-opacity">
-            <Zap className="w-5 h-5 text-primary" />
+            <img
+              src="../../public/Project Logo.png"
+              alt="Lock In"
+              className="w-10 h-10"
+            />
             <span className="font-bold text-lg">Lock In</span>
           </div>
           <p className="text-muted-foreground text-sm mb-8">
@@ -365,7 +362,10 @@ export default function Landing() {
               Terms
             </a>
             <span className="opacity-30">•</span>
-            <a href="https://github.com/okobb/LockIn.git" className="hover:text-primary transition-colors">
+            <a
+              href="https://github.com/okobb/LockIn.git"
+              className="hover:text-primary transition-colors"
+            >
               GitHub
             </a>
           </div>
