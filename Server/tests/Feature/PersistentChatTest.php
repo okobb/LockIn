@@ -5,8 +5,7 @@ namespace Tests\Feature;
 use App\Models\ContextSnapshot;
 use App\Models\User;
 use App\Models\ChatThread;
-use App\Models\ChatMessage;
-use App\Services\AIService;
+use App\Services\RAGService;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -23,21 +22,20 @@ class PersistentChatTest extends TestCase
     {
         parent::setUp();
         
-        // Create user
         $this->user = User::factory()->create();
 
-        // Mock QdrantService
         $this->mock(QdrantService::class, function ($mock) {
             $mock->shouldReceive('search')
                 ->andReturn([]);
         });
 
-        // Mock AIService
-        $this->mock(AIService::class, function ($mock) {
-            $mock->shouldReceive('chatWithTools')
+        $this->mock(RAGService::class, function ($mock) {
+            $mock->shouldReceive('chat')
                 ->andReturn([
+                    'type' => 'message',
                     'content' => 'This is a mocked AI response.',
-                    'tool_calls' => []
+                    'sources' => [],
+                    'tool_call' => null,
                 ]);
         });
     }
@@ -53,15 +51,12 @@ class PersistentChatTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure(['data' => ['thread_id', 'message_id', 'content']]);
 
-        // Assert Thread Created
         $this->assertDatabaseHas('chat_threads', [
             'user_id' => $this->user->id,
             'context_id' => null,
-            'title' => 'Global Thread', // from ChatService Logic
+            'title' => 'Global Thread',
         ]);
         
-        // ... (lines omitted)
-
     }
 
     public function test_context_chat_creates_context_thread_and_persists_messages()
@@ -86,7 +81,6 @@ class PersistentChatTest extends TestCase
         $response->assertStatus(200)
              ->assertJsonStructure(['data' => ['thread_id']]);
 
-        // Assert Thread Created with Context ID
         $this->assertDatabaseHas('chat_threads', [
             'user_id' => $this->user->id,
             'context_id' => $contextSnapshot->id,
@@ -115,7 +109,6 @@ class PersistentChatTest extends TestCase
         $thread->messages()->create(['role' => 'user', 'content' => 'Old user message']);
         $thread->messages()->create(['role' => 'assistant', 'content' => 'Old ai message']);
 
-        // 2. Call GET Endpoint
         $response = $this->actingAs($this->user)
             ->getJson("/api/ai/thread?context_id={$contextSnapshot->id}");
 

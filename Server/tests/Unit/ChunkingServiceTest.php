@@ -27,8 +27,6 @@ class ChunkingServiceTest extends TestCase
 
     public function test_merges_short_chunks(): void
     {
-        // 50 words * 4 chars = 200 tokens roughly. 
-        // 3 paragraphs of 50 words should stay in one chunk (approx 150-200 tokens is < 500)
         $p1 = str_repeat('word ', 50);
         $p2 = str_repeat('word ', 50);
         $p3 = str_repeat('word ', 50);
@@ -44,9 +42,7 @@ class ChunkingServiceTest extends TestCase
 
     public function test_splits_long_chunks(): void
     {
-        // 500 tokens * 4 chars = 2000 chars. 
-        // Create 3000 chars text
-        $longText = str_repeat('longword ', 400); // 8 chars * 400 = 3200 chars ~ 800 tokens
+        $longText = str_repeat('longword ', 400); 
         
         $chunks = $this->service->chunkContent($longText);
 
@@ -57,8 +53,8 @@ class ChunkingServiceTest extends TestCase
 
     public function test_token_counting_approximation(): void
     {
-        $text = "Hello world"; // 11 chars
-        $start = (int) ceil(11/4); // 3
+        $text = "Hello world"; 
+        $start = (int) ceil(11/4); 
         
         $this->assertEquals($start, $this->service->countTokens($text));
     }

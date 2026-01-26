@@ -7,8 +7,8 @@ use App\Models\User;
 use App\Services\ResourceHubService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Queue;
 use App\Jobs\FetchResourceMetadata;
+use App\Jobs\GenerateResourceTitle;
 use App\Jobs\GenerateResourceMetadata;
 use App\Jobs\ProcessResourceEmbedding;
 
@@ -34,6 +34,7 @@ use RefreshDatabase;
         
         Bus::assertChained([
             FetchResourceMetadata::class,
+            GenerateResourceTitle::class,
             GenerateResourceMetadata::class,
             ProcessResourceEmbedding::class,
         ]);

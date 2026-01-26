@@ -35,6 +35,7 @@ final class FocusSessionService extends BaseService
             'status' => 'active',
             'planned_duration_min' => $durationMin,
             'started_at' => now(),
+            'scheduled_end_at' => now()->addMinutes($durationMin),
             'context_snapshot_id' => $prevContextId,
         ]);
     }

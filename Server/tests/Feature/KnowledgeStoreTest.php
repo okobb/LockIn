@@ -19,7 +19,6 @@ class KnowledgeStoreTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user, 'api');
 
-        // Mock RAGService
         $mockRag = Mockery::mock(RAGService::class);
         $mockRag->shouldReceive('createResource')
             ->once()
@@ -41,7 +40,9 @@ class KnowledgeStoreTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJson([
-                'url' => 'http://example.com',
+                'data' => [
+                    'url' => 'http://example.com',
+                ],
             ]);
     }
 }

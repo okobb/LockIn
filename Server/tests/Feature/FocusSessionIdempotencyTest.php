@@ -39,13 +39,10 @@ class FocusSessionIdempotencyTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        // Start first
         $this->postJson('/api/focus-sessions', ['title' => 'Task A']);
         
         /** @var FocusSession $session */
         $session = FocusSession::first(['*']);
-
-        // Start again (Resume)
         $response = $this->postJson('/api/focus-sessions', ['title' => 'Task A']);
 
         $response->assertStatus(200)
@@ -63,7 +60,6 @@ class FocusSessionIdempotencyTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        // Start first
         $this->postJson('/api/focus-sessions', ['title' => 'Task A']);
         
         /** @var FocusSession $session1 */
@@ -75,7 +71,6 @@ class FocusSessionIdempotencyTest extends TestCase
         $response->assertStatus(201)
             ->assertJson(['data' => ['status' => 'started']]);
         
-        // Check old session abandoned
         $this->assertDatabaseHas('focus_sessions', [
             'id' => $session1->id,
             'status' => 'abandoned',
@@ -88,8 +83,6 @@ class FocusSessionIdempotencyTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        // 1. Setup: Create a past session with a context snapshot
-        // We need to manually create snapshot first because our controller doesn't create them yet
         $snapshot = ContextSnapshot::create([
             'user_id' => $user->id,
             'title' => 'Project X Context',
@@ -107,7 +100,6 @@ class FocusSessionIdempotencyTest extends TestCase
             'planned_duration_min' => 25,
         ]);
 
-        // 2. Action: Start a NEW session with the same title
         $response = $this->postJson('/api/focus-sessions', [
             'title' => 'Project X',
         ]);
@@ -120,7 +112,6 @@ class FocusSessionIdempotencyTest extends TestCase
                 ]
             ]);
 
-        // 3. Verify: New session should have the SAME snapshot ID
         /** @var FocusSession $newSession */
         $newSession = FocusSession::query()->where('id', '!=', $pastSession->id)->first(['*']);
         $this->assertEquals($snapshot->id, $newSession->context_snapshot_id);

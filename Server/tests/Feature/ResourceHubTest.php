@@ -28,6 +28,24 @@ class ResourceHubTest extends TestCase
         $this->app['router']->aliasMiddleware('signed', \Illuminate\Routing\Middleware\ValidateSignature::class);
         
         \Illuminate\Support\Facades\URL::forceRootUrl('http://localhost');
+
+        // Mock AIService globally for all tests in this file
+        $this->mock(AIService::class, function ($mock) {
+            $mock->shouldReceive('chat')->andReturn('[]');
+            $mock->shouldReceive('generateResourceMetadata')->andReturn([
+                'title' => 'AI Generated Title',
+                'summary' => 'AI Summary',
+                'difficulty' => 'intermediate',
+                'tags' => ['ai', 'generated'],
+                'estimated_minutes' => 10
+            ]);
+        });
+
+        // Mock RAGService globally for all tests in this file
+        $this->mock(\App\Services\RAGService::class, function ($mock) {
+            $mock->shouldReceive('indexResource')->byDefault();
+            $mock->shouldReceive('deleteResource')->byDefault();
+        });
     }
 
     public function test_can_create_resource_from_url()
@@ -45,9 +63,8 @@ class ResourceHubTest extends TestCase
                     'domain' => 'example.com',
                     'type' => \RESOURCE_TYPE_ARTICLE,
                 ]);
-        });
-
-        $this->mock(AIService::class, function ($mock) {
+            $mock->shouldReceive('fetchContent')
+                ->andReturn('Sample article content');
         });
 
         $response = $this->postJson('/api/resources', [

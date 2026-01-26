@@ -19,7 +19,6 @@ class KnowledgeAskTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user, 'api');
 
-        // Mock RAGService
         $mockRag = Mockery::mock(RAGService::class);
         $mockRag->shouldReceive('ask')
             ->once()
@@ -38,6 +37,9 @@ class KnowledgeAskTest extends TestCase
             'question' => 'How do I center a div?',
         ]);
 
+        if ($response->status() !== 200) {
+            dump($response->exception);
+        }
         $response->assertStatus(200)
             ->assertJson([
                 'answer' => 'Use flexbox or grid.',

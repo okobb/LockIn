@@ -46,22 +46,17 @@ class ContextSnapshotTest extends TestCase
                 ]
             ]);
 
-        // Verify Database
         $this->assertDatabaseHas('context_snapshots', [
             'focus_session_id' => $session->id,
             'text_note' => 'Leaving off here',
             'git_branch' => 'main',
         ]);
 
-        // Verify Session Linked
         $this->assertNotNull($session->fresh()->context_snapshot_id);
 
-        // Verify File Upload
         /** @var \App\Models\ContextSnapshot $snapshot */
         $snapshot = \App\Models\ContextSnapshot::where('focus_session_id', '=', $session->id, 'and')->first(['*']);
         
-        // Use facade directly for assertions to avoid static analysis confusion with the disk instance
-        // Storage::fake('local'); // REMOVED: Do not reset fake storage here
         Storage::assertExists($snapshot->voice_memo_path);
     }
 
@@ -73,7 +68,7 @@ class ContextSnapshotTest extends TestCase
         $otherUser = User::factory()->create();
         
         $session = FocusSession::create([
-            'user_id' => $otherUser->id, // Belongs to other user
+            'user_id' => $otherUser->id,
             'title' => 'Other Task',
             'started_at' => now(),
             'status' => 'active',
