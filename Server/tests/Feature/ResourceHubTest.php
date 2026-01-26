@@ -24,12 +24,10 @@ class ResourceHubTest extends TestCase
         parent::setUp();
         $this->user = User::factory()->create();
         
-        // Ensure signed middleware is available
         $this->app['router']->aliasMiddleware('signed', \Illuminate\Routing\Middleware\ValidateSignature::class);
         
         \Illuminate\Support\Facades\URL::forceRootUrl('http://localhost');
 
-        // Mock AIService globally for all tests in this file
         $this->mock(AIService::class, function ($mock) {
             $mock->shouldReceive('chat')->andReturn('[]');
             $mock->shouldReceive('generateResourceMetadata')->andReturn([
@@ -41,7 +39,6 @@ class ResourceHubTest extends TestCase
             ]);
         });
 
-        // Mock RAGService globally for all tests in this file
         $this->mock(\App\Services\RAGService::class, function ($mock) {
             $mock->shouldReceive('indexResource')->byDefault();
             $mock->shouldReceive('deleteResource')->byDefault();
@@ -52,7 +49,6 @@ class ResourceHubTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        // Mock UrlMetadataService
         $this->mock(UrlMetadataService::class, function ($mock) {
             $mock->shouldReceive('fetchMetadata')
                 ->once()
@@ -128,19 +124,14 @@ class ResourceHubTest extends TestCase
             'is_read' => true,
         ]);
 
-        // Filter by Type
         $response = $this->getJson('/api/resources?type=' . \RESOURCE_TYPE_VIDEO);
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
             ->assertJsonFragment(['title' => 'Vue Video']);
-
-        // Filter by Status (Unread)
         $response = $this->getJson('/api/resources?status=unread');
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
             ->assertJsonFragment(['title' => 'React Guide']);
-
-        // Search
         $response = $this->getJson('/api/resources?search=React');
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -165,7 +156,6 @@ class ResourceHubTest extends TestCase
             'is_favorite' => true,
         ]);
         
-        // Toggle back
         $this->postJson("/api/resources/{$resource->id}/favorite");
         $this->assertDatabaseHas('knowledge_resources', [
             'id' => $resource->id,

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\ContextSnapshot;
 use Tests\TestCase;
 use App\Services\ContextSnapshotService;
 use App\Services\TranscriptionService;
@@ -94,7 +95,7 @@ class ContextSnapshotServiceTest extends TestCase
     public function test_fork_snapshot_creates_replica_for_new_session()
     {
         $originalSession = FocusSession::factory()->create(['user_id' => $this->user->id]);
-        $originalSnapshot = \App\Models\ContextSnapshot::factory()->create([
+        $originalSnapshot = ContextSnapshot::factory()->create([
             'user_id' => $this->user->id,
             'focus_session_id' => $originalSession->id,
             'text_note' => 'Original Note',
@@ -118,7 +119,7 @@ class ContextSnapshotServiceTest extends TestCase
     public function test_update_snapshot_updates_fields_and_score()
     {
         $session = FocusSession::factory()->create(['user_id' => $this->user->id]);
-        $snapshot = \App\Models\ContextSnapshot::factory()->create([
+        $snapshot = ContextSnapshot::factory()->create([
             'user_id' => $this->user->id,
             'focus_session_id' => $session->id,
             'quality_score' => 10,
@@ -141,11 +142,9 @@ class ContextSnapshotServiceTest extends TestCase
         $this->assertEquals('feature-branch', $updated->git_branch);
         $this->assertEquals(['file1.php'], $updated->git_files_changed);
         
-        // Check Checklist
         $this->assertCount(1, $updated->ai_resume_checklist);
         $this->assertEquals('New Item', $updated->ai_resume_checklist[0]['text']);
         
-        // Quality Score should increase due to added context
         $this->assertGreaterThan(10, $updated->quality_score);
     }
 }

@@ -65,7 +65,7 @@ class FocusSessionServiceTest extends TestCase
             'status' => 'active',
             'task_id' => $task->id,
             'context_snapshot_id' => $context->id,
-            'ended_at' => null, // Ensure it's active
+            'ended_at' => null, 
         ]);
 
         $result = $this->service->handleSessionStart($this->user->id, [
@@ -86,7 +86,7 @@ class FocusSessionServiceTest extends TestCase
             'user_id' => $this->user->id,
             'title' => 'Original Session',
             'status' => 'active',
-            'ended_at' => null, // Ensure it's active
+            'ended_at' => null, 
         ]);
         
         $newTask = Task::factory()->create(['user_id' => $this->user->id]);
@@ -124,7 +124,6 @@ class FocusSessionServiceTest extends TestCase
     #[Test]
     public function test_get_stats_calculates_correctly()
     {
-        // 2 completed sessions this week
         FocusSession::factory()->count(2)->create([
             'user_id' => $this->user->id,
             'status' => 'completed',
@@ -133,14 +132,12 @@ class FocusSessionServiceTest extends TestCase
             'actual_duration_min' => 60,
         ]);
 
-        // 1 active session (should be ignored)
         FocusSession::factory()->create([
             'user_id' => $this->user->id,
             'status' => 'active',
             'ended_at' => null,
         ]);
 
-        // 1 old completed session
         FocusSession::factory()->create([
             'user_id' => $this->user->id,
             'status' => 'completed',
@@ -150,8 +147,8 @@ class FocusSessionServiceTest extends TestCase
 
         $stats = $this->service->getStats($this->user->id);
 
-        $this->assertEquals(3, $stats['total_contexts']); // 2 this week + 1 old
+        $this->assertEquals(3, $stats['total_contexts']); 
         $this->assertEquals(2, $stats['this_week']);
-        $this->assertEquals(150, $stats['time_saved_minutes']); // 60*2 + 30
+        $this->assertEquals(150, $stats['time_saved_minutes']); 
     }
 }
