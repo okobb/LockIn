@@ -294,22 +294,6 @@ export default function WeeklyPlanner() {
     setDropTarget(null);
   };
 
-  const LegendItem = ({
-    color,
-    label,
-    hours,
-  }: {
-    color: string;
-    label: string;
-    hours: string;
-  }) => (
-    <div className="flex items-center gap-2 text-xs">
-      <div className={`w-3 h-3 rounded-sm ${color}`} />
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{hours}</span>
-    </div>
-  );
-
   const handleAddTask = (data: {
     title: string;
     scheduled_date: string;
@@ -368,7 +352,7 @@ export default function WeeklyPlanner() {
                   try {
                     await syncCalendar();
                     toast("success", "Calendar synced successfully");
-                  } catch (error) {
+                  } catch {
                     toast("error", "Failed to sync calendar");
                   }
                 }}
@@ -776,6 +760,24 @@ export default function WeeklyPlanner() {
           serviceName={connectService}
         />
       </main>
+    </div>
+  );
+}
+
+function LegendItem({
+  color,
+  label,
+  hours,
+}: {
+  color: string;
+  label: string;
+  hours: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <div className={`w-3 h-3 rounded-sm ${color}`} />
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{hours}</span>
     </div>
   );
 }

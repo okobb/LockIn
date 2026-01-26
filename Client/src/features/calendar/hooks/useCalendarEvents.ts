@@ -287,9 +287,7 @@ export function useCalendarEvents({
         start_time: block.start_time,
         end_time: block.end_time,
         type: block.type,
-        // @ts-ignore - API needs to support these fields
         priority: block.priority,
-        // @ts-ignore - API needs to support these fields
         tags: block.tags,
         task_id: block.task_id,
       };

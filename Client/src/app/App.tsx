@@ -20,6 +20,7 @@ import { StatsPage } from "../features/stats";
 import { Settings } from "../features/settings";
 import { ModalProvider } from "../shared/context/ModalContext";
 import { ToastProvider } from "../shared/context/ToastContext";
+import { GlobalChat } from "../features/ai/components/GlobalChat";
 import "../shared/styles/global.css";
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
     <ModalProvider>
       <ToastProvider>
         <BrowserRouter>
+          <GlobalChat />
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
