@@ -128,11 +128,15 @@ final class DashboardService
      */
     private function calculateDeepWorkMinutes(int $userId, Carbon $date): int
     {
+        $expression = DB::connection()->getDriverName() === 'sqlite'
+            ? "(strftime('%s', end_time) - strftime('%s', start_time)) / 60"
+            : "EXTRACT(EPOCH FROM (end_time - start_time)) / 60";
+
         return (int) CalendarEvent::query()
             ->where('user_id', '=', $userId, 'and')
             ->where('type', '=', 'deep_work')
             ->whereDate('start_time', $date)
-            ->sum(DB::raw('EXTRACT(EPOCH FROM (end_time - start_time)) / 60'));
+            ->sum(DB::raw($expression));
     }
 
     private function mapSourceToTag(?string $source): string
