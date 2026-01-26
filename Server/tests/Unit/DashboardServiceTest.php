@@ -28,13 +28,9 @@ class DashboardServiceTest extends TestCase
     #[Test]
     public function test_get_priority_tasks_filters_high_priority()
     {
-        // High Priority (Priority 1)
         $t1 = Task::factory()->create(['user_id' => $this->user->id, 'priority' => 1, 'status' => 'open', 'title' => 'Important']);
-        // Medium Priority (Priority 2)
         $t2 = Task::factory()->create(['user_id' => $this->user->id, 'priority' => 2, 'status' => 'open', 'title' => 'Medium']);
-        // Low Priority (Priority 3) - Should be excluded
         $t3 = Task::factory()->create(['user_id' => $this->user->id, 'priority' => 3, 'status' => 'open', 'title' => 'Low']);
-        // Done Task (Priority 1) - Should be excluded
         $t4 = Task::factory()->create(['user_id' => $this->user->id, 'priority' => 1, 'status' => 'done', 'title' => 'Done']);
 
         $results = $this->service->getPriorityTasks($this->user->id);
@@ -49,7 +45,6 @@ class DashboardServiceTest extends TestCase
     #[Test]
     public function test_get_stats_returns_correct_flow_time_format()
     {
-        // 90 minutes deep work today
         CalendarEvent::create([
             'user_id' => $this->user->id,
             'title' => 'Deep Work',
@@ -61,7 +56,6 @@ class DashboardServiceTest extends TestCase
 
         $stats = $this->service->getStats($this->user->id);
 
-        // 1h 30m
         $this->assertEquals('1h 30m', $stats['flowTime']);
         $this->assertEquals(1, $stats['deepWorkBlocks']);
     }
@@ -69,7 +63,6 @@ class DashboardServiceTest extends TestCase
     #[Test]
     public function test_get_upcoming_events_filters_today()
     {
-        // Past event (today but earlier) - Should show if >= now()? Code says >= now().
         CalendarEvent::create([
             'user_id' => $this->user->id,
             'title' => 'Past Today',
@@ -78,7 +71,6 @@ class DashboardServiceTest extends TestCase
             'source' => 'manual',
         ]);
 
-        // Future event (today)
         CalendarEvent::create([
             'user_id' => $this->user->id,
             'title' => 'Future Today',
@@ -87,7 +79,6 @@ class DashboardServiceTest extends TestCase
             'source' => 'manual',
         ]);
 
-        // Future event (tomorrow) - Should be excluded (code: whereDate today)
         CalendarEvent::create([
             'user_id' => $this->user->id,
             'title' => 'Tomorrow',
@@ -120,7 +111,6 @@ class DashboardServiceTest extends TestCase
     #[Test]
     public function test_priority_tasks_format_sender_correctly()
     {
-        // Task with source metadata
         Task::factory()->create([
             'user_id' => $this->user->id,
             'title' => 'Email Task',
@@ -128,7 +118,6 @@ class DashboardServiceTest extends TestCase
             'source_metadata' => ['sender' => 'John Doe <john@example.com>'],
         ]);
 
-        // Task with incoming message
         $taskWithMsg = Task::factory()->create([
             'user_id' => $this->user->id,
             'title' => 'Msg Task',
@@ -138,7 +127,7 @@ class DashboardServiceTest extends TestCase
             'user_id' => $this->user->id,
             'extracted_task_id' => $taskWithMsg->id,
             'sender_info' => 'Jane Smith <jane@test.com>',
-            'status' => 'pending', // Minimal required
+            'status' => 'pending',
             'provider' => 'gmail',
             'provider_id' => 'msg-1',
             'external_id' => 'ext-1',
