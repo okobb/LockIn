@@ -55,7 +55,7 @@ class AIService
 
         return [
             'content' => $message->content,
-            'tool_calls' => $message->toolCalls ?? [],
+            'tool_calls' => isset($message->toolCalls) ? array_map(fn($toolCall) => $toolCall->toArray(), $message->toolCalls) : [],
         ];
     }
 

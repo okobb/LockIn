@@ -4,6 +4,8 @@ export interface Source {
   resource_id: string;
   score: number;
   content: string;
+  url?: string;
+  title?: string;
 }
 
 export interface ToolCallData {
@@ -24,9 +26,18 @@ export interface AIResponse {
 
 export const ai = {
   chat: async (message: string, activeContextId?: string) => {
-    return client.post<AIResponse>("/ai/chat", {
+    const response = await client.post<{ data: AIResponse }>("/ai/chat", {
       message,
       active_context_id: activeContextId,
     });
+    return response.data;
+  },
+  getThread: async (activeContextId?: string) => {
+    const response = await client.get<{
+      data: { thread: any; messages: any[] };
+    }>("/ai/thread", {
+      params: { context_id: activeContextId },
+    });
+    return response.data;
   },
 };

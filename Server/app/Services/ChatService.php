@@ -25,7 +25,7 @@ class ChatService
                 'context_id' => $activeContextId,
             ],
             [
-                'title' => 'New Conversation',
+                'title' => $activeContextId ? 'Context Thread' : 'Global Thread',
                 'metadata' => ['last_active' => now()],
             ]
         );
@@ -58,7 +58,7 @@ class ChatService
 
         $assistantMessage = $thread->messages()->create([
             'role' => 'assistant',
-            'content' => $response['content'],
+            'content' => $response['content'] ?? '',
             'tool_calls' => isset($response['tool_call']) ? [$response['tool_call']] : null,
             'sources' => $response['sources'] ?? null,
         ]);
@@ -90,5 +90,23 @@ class ChatService
             'thread' => $thread,
             'messages' => $messages,
         ];
+    }
+    /**
+     * Get or create a thread for a specific context.
+     */
+    public function getThreadByContext(int $userId, ?int $contextId): array
+    {
+        $thread = ChatThread::firstOrCreate(
+            [
+                'user_id' => $userId,
+                'context_id' => $contextId,
+            ],
+            [
+                'title' => $contextId ? 'Context Thread' : 'Global Thread',
+                'metadata' => ['last_active' => now()],
+            ]
+        );
+
+        return $this->getThreadHistory($thread->id, $userId);
     }
 }

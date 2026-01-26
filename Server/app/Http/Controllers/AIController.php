@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ChatRequest;
 use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AIController extends BaseController
@@ -41,6 +42,22 @@ class AIController extends BaseController
     public function getHistory(int $threadId): JsonResponse
     {
         $data = $this->chatService->getThreadHistory($threadId, (int) Auth::id());
+
+        return $this->successResponse($data);
+    }
+    /**
+     * Get or create a thread based on context ID.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getThread(Request $request): JsonResponse
+    {
+        $userId = (int) Auth::id();
+        $contextId = $request->input('context_id');
+        $contextId = $contextId ? (int) $contextId : null;
+
+        $data = $this->chatService->getThreadByContext($userId, $contextId);
 
         return $this->successResponse($data);
     }

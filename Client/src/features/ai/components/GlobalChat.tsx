@@ -1,5 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Trash2, Send, Check, AlertCircle, Loader2 } from "lucide-react";
+import { useLocation, matchPath } from "react-router-dom";
+import {
+  X,
+  Trash2,
+  Send,
+  Check,
+  AlertCircle,
+  Loader2,
+  FolderOpen,
+} from "lucide-react";
 import { Button } from "../../../shared/components/UI/Button";
 import { Card } from "../../../shared/components/UI/Card";
 import { Input } from "../../../shared/components/UI/Input";
@@ -23,23 +32,72 @@ interface Message {
 
 export function GlobalChat() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hello! I'm your Lock In Assistant. I can help you manage your tasks and find information.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const location = useLocation();
+  const [activeContextId, setActiveContextId] = useState<string | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    const match = matchPath("/context-history/:sessionId", location.pathname);
+
+    const searchParams = new URLSearchParams(location.search);
+    const queryContextId = searchParams.get("context_id");
+
+    const newContextId = match?.params.sessionId || queryContextId || undefined;
+    setActiveContextId(newContextId);
+  }, [location]);
+
+  useEffect(() => {
+    setMessages([]);
+
+    const fetchHistory = async () => {
+      try {
+        const { messages: history } = await ai.getThread(activeContextId);
+        if (history && history.length > 0) {
+          const formatted: Message[] = history.map((msg: any) => ({
+            id: msg.id.toString(),
+            role: msg.role === "tool" ? "assistant" : msg.role,
+            content: msg.content,
+            type: msg.tool_calls ? "tool_call" : "message",
+            sources: msg.sources,
+            tool_call: msg.tool_calls ? msg.tool_calls[0] : undefined,
+          }));
+          setMessages(formatted);
+        } else {
+          setMessages([
+            {
+              id: "welcome",
+              role: "assistant",
+              content: activeContextId
+                ? "I'm ready to help with this specific context."
+                : "Hello! I'm your Lock In Assistant. I can help you manage your tasks and find information.",
+            },
+          ]);
+        }
+      } catch (e) {
+        console.error("Failed to load history", e);
+      }
+    };
+
+    if (isOpen) {
+      fetchHistory();
+    }
+  }, [activeContextId, isOpen]);
+
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current && isOpen) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 100);
     }
   }, [messages, isOpen, isLoading]);
 
@@ -57,7 +115,7 @@ export function GlobalChat() {
     setIsLoading(true);
 
     try {
-      const response = await ai.chat(userMsg.content);
+      const response = await ai.chat(userMsg.content, activeContextId);
       const data = response;
 
       const aiMsg: Message = {
@@ -131,13 +189,18 @@ export function GlobalChat() {
           className={cn(
             "h-14 w-14 rounded-full shadow-lg transition-transform duration-300 hover:scale-105",
             isOpen && "rotate-90 scale-0 opacity-0",
+            activeContextId ? "bg-blue-600 hover:bg-blue-700" : "bg-primary",
           )}
         >
-          <img
-            src="/Project logo.png"
-            alt="Lock In Assistant"
-            className="h-10 w-10 object-contain"
-          />
+          {activeContextId ? (
+            <FolderOpen className="h-6 w-6 text-white" />
+          ) : (
+            <img
+              src="/Project logo.png"
+              alt="Lock In Assistant"
+              className="h-10 w-10 object-contain"
+            />
+          )}
         </Button>
       </div>
 
@@ -151,14 +214,35 @@ export function GlobalChat() {
         style={{ height: "600px" }}
       >
         <Card className="flex h-full flex-col border-0 shadow-none">
-          <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/50">
+          <div
+            className={cn(
+              "flex items-center justify-between border-b px-4 py-3",
+              activeContextId ? "bg-blue-50/50" : "bg-muted/50",
+            )}
+          >
             <div className="flex items-center gap-2">
-              <img
-                src="/Project logo.png"
-                alt="Logo"
-                className="h-6 w-6 object-contain"
-              />
-              <h3 className="font-semibold text-sm">Lock In Assistant</h3>
+              {activeContextId ? (
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100">
+                  <FolderOpen className="h-3.5 w-3.5 text-blue-600" />
+                </span>
+              ) : (
+                <img
+                  src="/Project logo.png"
+                  alt="Logo"
+                  className="h-6 w-6 object-contain"
+                />
+              )}
+
+              <div className="flex flex-col">
+                <h3 className="font-semibold text-sm">
+                  {activeContextId ? "Context Mode" : "Global Brain"}
+                </h3>
+                {activeContextId && (
+                  <span className="text-[10px] text-muted-foreground">
+                    ID: {activeContextId}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <Button
@@ -213,24 +297,51 @@ export function GlobalChat() {
                     "max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm",
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground rounded-tr-none"
-                      : "bg-muted text-muted-foreground rounded-tl-none",
+                      : msg.type === "error"
+                        ? "bg-destructive text-destructive-foreground rounded-tl-none border border-destructive/20"
+                        : "bg-muted text-muted-foreground rounded-tl-none",
                   )}
                 >
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                  <div className="whitespace-pre-wrap">
+                    {msg.content ||
+                      (msg.type === "tool_call"
+                        ? "Execute Action"
+                        : "Empty response")}
+                  </div>
 
-                  {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {msg.sources.map((source, idx) => (
-                        <span
-                          key={idx}
-                          title={source.content}
-                          className="inline-flex items-center rounded-full bg-background/50 px-2 py-0.5 text-[10px] font-medium opacity-80 cursor-help"
-                        >
-                          📄 Source {idx + 1}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  {(() => {
+                    let sources = msg.sources;
+                    if (typeof sources === "string") {
+                      try {
+                        sources = JSON.parse(sources);
+                      } catch (e) {
+                        sources = [];
+                      }
+                    }
+
+                    if (sources && sources.length > 0) {
+                      const validSources = sources.filter((s: any) => s.url);
+                      if (validSources.length === 0) return null;
+
+                      return (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {validSources.map((source: any, idx: number) => (
+                            <a
+                              key={idx}
+                              href={source.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={source.content?.substring(0, 200)}
+                              className="inline-flex items-center rounded-full bg-background/50 px-2 py-0.5 text-[10px] font-medium opacity-80 hover:opacity-100 hover:bg-primary/20 transition-colors cursor-pointer"
+                            >
+                              🔗 {source.title || `Source ${idx + 1}`}
+                            </a>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {msg.type === "tool_call" &&
