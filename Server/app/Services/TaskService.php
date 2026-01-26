@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 use App\Traits\CachesData;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @extends BaseService<Task>
@@ -63,7 +64,8 @@ final class TaskService extends BaseService
             ->where('status', '=', 'open')
             ->when($query, function ($q) use ($query, $userId) {
 
-                $q->where('title', 'ILIKE', '%' . $query . '%');
+                $operator = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                $q->where('title', $operator, '%' . $query . '%');
             })
 
             ->orderBy('created_at', 'desc')
