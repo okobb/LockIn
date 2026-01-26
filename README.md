@@ -35,7 +35,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Key Features
 
-- **Context Snapshots**: Instantly saves and restores your entire workspace—including open browser tabs, active Git branches, and VS Code state—so you can switch tasks without losing context.
+<br><br>
+
+- **Context Snapshots**: Instantly saves and restores your entire workspace—including open browser tabs, and active Git branches—so you can switch tasks without losing context.
 
 - **RAG-Powered Second Brain**: A "Talk to Your Data" engine that indexes your personal docs and logs into a vector database, allowing the AI to give grounded answers specific to your work.
 
@@ -43,7 +45,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Active Flow Coach**: An embedded AI agent that doesn't just chat but actively unblocks you by generating dynamic checklists and pulling relevant documentation while you work.
 
+<img src="./readme/Highlights/highlights.png"/>
 
+<br><br>
 
 <!-- Demo -->
 <img src="./readme/titles/title5.svg"/>
@@ -85,4 +89,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | Image Resource Hub | AI chatbot |
 | :----------------: | :----------------: |
 
-| <img src="./readme/Screens/Image Resource Hub.png" width="400" /> | <img src="./readme/Screens/AI chatbot.png" width="400" />
+| <img src="./readme/Screens/Image Resource Hub.png" width="400" /> | <img src="./readme/Screens/AI chatbot.png" width="400" /> |
