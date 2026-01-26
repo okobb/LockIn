@@ -71,6 +71,26 @@ const typeIcons: Record<string, React.ElementType> = {
   documentation: BookOpen,
 };
 
+const tagColors = [
+  "text-blue-400 bg-blue-400/20 border-blue-400/30",
+  "text-green-400 bg-green-400/20 border-green-400/30",
+  "text-purple-400 bg-purple-400/20 border-purple-400/30",
+  "text-yellow-400 bg-yellow-400/20 border-yellow-400/30",
+  "text-pink-400 bg-pink-400/20 border-pink-400/30",
+  "text-indigo-400 bg-indigo-400/20 border-indigo-400/30",
+  "text-cyan-400 bg-cyan-400/20 border-cyan-400/30",
+  "text-orange-400 bg-orange-400/20 border-orange-400/30",
+];
+
+const getTagColor = (tag: string) => {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % tagColors.length;
+  return tagColors[index];
+};
+
 export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
   resource,
   isOpen,
@@ -328,7 +348,10 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
                   {resource.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-3 py-1 bg-white/5 text-zinc-300 rounded-full text-xs border border-white/10"
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs border font-medium",
+                        getTagColor(tag),
+                      )}
                     >
                       {tag}
                     </span>

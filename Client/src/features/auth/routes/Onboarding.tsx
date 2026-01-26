@@ -19,7 +19,6 @@ import { cn } from "../../../shared/lib/utils";
 import { useIntegrations } from "../../settings/hooks/useIntegrations";
 import { useModal } from "../../../shared/context/ModalContext";
 
-// Custom SVG Icons
 const GitHubIcon = (props: any) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +73,6 @@ export default function Onboarding() {
     },
   });
 
-  // Initialize theme from localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("theme");
@@ -111,7 +109,6 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background text-foreground font-sans">
       <div className="w-full max-w-3xl space-y-8">
-        {/* Progress Bar */}
         <div className="w-full h-1 bg-secondary rounded-full overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
@@ -119,7 +116,6 @@ export default function Onboarding() {
           />
         </div>
 
-        {/* Step 1: Welcome */}
         {currentStep === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
             <div className="text-center space-y-4">
@@ -170,7 +166,6 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* Step 2: Connect Integrations */}
         {currentStep === 2 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
             <div className="text-center md:text-left space-y-2">
@@ -309,7 +304,6 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* Step 4: Complete */}
         {currentStep === 4 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
             <div className="text-center md:text-left space-y-2">

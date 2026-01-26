@@ -21,14 +21,21 @@ import { Settings } from "../features/settings";
 import { ModalProvider } from "../shared/context/ModalContext";
 import { ToastProvider } from "../shared/context/ToastContext";
 import { GlobalChat } from "../features/ai/components/GlobalChat";
+import { useAuth } from "../features/auth/hooks/useAuth";
 import "../shared/styles/global.css";
+
+const AuthenticatedChat = () => {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return null;
+  return <GlobalChat />;
+};
 
 function App() {
   return (
     <ModalProvider>
       <ToastProvider>
         <BrowserRouter>
-          <GlobalChat />
+          <AuthenticatedChat />
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />

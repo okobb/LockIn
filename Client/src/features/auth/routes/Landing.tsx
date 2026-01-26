@@ -365,12 +365,8 @@ export default function Landing() {
               Terms
             </a>
             <span className="opacity-30">•</span>
-            <a href="#" className="hover:text-primary transition-colors">
+            <a href="https://github.com/okobb/LockIn.git" className="hover:text-primary transition-colors">
               GitHub
-            </a>
-            <span className="opacity-30">•</span>
-            <a href="#" className="hover:text-primary transition-colors">
-              Twitter
             </a>
           </div>
           <p className="text-xs text-muted-foreground/60">
