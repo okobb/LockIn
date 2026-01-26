@@ -55,7 +55,6 @@ class ContextSnapshotServiceTest extends TestCase
             'checklist' => ['Item 1', 'Item 2'],
         ];
         
-        // No voice file
         $snapshot = $this->service->processSnapshot($session, $data, null);
         
         $this->assertDatabaseHas('context_snapshots', [
@@ -110,10 +109,43 @@ class ContextSnapshotServiceTest extends TestCase
         $this->assertEquals($newSession->id, $forked->focus_session_id);
         $this->assertEquals('forked', $forked->type);
         $this->assertEquals('Original Note', $forked->text_note);
-        // Verify Deep Copy of arrays? Replicate converts arrays.
         $this->assertEquals($originalSnapshot->browser_state, $forked->browser_state);
         
-        // Verify link updated on new session
         $this->assertEquals($forked->id, $newSession->fresh()->context_snapshot_id);
+    }
+
+    #[Test]
+    public function test_update_snapshot_updates_fields_and_score()
+    {
+        $session = FocusSession::factory()->create(['user_id' => $this->user->id]);
+        $snapshot = \App\Models\ContextSnapshot::factory()->create([
+            'user_id' => $this->user->id,
+            'focus_session_id' => $session->id,
+            'quality_score' => 10,
+        ]);
+
+        $updateData = [
+            'note' => 'Updated Note',
+            'git_state' => [
+                'diff' => 'diff content',
+                'branch' => 'feature-branch',
+                'files' => ['file1.php']
+            ],
+            'checklist' => ['New Item'],
+        ];
+
+        $updated = $this->service->updateSnapshot($snapshot, $updateData);
+
+        $this->assertEquals('Updated Note', $updated->text_note);
+        $this->assertEquals('diff content', $updated->git_diff_blob);
+        $this->assertEquals('feature-branch', $updated->git_branch);
+        $this->assertEquals(['file1.php'], $updated->git_files_changed);
+        
+        // Check Checklist
+        $this->assertCount(1, $updated->ai_resume_checklist);
+        $this->assertEquals('New Item', $updated->ai_resume_checklist[0]['text']);
+        
+        // Quality Score should increase due to added context
+        $this->assertGreaterThan(10, $updated->quality_score);
     }
 }
