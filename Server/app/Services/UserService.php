@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Hash;
  *
  * @extends BaseService<User>
  */
-final class UserService extends BaseService
+class UserService extends BaseService
 {
     /**
      * {@inheritDoc}

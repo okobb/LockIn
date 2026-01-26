@@ -195,8 +195,12 @@ class StatsService
     {
         
         // Find best day of week
+        $dowExpression = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%w', date)"
+            : "EXTRACT(DOW FROM date)";
+
         $bestDayStats = DailyStat::query()->where('user_id', $userId)
-            ->selectRaw('EXTRACT(DOW FROM date) as dow, AVG(flow_time_min) as avg_flow')
+            ->selectRaw("$dowExpression as dow, AVG(flow_time_min) as avg_flow")
             ->groupBy('dow')
             ->orderByDesc('avg_flow')
             ->first();
