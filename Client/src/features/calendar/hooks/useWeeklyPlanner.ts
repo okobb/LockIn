@@ -33,6 +33,8 @@ export function useWeeklyPlanner() {
     updateBacklogTask,
     addBacklogTask,
     removeBacklogTask,
+    completeTask,
+    scheduleTask,
   } = useTaskBacklog();
 
   const {
@@ -88,7 +90,13 @@ export function useWeeklyPlanner() {
 
       // Check against CALENDAR_END_HOUR
       const endHour = endTime.getHours() + endTime.getMinutes() / 60;
-      if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
+      const isNextDay = endTime.getDate() !== startTime.getDate();
+
+      if (
+        absoluteHour >= CALENDAR_END_HOUR ||
+        (isNextDay && endHour > 0) ||
+        (!isNextDay && endHour > CALENDAR_END_HOUR)
+      ) {
         await modal.open({
           type: "error",
           title: "Schedule Conflict",
@@ -99,14 +107,14 @@ export function useWeeklyPlanner() {
 
       if (checkOverlap(startTime, endTime)) {
         await modal.open({
-          type: "warning",
+          type: "error",
           title: "Schedule Conflict",
           message: "This time slot overlaps with an existing block.",
         });
         return;
       }
 
-      removeBacklogTask(taskId);
+      scheduleTask(taskId, startTime.toISOString(), endTime.toISOString());
 
       // Add block to calendar (async with optimistic update)
       const newBlock: CalendarBlock = {
@@ -117,11 +125,12 @@ export function useWeeklyPlanner() {
         type: "deep_work",
         priority: task.priority,
         tags: task.tags,
+        task_id: Number(taskId),
       };
 
       addBlock(newBlock);
     },
-    [backlogTasks, checkOverlap, addBlock, removeBacklogTask, modal],
+    [backlogTasks, checkOverlap, addBlock, scheduleTask, modal],
   );
 
   const returnToBacklog = useCallback(
@@ -232,8 +241,12 @@ export function useWeeklyPlanner() {
       title: string,
       type: "deep_work" | "meeting" | "external",
       durationMinutes: number,
+      dateOverride?: Date,
+      hourOverride?: number,
     ) => {
-      const { date, hour } = createBlockState;
+      const date = dateOverride || createBlockState.date;
+      const hour = hourOverride ?? createBlockState.hour;
+
       if (!date || hour === null) return;
 
       const startTime = new Date(date);
@@ -245,7 +258,13 @@ export function useWeeklyPlanner() {
       endTime.setMinutes(startTime.getMinutes() + durationMinutes);
 
       const endHour = endTime.getHours() + endTime.getMinutes() / 60;
-      if (absoluteHour >= CALENDAR_END_HOUR || endHour > CALENDAR_END_HOUR) {
+      const isNextDay = endTime.getDate() !== startTime.getDate();
+
+      if (
+        absoluteHour >= CALENDAR_END_HOUR ||
+        (isNextDay && endHour > 0) ||
+        (!isNextDay && endHour > CALENDAR_END_HOUR)
+      ) {
         await modal.open({
           type: "error",
           title: "Schedule Conflict",
@@ -256,7 +275,7 @@ export function useWeeklyPlanner() {
 
       if (checkOverlap(startTime, endTime)) {
         await modal.open({
-          type: "warning",
+          type: "error",
           title: "Schedule Conflict",
           message: "This time slot overlaps with an existing block.",
         });
@@ -315,6 +334,7 @@ export function useWeeklyPlanner() {
     updateBacklogTask,
     addBacklogTask,
     removeBacklogTask,
+    completeTask,
     updateCalendarBlock,
 
     pendingMoveState,

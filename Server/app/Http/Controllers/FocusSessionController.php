@@ -64,7 +64,7 @@ final class FocusSessionController extends BaseController
             return $this->forbiddenResponse();
         }
 
-        $this->focusSessionService->deleteSession($session);
+        $this->focusSessionService->delete($session->id);
 
         return $this->successResponse(null, 'Session deleted successfully');
     }

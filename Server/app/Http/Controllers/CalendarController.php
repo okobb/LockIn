@@ -99,8 +99,9 @@ final class CalendarController extends BaseController
         }
 
         // If it's an external event, don't delete it, just mark as dismissed
+        // If it's an external event, don't delete it, just mark as dismissed
         if ($event->external_id) {
-            $event->update(['is_dismissed' => true]);
+            $event->update(['is_dismissed' => \Illuminate\Support\Facades\DB::raw('true')]);
             return $this->successResponse(null, 'Event dismissed successfully');
         }
 

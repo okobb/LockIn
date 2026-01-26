@@ -10,7 +10,6 @@ import {
   ChevronRight,
   GitBranch,
   FileText,
-  Save,
   Play,
   ArrowRight,
   Monitor,
@@ -30,6 +29,7 @@ import {
   generateAIChecklist,
   toggleChecklistItem,
 } from "../api/focusApi";
+import { markSessionComplete } from "../../context/api/contextHistoryApi";
 
 import { cn } from "../../../shared/lib/utils";
 import { Button } from "../../../shared/components/UI/Button";
@@ -39,6 +39,8 @@ import { Textarea } from "../../../shared/components/UI/Textarea";
 import { Input } from "../../../shared/components/UI/Input";
 import { QualityScoreBadge } from "../../../shared/components/QualityScoreBadge/QualityScoreBadge";
 import { useSessionContext } from "../context/SessionContext";
+import { EndSessionModal } from "../components/EndSessionModal";
+import { tasks } from "../../tasks/api/tasks";
 
 interface FocusState {
   taskId?: number;
@@ -57,13 +59,14 @@ export default function FocusMode() {
   const { open } = useModal();
   const { activeSession, updateSession, clearSession } = useSessionContext();
 
+  // Force HMR update
   const locationState = location.state as FocusState | null;
-
   const activeState = locationState || activeSession;
 
   const { session, setSession } = useFocusSession(activeState);
 
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
+  const [isEndSessionModalOpen, setIsEndSessionModalOpen] = useState(false);
 
   // Track which session we've initialized for to detect navigation changes
   const lastInitializedSession = useRef<string | null>(null);
@@ -300,6 +303,41 @@ export default function FocusMode() {
       setIsNoteHydrated(true);
     }
   }, [session, isNoteHydrated]);
+
+  const handleCompleteTask = async () => {
+    if (activeState?.taskId) {
+      try {
+        await tasks.complete(activeState.taskId);
+      } catch (err) {
+        console.error("Failed to complete task", err);
+      }
+    } else if (session?.task_id) {
+      try {
+        await tasks.complete(session.task_id);
+      } catch (err) {
+        console.error("Failed to complete task", err);
+      }
+    }
+
+    // Complete the focus session if it exists
+    const sessionId = session?.id || activeState?.sessionId;
+    if (sessionId) {
+      try {
+        await markSessionComplete(sessionId);
+      } catch (err) {
+        console.error("Failed to complete focus session", err);
+      }
+    }
+
+    clearSession();
+
+    navigate("/dashboard");
+    open({
+      type: "success",
+      title: "Mission Complete",
+      message: "Task completed successfully.",
+    });
+  };
 
   const handleLockIn = () => {
     const payloadSessionId = session?.id || (activeState as any)?.sessionId;
@@ -720,9 +758,9 @@ export default function FocusMode() {
                 <Button
                   size="lg"
                   className="h-12 rounded-full px-8 shadow-lg shadow-primary/20 hover:shadow-primary/40 text-sm font-semibold bg-primary hover:bg-primary/90 transition-all active:scale-95"
-                  onClick={handleLockIn}
+                  onClick={() => setIsEndSessionModalOpen(true)}
                 >
-                  <Save className="w-4 h-4 mr-2" /> Lock In Context
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> End Session
                 </Button>
               </div>
             </div>
@@ -737,6 +775,7 @@ export default function FocusMode() {
               : "w-[380px] opacity-100",
           )}
         >
+          {/* ... (Sidebar Content) ... */}
           <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -775,38 +814,70 @@ export default function FocusMode() {
               </div>
             </div>
 
-            {activeGitState && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Branch</span>
-                    <Badge
-                      variant="outline"
-                      className="border-purple-500/30 text-purple-400 font-mono bg-purple-500/10"
-                    >
-                      {activeGitState.branch}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">File</span>
-                    <span className="font-mono text-foreground/80">
-                      {activeGitState.files_changed[0]}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-xs font-mono border-t border-purple-500/20 pt-3">
-                    <div className="flex items-center gap-1.5 text-emerald-500">
-                      <Plus className="w-3 h-3" />
-                      <span>{activeGitState.additions} additions</span>
+            {activeGitState &&
+              (activeGitState.additions > 0 ||
+                activeGitState.deletions > 0 ||
+                activeGitState.files_changed.length > 0) && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-4">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Branch</span>
+                      <Badge
+                        variant="outline"
+                        className="border-blue-500/30 text-blue-400 font-mono bg-blue-500/10"
+                      >
+                        {activeGitState.branch || "unknown"}
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-1.5 text-red-500">
-                      <div className="w-3 h-px bg-current" />
-                      <span>{activeGitState.deletions} deletions</span>
+
+                    <div className="space-y-2">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Changed Files ({activeGitState.files_changed.length})
+                      </span>
+                      <div className="space-y-1 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                        {activeGitState.files_changed.map((file: any, i) => {
+                          const filePath = file.file || file || "";
+                          const fileName = filePath.split("/").pop();
+                          return (
+                            <div
+                              key={i}
+                              className="flex items-center gap-3 p-2 rounded bg-card/40 border border-border/50 text-xs group"
+                            >
+                              
+                              <div
+                                className="font-mono truncate text-foreground/90"
+                                title={filePath}
+                              >
+                                {fileName}
+                              </div>
+                              <div className="flex items-center gap-1.5 font-mono shrink-0 min-w-[60px]">
+                                <span className="text-emerald-500">
+                                  +{file.additions || 0}
+                                </span>
+                                <span className="text-red-500">
+                                  -{file.deletions || 0}
+                                </span>
+                              </div>
+                            </div>
+                            
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs font-mono border-t border-blue-500/20 pt-3">
+                      <div className="flex items-center gap-1.5 text-emerald-500">
+                        <Plus className="w-3 h-3" />
+                        <span>{activeGitState.additions} additions</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-red-500">
+                        <div className="w-3 h-px bg-current" />
+                        <span>{activeGitState.deletions} deletions</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div className="space-y-4">
               <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -872,6 +943,14 @@ export default function FocusMode() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
+
+        <EndSessionModal
+          isOpen={isEndSessionModalOpen}
+          onClose={() => setIsEndSessionModalOpen(false)}
+          onComplete={handleCompleteTask}
+          onPause={handleLockIn}
+          title={activeState.title}
+        />
       </main>
     </div>
   );

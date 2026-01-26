@@ -36,7 +36,8 @@ class Task extends Model
         'progress_percent',
         'completed_at',
         'received_at',
-        'external_id'
+        'external_id',
+        'context_snapshot_id',
     ];
 
     /**
@@ -64,6 +65,11 @@ class Task extends Model
     public function focusSessions(): HasMany
     {
         return $this->hasMany(FocusSession::class);
+    }
+
+    public function contextSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(ContextSnapshot::class);
     }
 
     public function incomingMessages(): HasMany

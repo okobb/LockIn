@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Play,
   RotateCcw,
   CheckCircle2,
   Calendar as CalendarIcon,
-  // ArrowRight,
+  ArrowRight,
   Zap,
   Layers,
   Activity,
@@ -13,6 +13,7 @@ import {
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useSessionContext } from "../../../focus/context/SessionContext";
+import { getSession } from "../../../focus/api/focusApi";
 import { Button } from "../../../../shared/components/UI/Button";
 import { Card, CardContent } from "../../../../shared/components/UI/Card";
 import { cn } from "../../../../shared/lib/utils";
@@ -32,8 +33,26 @@ export default function NewDashboard() {
     isLoadingUpcoming,
   } = useDashboard();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { activeSession } = useSessionContext();
+  const { activeSession, clearSession } = useSessionContext();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeSession?.sessionId) {
+      getSession(activeSession.sessionId)
+        .then((session) => {
+          if (
+            session.status === "completed" ||
+            session.status === "abandoned" ||
+            session.ended_at
+          ) {
+            clearSession();
+          }
+        })
+        .catch(() => {
+          clearSession();
+        });
+    }
+  }, [activeSession?.sessionId, clearSession]);
 
   const handleResumeSession = () => {
     if (activeSession) {
@@ -267,22 +286,34 @@ export default function NewDashboard() {
                       </div>
                     ) : upcomingEvents.length > 0 ? (
                       upcomingEvents.map((event: any, i: number) => (
-                        <div key={i} className="relative pl-8">
-                          <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-4 border-background bg-foreground" />
+                        <div
+                          key={i}
+                          className="group/event relative pl-8 cursor-pointer hover:bg-primary/5 rounded-xl p-2 -ml-2 transition-colors duration-200"
+                          onClick={() => {
+                            localStorage.removeItem("current_focus_session");
+                            navigate("/focus", {
+                              state: {
+                                taskId: event.taskId,
+                                title: event.title,
+                                isNewSession: true,
+                              },
+                            });
+                          }}
+                        >
+                          <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-4 border-background bg-foreground group-hover/event:bg-primary group-hover/event:scale-125 transition-all" />
                           <div className="space-y-1">
                             <div className="text-sm font-mono text-muted-foreground">
-                              {new Date(
-                                event.start_time || Date.now(),
-                              ).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {event.time}
                             </div>
-                            <div className="font-medium text-base">
+                            <div className="font-medium text-base group-hover/event:text-primary transition-colors">
                               {event.title}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {event.type || "Event"}
+                            <div className="text-sm text-muted-foreground flex items-center justify-between">
+                              <span>{event.type || "Event"}</span>
+                              <span className="text-xs opacity-0 group-hover/event:opacity-100 transition-opacity flex items-center text-primary font-medium">
+                                Start Focus{" "}
+                                <ArrowRight className="w-3 h-3 ml-1" />
+                              </span>
                             </div>
                           </div>
                         </div>

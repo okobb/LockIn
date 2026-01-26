@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\DailyStat;
+use App\Models\FocusSession;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -16,6 +18,12 @@ use App\Traits\CachesData;
 final class TaskService extends BaseService
 {
     use CachesData;
+
+    public function __construct(
+        protected FocusSessionService $focusSessionService
+    ) {
+        parent::__construct();
+    }
 
     protected function getModelClass(): string
     {
@@ -87,6 +95,33 @@ final class TaskService extends BaseService
     {
         if (isset($data['status']) && $data['status'] === 'done' && $task->status !== 'done') {
             $data['completed_at'] = now();
+            
+            // Increment daily stats
+            $stat = DailyStat::query()->firstOrCreate(
+                ['user_id' => $task->user_id, 'date' => now()->toDateString()]
+            );
+            $stat->tasks_completed += 1;
+            $stat->save();
+
+            $hasActiveSession = FocusSession::query()->where('task_id', $task->id)
+                ->where('status', 'active')
+                ->exists();
+
+            if (!$hasActiveSession) {
+                FocusSession::create([
+                    'user_id' => $task->user_id,
+                    'task_id' => $task->id,
+                    'title' => $task->title,
+                    'status' => 'completed',
+                    'started_at' => $task->created_at,
+                    'ended_at' => now(),
+                    'planned_duration_min' => $task->estimated_minutes ?? 25,
+                    'actual_duration_min' => $task->estimated_minutes ?? 25,
+                    'created_at' => now(),
+                ]);
+            }
+
+            $this->focusSessionService->clearUserStatsCache($task->user_id);
         }
 
         $task->update($data);
@@ -172,11 +207,13 @@ final class TaskService extends BaseService
 
 
     /**
-     * Delete a task and invalidate cache.
+     * Delete a task by id and invalidate cache.
      */
-    public function deleteTask(Task $task): void
+    public function delete(int|string $id): bool
     {
+        $task = $this->findOrFail($id);
         $task->delete();
         $this->clearUserDashboardCache($task->user_id);
+        return true;
     }
 }

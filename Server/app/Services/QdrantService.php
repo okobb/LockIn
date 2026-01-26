@@ -56,6 +56,26 @@ class QdrantService
                 ],
             ],
         ]);
+        
+        $this->createPayloadIndex('user_id', 'integer');
+        $this->createPayloadIndex('context_id', 'integer');
+    }
+
+    /**
+     * Create a payload index.
+     */
+    public function createPayloadIndex(string $fieldName, string $schemaType = 'keyword'): void
+    {
+        try {
+            $this->client->put("/collections/{$this->collectionName}/index", [
+                'json' => [
+                    'field_name' => $fieldName,
+                    'field_schema' => $schemaType,
+                ],
+            ]);
+        } catch (GuzzleException $e) {
+            Log::warning("Failed to create index for $fieldName: " . $e->getMessage());
+        }
     }
 
     /**

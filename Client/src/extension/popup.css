@@ -2,8 +2,7 @@
 /* We are primarily using the variables and utility classes from shared/styles/global.css */
 
 body {
-  width: 350px;
-  width: 350px;
+  width: 300px;
   min-height: 200px;
   /* height: auto; Default */
   overflow: hidden;

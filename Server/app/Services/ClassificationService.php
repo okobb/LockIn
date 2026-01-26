@@ -39,7 +39,7 @@ class ClassificationService
                 'body' => $response->body(),
             ]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('ML Service connection error', [
                 'error' => $e->getMessage(),
                 'url' => $this->baseUrl

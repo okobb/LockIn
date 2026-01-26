@@ -120,39 +120,49 @@ class StatsService
     {
         return Cache::remember("stats:streak:{$userId}", now()->addHour(), function () use ($userId) {
             $streak = 0;
-            $checkDate = now();
+            $today = now()->toDateString();
+            $yesterday = now()->subDay()->toDateString();
             
-            $hasWorkedToday = DailyStat::query()->where('user_id', '=', $userId)
-                ->where('date', '=', $checkDate->toDateString())
-                ->where('flow_time_min', '>', 0)
-                ->exists();
-                
-            if ($hasWorkedToday) {
-                $streak++;
-                $checkDate->subDay();
-            } else {
-                // Check yesterday
-                $checkDate->subDay();
-                $hasWorkedYesterday = DailyStat::query()->where('user_id', '=', $userId)
-                ->where('date', '=', $checkDate->toDateString())
-                ->where('flow_time_min', '>', 0)
-                ->exists();
-                
-                if (!$hasWorkedYesterday) {
-                    return 0; // Streak broken
-                }
+            $activeDates = DailyStat::query()
+                ->where('user_id', $userId)
+                ->where(function ($query) {
+                    $query->where('flow_time_min', '>', 0)
+                          ->orWhere('tasks_completed', '>', 0);
+                })
+                ->whereDate('date', '<=', $today)
+                ->orderBy('date', 'desc')
+                ->pluck('date')
+                ->map(fn($date) => $date instanceof Carbon ? $date->toDateString() : substr((string)$date, 0, 10))
+                ->toArray();
+
+            if (empty($activeDates)) {
+                return 0;
             }
 
-            // Count backwards
-            while (true) {
-                $hasWorked = DailyStat::query()->where('user_id', '=', $userId)
-                    ->where('date', '=', $checkDate->toDateString())
-                    ->where('flow_time_min', '>', 0)
-                    ->exists();
-                    
-                if ($hasWorked) {
+            if (!in_array($today, $activeDates) && !in_array($yesterday, $activeDates)) {
+                return 0;
+            }
+
+            $currentCheckFn = in_array($today, $activeDates) 
+                ? now() 
+                : now()->subDay();
+                 
+            $checkDateStr = $currentCheckFn->toDateString();
+            
+            $startIndex = array_search($checkDateStr, $activeDates);
+            
+            if ($startIndex === false) {
+                 return 0;
+            }
+
+            $streak = 1;
+            $expectedDate = $currentCheckFn->copy()->subDay();
+            
+            for ($i = $startIndex + 1; $i < count($activeDates); $i++) {
+                $dateStr = $activeDates[$i];
+                if ($dateStr === $expectedDate->toDateString()) {
                     $streak++;
-                    $checkDate->subDay();
+                    $expectedDate->subDay();
                 } else {
                     break;
                 }
@@ -172,6 +182,7 @@ class StatsService
     public function setWeeklyGoal(int $userId, int $targetMinutes): void
     {
         $this->userService->setWeeklyGoal($userId, $targetMinutes);
+        Cache::forget("stats:weekly:{$userId}");
     }
 
     /**

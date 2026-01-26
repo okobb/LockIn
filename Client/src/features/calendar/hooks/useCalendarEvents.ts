@@ -113,6 +113,7 @@ export function useCalendarEvents({
             description: newBlockData.description || null,
             priority: newBlockData.priority,
             tags: newBlockData.tags,
+            task_id: newBlockData.task_id,
             source: "manual",
             external_id: null,
           };
@@ -286,10 +287,9 @@ export function useCalendarEvents({
         start_time: block.start_time,
         end_time: block.end_time,
         type: block.type,
-        // @ts-ignore - API needs to support these fields
         priority: block.priority,
-        // @ts-ignore - API needs to support these fields
         tags: block.tags,
+        task_id: block.task_id,
       };
       createMutation.mutate(createData);
     },
@@ -353,10 +353,27 @@ export function useCalendarEvents({
         calculatedStartISO: newStart.toISOString(),
       });
 
-      await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
+      if (checkOverlap(newStart, newEnd, blockId)) {
+        await modal.open({
+          type: "error",
+          title: "Schedule Conflict",
+          message: "This time slot overlaps with an existing block.",
+        });
+        return;
+      }
 
-      const previousData =
-        queryClient.getQueryData<CalendarEventsResponse>(queryKey);
+      const endHour = newEnd.getHours() + newEnd.getMinutes() / 60;
+
+      if (endHour > CALENDAR_END_HOUR) {
+        await modal.open({
+          type: "error",
+          title: "Schedule Conflict",
+          message: "Cannot move blocks past 9 PM.",
+        });
+        return;
+      }
+
+      await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
 
       queryClient.setQueryData<CalendarEventsResponse>(
         queryKey,
@@ -376,38 +393,6 @@ export function useCalendarEvents({
           };
         },
       );
-
-      if (checkOverlap(newStart, newEnd, blockId)) {
-        const confirmed = await modal.open({
-          type: "warning",
-          title: "Schedule Conflict",
-          message: "This time slot overlaps with an existing block.",
-        });
-
-        if (!confirmed) {
-          // Revert to snapshot - but first cancel any new queries that may have started
-          await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
-          if (previousData) {
-            queryClient.setQueryData(queryKey, previousData);
-          }
-          return;
-        }
-      }
-
-      // Check if the block ends after work hours or calendar limit
-      const endHour = newEnd.getHours() + newEnd.getMinutes() / 60;
-
-      if (endHour > CALENDAR_END_HOUR) {
-        await modal.open({
-          type: "error",
-          title: "Schedule Conflict",
-          message: "Cannot move blocks past 9 PM.",
-        });
-        // Revert UI by invalidating
-        await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
-        if (previousData) queryClient.setQueryData(queryKey, previousData);
-        return;
-      }
 
       if (isOvertime(endHour)) {
         setPendingMoveState({
@@ -465,10 +450,13 @@ export function useCalendarEvents({
 
   const removeBlock = useCallback(
     async (blockId: string) => {
+      console.log("Attempting to delete block:", blockId);
       // Check if this is a temp ID (negative number) - skip API call if so
       const numericId = Number(blockId);
-      if (!isNaN(numericId) && numericId < 0) {
-        // Temp block - just remove from cache without calling API
+      // Check if this is a temp ID (negative number OR non-numeric string like "block-123")
+      // If so, just remove from cache without calling API
+      if (isNaN(numericId) || numericId < 0) {
+        console.log("Deleting temp/local block from cache:", blockId);
         queryClient.setQueryData<CalendarEventsResponse>(
           queryKey,
           (old: CalendarEventsResponse | undefined) => {

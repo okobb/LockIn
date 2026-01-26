@@ -41,6 +41,7 @@ final class CalendarEventService extends BaseService
                 'description' => $data['description'] ?? null,
                 'tags' => $tags,
                 'priority' => $data['priority'] ?? null,
+                'task_id' => $data['task_id'] ?? null,
             ], fn($value) => !is_null($value)),
         ]);
     }

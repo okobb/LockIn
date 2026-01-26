@@ -175,6 +175,45 @@ export function useTaskBacklog() {
     },
   });
 
+  const completeMutation = useMutation({
+    mutationFn: (id: number) => tasks.complete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["tasks"] });
+      const previousData = queryClient.getQueryData<TasksResponse>(queryKey);
+
+      queryClient.setQueryData<TasksResponse>(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: old.data
+            .map((task) =>
+              task.id === id ? { ...task, status: "done" as const } : task,
+            )
+            .filter((t) => t.status !== "done"),
+        };
+      });
+
+      return { previousData };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: async (error, _id, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
+      console.error("Complete task failed:", error);
+      await modal.open({
+        type: "error",
+        title: "Complete Failed",
+        message: "Failed to complete task. Please try again.",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
   const toggleBacklog = useCallback(() => {
     setIsBacklogCollapsed((prev) => !prev);
   }, []);
@@ -191,7 +230,7 @@ export function useTaskBacklog() {
       };
       createMutation.mutate(payload);
     },
-    [createMutation]
+    [createMutation],
   );
 
   const updateBacklogTask = useCallback(
@@ -203,14 +242,14 @@ export function useTaskBacklog() {
 
       updateMutation.mutate({ id: Number(taskId), data: updateData });
     },
-    [updateMutation]
+    [updateMutation],
   );
 
   const removeBacklogTask = useCallback(
     (taskId: string) => {
       deleteMutation.mutate(Number(taskId));
     },
-    [deleteMutation]
+    [deleteMutation],
   );
 
   const scheduleTask = useCallback(
@@ -221,12 +260,19 @@ export function useTaskBacklog() {
         end: endTime,
       });
     },
-    [scheduleMutation]
+    [scheduleMutation],
+  );
+
+  const completeTask = useCallback(
+    (taskId: string) => {
+      completeMutation.mutate(Number(taskId));
+    },
+    [completeMutation],
   );
 
   const backlogTasks = useMemo(
     () => (data?.data ?? []).map(toBacklogTask),
-    [data]
+    [data],
   );
 
   return {
@@ -238,6 +284,7 @@ export function useTaskBacklog() {
     addBacklogTask,
     updateBacklogTask,
     removeBacklogTask,
+    completeTask,
     scheduleTask,
   };
 }

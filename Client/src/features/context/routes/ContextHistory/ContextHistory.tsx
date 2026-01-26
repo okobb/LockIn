@@ -341,11 +341,18 @@ export default function ContextHistory() {
                                   >
                                     {session.status === "completed"
                                       ? "Completed"
-                                      : "Abandoned"}
+                                      : "Incomplete"}
                                   </Badge>
                                 </div>
                               </div>
-                              <span className="text-xs font-mono text-muted-foreground">
+                              <span className="text-xs font-mono text-muted-foreground flex items-center gap-2">
+                                {session.status === "completed" &&
+                                  !session.context_snapshot && (
+                                    <span className="flex items-center gap-1 text-emerald-600 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                      <Clock className="w-3 h-3" />
+                                      Mission Accomplished
+                                    </span>
+                                  )}
                                 {formatTime(
                                   session.ended_at || session.started_at,
                                 )}
@@ -405,6 +412,24 @@ export default function ContextHistory() {
                                 "
                               </div>
                             )}
+
+                            {!session.context_snapshot &&
+                              session.status === "completed" && (
+                                <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl flex items-center gap-4 mb-3">
+                                  <div className="p-2 bg-emerald-500/10 rounded-lg">
+                                    <Clock className="w-5 h-5 text-emerald-600" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-emerald-900">
+                                      Task Victory
+                                    </p>
+                                    <p className="text-xs text-emerald-700/70">
+                                      Session finished successfully without a
+                                      snapshot.
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
 
                             <div className="flex items-center justify-between pt-2 border-t border-border/20">
                               <div className="flex items-center gap-2">

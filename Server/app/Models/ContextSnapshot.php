@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 class ContextSnapshot extends Model
 {
+    use HasFactory;
     /**
      * @var list<string>
      */
@@ -21,6 +24,8 @@ class ContextSnapshot extends Model
         'git_diff_blob',
         'git_branch',
         'git_last_commit',
+        'git_additions',
+        'git_deletions',
         'repository_source',
         'git_files_changed',
         'browser_state',
@@ -39,19 +44,21 @@ class ContextSnapshot extends Model
     /**
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'git_files_changed' => 'array',
-            'browser_state' => 'array',
-            'ide_state' => 'array',
-            'ai_resume_checklist' => 'array',
-            'voice_recorded_at' => 'datetime',
-            'voice_duration_sec' => 'integer',
-            'quality_score' => 'integer',
-            'restored_at' => 'datetime',
-        ];
-    }
+    /**
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'git_files_changed' => 'array',
+        'git_additions' => 'integer',
+        'git_deletions' => 'integer',
+        'browser_state' => 'array',
+        'ide_state' => 'array',
+        'ai_resume_checklist' => 'array',
+        'voice_recorded_at' => 'datetime',
+        'voice_duration_sec' => 'integer',
+        'quality_score' => 'integer',
+        'restored_at' => 'datetime',
+    ];
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

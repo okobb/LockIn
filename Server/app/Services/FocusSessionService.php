@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\ContextSnapshot;
 use App\Models\FocusSession;
+use App\Models\Task;
 use Illuminate\Support\Facades\DB;
 use App\Traits\CachesData;
 use Illuminate\Support\Facades\Cache;
@@ -89,10 +91,24 @@ final class FocusSessionService extends BaseService
                 $prevSession?->context_snapshot_id
             );
 
+            $restoredContext = (bool) $prevSession;
+
+            if (!$restoredContext && !empty($validated['task_id'])) {
+                $task = Task::find($validated['task_id'], ['*']);
+                if ($task && $task->context_snapshot_id) {
+                    $taskSnapshot = ContextSnapshot::find($task->context_snapshot_id, ['*']);
+                    if ($taskSnapshot) {
+                         app(ContextSnapshotService::class)->forkSnapshot($taskSnapshot, $session);
+                         $session->refresh();
+                         $restoredContext = true;
+                    }
+                }
+            }
+
             return [
                 'session' => $session,
                 'status' => 'started',
-                'restored_context' => (bool) $prevSession,
+                'restored_context' => $restoredContext,
             ];
         });
     }
@@ -104,7 +120,7 @@ final class FocusSessionService extends BaseService
         $query = FocusSession::query()->where('user_id', $userId)
             ->where('status', '!=', 'active')
             ->with(['contextSnapshot.checklistItems', 'task'])
-            ->orderBy('ended_at', 'desc');
+            ->orderBy('created_at', 'desc');
             
         if (!empty($filters['search'])) {
             $query->where('title', 'ILIKE', "%{$filters['search']}%");
@@ -156,15 +172,26 @@ final class FocusSessionService extends BaseService
     }
 
     /**
-     * Delete session and invalidate cache.
+     * Delete session by id and invalidate cache.
      */
-    public function deleteSession(FocusSession $session): void
+    public function delete(int|string $id): bool
     {
+        $session = $this->findOrFail($id);
+        
         if ($session->contextSnapshot) {
             $session->contextSnapshot->delete();
         }
         
         $session->delete();
         $this->clearUserStatsCache($session->user_id);
+        return true;
+    }
+
+    /**
+     * Clear the stats cache for a user.
+     */
+    public function clearUserStatsCache(int $userId): void
+    {
+        Cache::forget("focus:stats:{$userId}");
     }
 }
