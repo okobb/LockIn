@@ -33,9 +33,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <br><br>
 
-## Key Features
+<img src="./readme/titles/title4.svg">
 
-<br><br>
+## Key Features
 
 - **Context Snapshots**: Instantly saves and restores your entire workspace—including open browser tabs, and active Git branches—so you can switch tasks without losing context.
 
@@ -44,6 +44,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Bayesian Noise Filter**: A high-performance Go microservice that learns from your behavior to automatically classify notifications as "Important" or "Noise," protecting your focus.
 
 - **Active Flow Coach**: An embedded AI agent that doesn't just chat but actively unblocks you by generating dynamic checklists and pulling relevant documentation while you work.
+
+<br>
 
 <img src="./readme/Highlights/highlights.png"/>
 
