@@ -7,25 +7,28 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const { setAuth, logout, user, isAuthenticated } = useAuthContext();
 
-  const handleAuthSuccess = (data: {
-    data: { user: any; authorization: { token: string } };
-  }) => {
+  const handleAuthSuccess = (
+    data: {
+      data: { user: any; authorization: { token: string } };
+    },
+    redirectPath = "/",
+  ) => {
     console.log("Login success, data:", data);
     setAuth(data.data.user, data.data.authorization.token);
     console.log("Auth state set. Navigating...");
     setTimeout(() => {
-      navigate("/");
+      navigate(redirectPath);
     }, 100);
   };
 
   const loginMutation = useMutation({
     mutationFn: auth.login,
-    onSuccess: handleAuthSuccess,
+    onSuccess: (data) => handleAuthSuccess(data),
   });
 
   const registerMutation = useMutation({
     mutationFn: auth.register,
-    onSuccess: handleAuthSuccess,
+    onSuccess: (data) => handleAuthSuccess(data, "/onboarding"),
   });
 
   const googleLoginMutation = useMutation({

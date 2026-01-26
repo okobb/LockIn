@@ -118,7 +118,9 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             <span
               className={cn(
                 "text-xs px-2 py-0.5 rounded-full border",
-                difficultyColors[resource.difficulty],
+                difficultyColors[
+                  resource.difficulty.toLowerCase() as keyof typeof difficultyColors
+                ],
               )}
             >
               {resource.difficulty}

@@ -31,7 +31,8 @@ class ContextSnapshotController extends BaseController
         $snapshot = $this->service->processSnapshot(
             $session,
             $validated,
-            $request->file('voice_file')
+            $request->file('voice_file'),
+            $request->boolean('should_complete', false)
         );
 
         return $this->createdResponse([

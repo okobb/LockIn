@@ -31,7 +31,7 @@ final class ContextSnapshotService extends BaseService
     /**
      * Process a context snapshot request
      */
-    public function processSnapshot(FocusSession $session, array $validatedData, ?UploadedFile $voiceFile): ContextSnapshot
+    public function processSnapshot(FocusSession $session, array $validatedData, ?UploadedFile $voiceFile, bool $shouldComplete = true): ContextSnapshot
     {
         // Normalize JSON fields if they came as strings (multipart/form-data quirks)
         $browserState = $validatedData['browser_state'] ?? null;
@@ -65,10 +65,12 @@ final class ContextSnapshotService extends BaseService
             );
         }
 
-        $session->update([
-            'status' => 'completed',
-            'ended_at' => $session->ended_at ?? now(),
-        ]);
+        if ($shouldComplete) {
+            $session->update([
+                'status' => 'completed',
+                'ended_at' => $session->ended_at ?? now(),
+            ]);
+        }
 
         return $snapshot;
     }
@@ -102,6 +104,7 @@ final class ContextSnapshotService extends BaseService
             'git_diff_blob' => $data['git_state']['diff'] ?? $snapshot->git_diff_blob,
             'git_branch' => $data['git_state']['branch'] ?? $snapshot->git_branch,
             'repository_source' => $data['git_state']['repo'] ?? $snapshot->repository_source,
+            'git_files_changed' => $data['git_state']['files'] ?? $snapshot->git_files_changed,
         ];
 
         if ($voiceFile) {
@@ -195,6 +198,7 @@ final class ContextSnapshotService extends BaseService
                 'git_diff_blob' => $data['git_state']['diff'] ?? null,
                 'git_branch' => $data['git_state']['branch'] ?? null,
                 'repository_source' => $data['git_state']['repo'] ?? null,
+                'git_files_changed' => $data['git_state']['files'] ?? [], // Fixed: Include files list
             ];
 
             if ($voiceFile) {

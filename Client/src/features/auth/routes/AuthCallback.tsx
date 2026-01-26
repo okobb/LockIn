@@ -23,7 +23,13 @@ export default function AuthCallback() {
       try {
         const user = JSON.parse(userStr);
         setAuth(user, token);
-        navigate("/dashboard");
+
+        // Check if user is new (created within the last 2 minutes)
+        const createdAt = new Date(user.created_at).getTime();
+        const now = new Date().getTime();
+        const isNewUser = now - createdAt < 2 * 60 * 1000; // 2 minutes in milliseconds
+
+        navigate(isNewUser ? "/onboarding" : "/dashboard");
       } catch (e) {
         console.error("Failed to parse user data", e);
         navigate("/login");
