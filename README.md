@@ -40,7 +40,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 |                        Landing Dark                         |                        Landing Light                         |
 | :---------------------------------------------------------: | :----------------------------------------------------------: |
-| <img src="./readme/Screens/Landing Dark.gif" width="400" /> | <img src="./readme/Screens/Landing Light.gif" width="400" /> |
+| <img src="./readme/Screens/Landing Dark.gif" width="400" /> | <img src="./readme/Screens/Landing Light.gif" width="375" /> |
 
 |                        Onboarding                         |                        Dashboard Dark                         |
 | :-------------------------------------------------------: | :-----------------------------------------------------------: |
