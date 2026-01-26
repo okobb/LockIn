@@ -50,7 +50,24 @@ class AIService
             $payload['tool_choice'] = 'auto';
         }
 
-        $response = $this->client->chat()->create($payload);
+        try {
+            $response = $this->client->chat()->create($payload);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('OpenAI API Error', [
+                'error' => $e->getMessage(),
+                'payload' => $payload
+            ]);
+            throw $e;
+        }
+
+        if (empty($response->choices)) {
+             \Illuminate\Support\Facades\Log::error('OpenAI Invalid Response', [
+                'response' => json_encode($response),
+                'payload' => $payload
+            ]);
+            throw new \Exception('OpenAI returned no choices in response.');
+        }
+
         $message = $response->choices[0]->message;
 
         return [
