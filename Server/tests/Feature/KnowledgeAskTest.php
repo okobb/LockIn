@@ -19,13 +19,12 @@ class KnowledgeAskTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user, 'api');
 
-        // Mock RAGService
         $mockRag = Mockery::mock(RAGService::class);
-        $mockRag->shouldReceive('ask')
+        $mockRag->shouldReceive('chat')
             ->once()
             ->with($user->id, 'How do I center a div?')
             ->andReturn([
-                'answer' => 'Use flexbox or grid.',
+                'content' => 'Use flexbox or grid.',
                 'sources' => [
                     ['content' => 'CSS Flexbox Guide...'],
                     ['content' => 'CSS Grid Guide...'],
@@ -38,13 +37,18 @@ class KnowledgeAskTest extends TestCase
             'question' => 'How do I center a div?',
         ]);
 
+        if ($response->status() !== 200) {
+            dump($response->exception);
+        }
         $response->assertStatus(200)
             ->assertJson([
-                'answer' => 'Use flexbox or grid.',
-                'sources' => [
-                    ['content' => 'CSS Flexbox Guide...'],
-                    ['content' => 'CSS Grid Guide...'],
-                ],
+                'data' => [
+                    'answer' => 'Use flexbox or grid.',
+                    'sources' => [
+                        ['content' => 'CSS Flexbox Guide...'],
+                        ['content' => 'CSS Grid Guide...'],
+                    ],
+                ]
             ]);
     }
 

@@ -15,12 +15,9 @@ class QdrantConnectionTest extends TestCase
         try {
             $qdrant = new QdrantService();
             
-            // Check if we can reach the server and check/create collection
             echo "Attempting to ensure collection exists...\n";
             $qdrant->ensureCollectionExists();
             echo "Collection check passed.\n";
-
-            // Try a simple search to verify read access
             echo "Attempting a search...\n";
             $results = $qdrant->search(array_fill(0, 1536, 0.1), [], 1);
             echo "Search executed successfully. Result count: " . count($results) . "\n";

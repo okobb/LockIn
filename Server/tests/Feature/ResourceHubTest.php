@@ -24,17 +24,31 @@ class ResourceHubTest extends TestCase
         parent::setUp();
         $this->user = User::factory()->create();
         
-        // Ensure signed middleware is available
         $this->app['router']->aliasMiddleware('signed', \Illuminate\Routing\Middleware\ValidateSignature::class);
         
         \Illuminate\Support\Facades\URL::forceRootUrl('http://localhost');
+
+        $this->mock(AIService::class, function ($mock) {
+            $mock->shouldReceive('chat')->andReturn('[]');
+            $mock->shouldReceive('generateResourceMetadata')->andReturn([
+                'title' => 'AI Generated Title',
+                'summary' => 'AI Summary',
+                'difficulty' => 'intermediate',
+                'tags' => ['ai', 'generated'],
+                'estimated_minutes' => 10
+            ]);
+        });
+
+        $this->mock(\App\Services\RAGService::class, function ($mock) {
+            $mock->shouldReceive('indexResource')->byDefault();
+            $mock->shouldReceive('deleteResource')->byDefault();
+        });
     }
 
     public function test_can_create_resource_from_url()
     {
         $this->actingAs($this->user);
 
-        // Mock UrlMetadataService
         $this->mock(UrlMetadataService::class, function ($mock) {
             $mock->shouldReceive('fetchMetadata')
                 ->once()
@@ -45,9 +59,8 @@ class ResourceHubTest extends TestCase
                     'domain' => 'example.com',
                     'type' => \RESOURCE_TYPE_ARTICLE,
                 ]);
-        });
-
-        $this->mock(AIService::class, function ($mock) {
+            $mock->shouldReceive('fetchContent')
+                ->andReturn('Sample article content');
         });
 
         $response = $this->postJson('/api/resources', [
@@ -111,19 +124,14 @@ class ResourceHubTest extends TestCase
             'is_read' => true,
         ]);
 
-        // Filter by Type
         $response = $this->getJson('/api/resources?type=' . \RESOURCE_TYPE_VIDEO);
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
             ->assertJsonFragment(['title' => 'Vue Video']);
-
-        // Filter by Status (Unread)
         $response = $this->getJson('/api/resources?status=unread');
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
             ->assertJsonFragment(['title' => 'React Guide']);
-
-        // Search
         $response = $this->getJson('/api/resources?search=React');
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -148,7 +156,6 @@ class ResourceHubTest extends TestCase
             'is_favorite' => true,
         ]);
         
-        // Toggle back
         $this->postJson("/api/resources/{$resource->id}/favorite");
         $this->assertDatabaseHas('knowledge_resources', [
             'id' => $resource->id,

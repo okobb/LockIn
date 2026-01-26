@@ -40,7 +40,6 @@ class CalendarEventTest extends TestCase
         $this->assertEquals('high', $event->metadata['priority']);
         $this->assertContains('coding', $event->metadata['tags']);
         $this->assertContains('feature', $event->metadata['tags']);
-        // Service adds 'Manual' tag automatically
         $this->assertContains('Manual', $event->metadata['tags']);
     }
 

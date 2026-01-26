@@ -20,7 +20,6 @@ class AIServiceTest extends TestCase
 
     public function test_chat_returns_content(): void
     {
-        // Use the SDK's fake() method to create a test response with overrides
         $mockResponse = CreateResponse::fake([
             'model' => 'gpt-4o-mini',
             'choices' => [
@@ -35,7 +34,6 @@ class AIServiceTest extends TestCase
             ],
         ]);
 
-        // Mock the ChatContract interface (not the final Chat class)
         $mockChat = Mockery::mock(ChatContract::class);
         $mockChat->shouldReceive('create')
             ->once()
@@ -45,14 +43,11 @@ class AIServiceTest extends TestCase
             })
             ->andReturn($mockResponse);
 
-        // Mock the ClientContract interface (not the final Client class)
         $mockClient = Mockery::mock(ClientContract::class);
         $mockClient->shouldReceive('chat')->andReturn($mockChat);
 
-        // Mock PromptService
         $mockPromptService = Mockery::mock(PromptService::class);
 
-        // Inject the mock client via constructor
         $aiService = new AIService($mockPromptService, $mockClient);
 
         $result = $aiService->chat([
