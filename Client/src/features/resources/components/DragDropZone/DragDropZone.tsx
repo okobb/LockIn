@@ -44,23 +44,23 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
 
   if (selectedFile) {
     return (
-      <div className="flex items-center justify-between p-4 rounded-lg bg-[#18181B] border border-purple-500/30">
+      <div className="flex items-center justify-between p-4 rounded-lg bg-card border border-primary/30">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-md bg-purple-500/20 text-purple-400">
+          <div className="p-2 rounded-md bg-primary/20 text-primary">
             <File size={20} />
           </div>
           <div>
-            <p className="text-sm font-medium text-zinc-100 line-clamp-1">
+            <p className="text-sm font-medium text-foreground line-clamp-1">
               {selectedFile.name}
             </p>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               {(selectedFile.size / 1024).toFixed(1)} KB
             </p>
           </div>
         </div>
         <button
           onClick={onClear}
-          className="p-1 text-zinc-500 hover:text-red-400 hover:bg-white/5 rounded transition-colors"
+          className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
         >
           <X size={16} />
         </button>
@@ -76,8 +76,8 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
       className={cn(
         "relative flex flex-col items-center justify-center p-8 rounded-lg border-2 border-dashed transition-all cursor-pointer",
         isDragOver
-          ? "border-purple-500 bg-purple-500/5"
-          : "border-zinc-700 hover:border-zinc-500 hover:bg-[#18181B]",
+          ? "border-primary bg-primary/5"
+          : "border-border hover:border-foreground/50 hover:bg-muted/50",
       )}
     >
       <input
@@ -87,13 +87,13 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
         accept={accept}
       />
 
-      <div className="p-3 mb-3 rounded-full bg-zinc-800 text-zinc-400">
+      <div className="p-3 mb-3 rounded-full bg-muted text-muted-foreground">
         <Upload size={24} />
       </div>
-      <p className="text-sm font-medium text-zinc-200 mb-1">
+      <p className="text-sm font-medium text-foreground mb-1">
         Click to upload or drag and drop
       </p>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-muted-foreground">
         PDF, Images, Video, Text (max 10MB)
       </p>
     </div>
