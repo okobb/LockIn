@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\AgendaService;
 use App\Services\DashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,7 +12,8 @@ use Illuminate\Http\Request;
 final class DashboardController extends BaseController
 {
     public function __construct(
-        private readonly DashboardService $dashboardService
+        private readonly DashboardService $dashboardService,
+        private readonly AgendaService $agendaService
     ) {}
 
     /**
@@ -39,7 +41,7 @@ final class DashboardController extends BaseController
      */
     public function upcoming(Request $request): JsonResponse
     {
-        $events = $this->dashboardService->getUpcomingEvents($request->user()->id);
+        $events = $this->agendaService->getUnifiedAgenda($request->user()->id);
 
         return $this->successResponse($events);
     }
