@@ -7,8 +7,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Tests\TestCase;
+use Throwable;
 
-class ReproduceRefreshTest extends TestCase
+class AuthTokenRefreshTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -25,9 +26,7 @@ class ReproduceRefreshTest extends TestCase
             $response = $this->withHeaders([
                 'Authorization' => 'Bearer ' . $token,
             ])->postJson('/api/auth/refresh');
-        } catch (\Throwable $e) {
-            dump($e->getMessage());
-            dump($e->getTraceAsString());
+        } catch (Throwable $e) {
             throw $e;
         }
         

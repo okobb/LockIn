@@ -12,7 +12,7 @@ use App\Jobs\GenerateResourceTitle;
 use App\Jobs\GenerateResourceMetadata;
 use App\Jobs\ProcessResourceEmbedding;
 
-class DebugResourceHubTest extends TestCase
+class ResourceImportJobTest extends TestCase
 {
 use RefreshDatabase;
     public function test_resource_creation_chain()
@@ -26,11 +26,9 @@ use RefreshDatabase;
         
         $url = 'https://example.com/debugging-resource-hub';
         
-        echo "\nCreating resource from URL: $url\n";
         
         $resource = $service->createFromUrl($url, $user->id);
         
-        echo "Resource created with ID: " . $resource->id . "\n";
         
         Bus::assertChained([
             FetchResourceMetadata::class,
@@ -39,6 +37,5 @@ use RefreshDatabase;
             ProcessResourceEmbedding::class,
         ]);
         
-        echo "Job chain asserted successfully.\n";
     }
 }
