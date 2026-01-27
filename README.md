@@ -105,3 +105,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 |                     Services                     |                     Validation                     |                  Testing                   |
 | :----------------------------------------------: | :------------------------------------------------: | :----------------------------------------: |
 | ![Services](./readme/Development/Controller.PNG) | ![Validation](./readme/Development/Validation.png) | ![Testing](./readme/Development/tests.PNG) |
+
+<br><br>
+
+### RAG AI Assistant
+
+The AI assistant is powered by a Retrieval-Augmented Generation (RAG) pipeline. User resources are chunked, embedded using OpenAI embeddings, and stored in a Qdrant vector database for semantic search. The assistant uses OpenAI function calling to execute tools like creating tasks or listing resources.
+
+|              Knowledge Chunks (Database)               |                 RAG Assistant Tools                  |
+| :----------------------------------------------------: | :--------------------------------------------------: |
+| ![Chunks](./readme/Development/Knowledge_Chunks.png) | ![Tools](./readme/Development/AI_Tools.png) |
