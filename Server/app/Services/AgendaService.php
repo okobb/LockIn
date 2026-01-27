@@ -27,6 +27,10 @@ final class AgendaService
                 ->orderBy('start_time')
                 ->get();
 
+            $eventTaskIds = $events->map(function ($event) {
+                return ($event->metadata ?? [])['task_id'] ?? null;
+            })->filter()->unique()->values()->all();
+
             $tasks = Task::query()
                 ->where('user_id', '=', $userId, 'and')
                 ->whereIn('status', ['open', 'in_progress'])
@@ -35,6 +39,7 @@ final class AgendaService
                       ->orWhereDate('due_date', Carbon::today());
                 })
                 ->whereNull('completed_at')
+                ->whereNotIn('id', $eventTaskIds)
                 ->get();
                 
             return $events->concat($tasks)

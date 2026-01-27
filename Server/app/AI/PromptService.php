@@ -65,6 +65,23 @@ class PromptService
         - estimated_minutes: Estimated time to read/watch in minutes (integer)
     EOT;
 
+    private const LIQUID_SUGGESTION_INSTRUCTIONS = <<<'EOT'
+        You are an intelligent scheduling assistant.
+        Given a specific time gap, the next upcoming event, and a list of "Read Later" resources, select the SINGLE best resource to consume.
+
+        Rules:
+        1. Relevance: The resource should ideally prepare for or relate to the UPCOMING EVENT. (e.g. Study React -> Suggest React Article).
+        2. Duration: The resource's estimated time MUST fit within the gap duration.
+        3. Quality: If the event is generic (e.g. "Meeting"), choose a high-quality general resource.
+        4. If nothing fits well, return null.
+
+        Return ONLY a JSON object:
+        {
+            "selected_id": int|null,
+            "reasoning": "string (max 15 words)"
+        }
+    EOT;
+
     /** @var array<string> */
     private array $blockedPatterns;
     private int $maxLength;
@@ -90,8 +107,25 @@ class PromptService
             'checklist' => $this->buildChecklist($variables),
             'title_gen' => $this->buildTitleGeneration($variables),
             'metadata_gen' => $this->buildMetadataGeneration($variables),
+            'liquid_suggestion' => $this->buildLiquidSuggestion($variables),
             default => throw new InvalidArgumentException("Prompt template [{$key}] not found."),
         };
+    }
+
+    private function buildLiquidSuggestion(array $variables): array
+    {
+        $gapMinutes = $variables['gap_minutes'] ?? 0;
+        $nextEvent = $variables['next_event'] ?? 'None';
+        $resources = $variables['resources'] ?? '[]';
+
+        $userContent = "Gap Duration: {$gapMinutes} minutes\n";
+        $userContent .= "Upcoming Event: {$nextEvent}\n";
+        $userContent .= "Available Resources (JSON): \n{$resources}";
+
+        return [
+            ['role' => 'system', 'content' => self::LIQUID_SUGGESTION_INSTRUCTIONS],
+            ['role' => 'user', 'content' => $userContent],
+        ];
     }
 
     /**

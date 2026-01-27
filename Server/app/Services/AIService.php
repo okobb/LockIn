@@ -163,6 +163,20 @@ class AIService
     }
 
     /**
+     * Pick the best resource for a time gap.
+     */
+    public function getLiquidSuggestion(int $minutes, string $nextEvent, string $resourcesJson): array
+    {
+        $messages = $this->promptService->build('liquid_suggestion', [
+            'gap_minutes' => $minutes,
+            'next_event' => $nextEvent,
+            'resources' => $resourcesJson
+        ]);
+
+        return $this->getJson($messages, ['temperature' => 0.3]);
+    }
+
+    /**
      * Perform OCR on an image using GPT-4o.
      */
     public function ocr(string $path): string
