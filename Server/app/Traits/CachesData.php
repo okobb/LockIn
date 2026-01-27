@@ -35,6 +35,6 @@ trait CachesData
      */
     protected function clearUserResourceCache(int $userId): void
     {
-        // Cache::tags(["resources:{$userId}"])->flush();
+        Cache::increment("resources:version:{$userId}");
     }
 }
