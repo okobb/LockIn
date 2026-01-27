@@ -88,10 +88,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | :-----------------------------------------------------------------: | :---------------------------------------------------------------: |
 | <img src="./readme/Screens/Resource Hub Details.png" width="400" /> | <img src="./readme/Screens/Resource Hub Empty.png" width="400" /> |
 
-| Resource Hub (Image) | AI chatbot |
+| Resource Hub (Image) | AI Chatbot |
 | :------------------: | :--------: |
 
-| <img src="./readme/Screens/Image Resource Hub.png" width="400" /> | <img src="./readme/Screens/AI chatbot.gif" width="400" /> |
+| <img src="./readme/Screens/Image Resource Hub.png" width="400" /> | <img src="./readme/Screens/AI Chatbot.gif" width="400" /> |
 
 <br><br>
 
@@ -104,7 +104,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 |                     Services                     |                     Validation                     |                  Testing                   |
 | :----------------------------------------------: | :------------------------------------------------: | :----------------------------------------: |
-| ![Services](./readme/Development/Controller.PNG) | ![Validation](./readme/Development/Validation.png) | ![Testing](./readme/Development/tests.PNG) |
+| ![Services](./readme/Development/Controller.PNG) | ![Validation](./readme/Development/Validation.png) | ![Testing](./readme/Development/Tests.png) |
 
 <br><br>
 
