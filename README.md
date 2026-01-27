@@ -149,3 +149,10 @@ A Go-based microservice uses Bayesian classification to filter incoming messages
 | ![CI](./readme/Deployment/CI.png) | ![CD](./readme/Deployment/CD.png) |
 
 <br><br>
+
+### API Validation
+
+Production API endpoints validated via Postman to ensure the deployed service is operational.
+| User Login | Create Task | View Tasks |
+| :----------: | :--------------: | :--------------: |
+| ![Health](./readme/Deployment/Login.png) | ![User Login](./readme/Deployment/Create_Task.png) | ![API](./readme/Deployment/Get_Tasks.png) |
