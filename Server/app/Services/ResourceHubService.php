@@ -217,6 +217,11 @@ class ResourceHubService
             };
         }
         
-        return $query->paginate(20);
+        $version = Cache::get("resources:version:{$userId}", 1);
+        $cacheKey = "resources.list.{$userId}.v{$version}." . md5(serialize($filters)) . ".page." . request('page', 1);
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($query) {
+            return $query->paginate(20);
+        });
     }
 }

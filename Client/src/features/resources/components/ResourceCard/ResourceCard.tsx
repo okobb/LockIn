@@ -43,21 +43,22 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   selected,
   onToggleSelect,
 }) => {
-  const { toggleFavorite, markAsRead } = useResourceMutations();
+  const { toggleFavorite, markAsRead, isTogglingFavorite, isMarkingAsRead } =
+    useResourceMutations();
   const TypeIcon = typeIcons[resource.type] || Globe;
   const isProcessing = resource._isProcessing;
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isProcessing) return;
+    if (isProcessing || isTogglingFavorite) return;
     toggleFavorite.mutate(resource.id);
   };
 
   const handleToggleRead = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isProcessing) return;
+    if (isProcessing || isMarkingAsRead) return;
     markAsRead.mutate({ id: resource.id, isRead: !resource.is_read });
   };
 
@@ -139,10 +140,12 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           onClick={handleFavorite}
           className={cn(
             "p-1.5 rounded-full transition-colors hover:bg-accent",
+            isTogglingFavorite && "opacity-50 cursor-not-allowed",
             resource.is_favorite
               ? "text-yellow-400"
               : "text-muted-foreground hover:text-yellow-400",
           )}
+          disabled={isTogglingFavorite}
         >
           <Star
             size={16}
@@ -184,10 +187,13 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             onClick={handleToggleRead}
             className={cn(
               "w-2 h-2 rounded-full ring-2 ring-offset-2 ring-offset-card transition-all",
-              resource.is_read
+              isMarkingAsRead &&
+                "opacity-50 cursor-not-allowed ring-muted-foreground/10",
+              resource.is_read && !isMarkingAsRead
                 ? "bg-emerald-500 ring-emerald-500/20"
                 : "bg-muted-foreground/50 ring-muted-foreground/20 hover:bg-primary",
             )}
+            disabled={isMarkingAsRead}
             title={resource.is_read ? "Mark as unread" : "Mark as read"}
           />
         </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { type ResourceFilters } from "../../types";
 import { useResources, useResourceMutations } from "../../hooks/useResources";
 import { ResourceCard } from "../../components/ResourceCard/ResourceCard";
+import { ResourceCardSkeleton } from "../../components/ResourceCard/ResourceCardSkeleton";
 import { Plus, Search, Loader2, BookOpen, X, Play, Trash } from "lucide-react";
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { AddResourceModal } from "../../components/AddResourceModal/AddResourceModal";
@@ -28,10 +29,22 @@ export const ResourceHub: React.FC = () => {
     new Set(),
   );
 
-  // Debounced search (simplified for now)
+  // Debounced search
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const { data, isLoading } = useResources({ ...filters, search: searchTerm });
+  // Debounce search term
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const { data, isLoading } = useResources({
+    ...filters,
+    search: debouncedSearch,
+  });
   const { addToSession, deleteResource } = useResourceMutations();
   const { activeSession } = useSessionContext();
   const resources = data?.data || [];
@@ -320,8 +333,10 @@ export const ResourceHub: React.FC = () => {
           </div>
 
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="animate-spin text-primary" size={32} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ResourceCardSkeleton key={i} />
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
