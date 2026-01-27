@@ -111,7 +111,7 @@ export default function MissionBar() {
           <input
             ref={inputRef}
             type="text"
-            className="flex-1 h-12 md:h-14 border-none focus:outline-none focus:border-none focus:ring-offset-0 text-base md:text-lg text-foreground placeholder:text-muted-foreground/60 w-full bg-transparent outline-none ring-0 ring-offset-0 shadow-none focus:!ring-0 focus-visible:!ring-0 focus-visible:!ring-offset-0"
+            className="flex-1 h-12 md:h-14 border-none focus:outline-none focus:border-none focus:ring-offset-0 text-base md:text-lg text-foreground placeholder:text-muted-foreground/60 w-full bg-transparent outline-none ring-0 ring-offset-0 shadow-none focus:ring-0! focus-visible:ring-0! focus-visible:ring-offset-0!"
             placeholder="What are you working on?"
             value={query}
             onFocus={() => setIsFocused(true)}

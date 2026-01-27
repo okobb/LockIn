@@ -12,6 +12,7 @@ use App\Http\Controllers\N8nController;
 use App\Http\Controllers\ResourceHubController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\ReadLaterController;
 use App\Http\Controllers\FocusSessionController;
 use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\StatsController;
@@ -108,6 +109,16 @@ Route::middleware('auth:api')->group(function () {
     Route::get('dashboard/priority-tasks', [DashboardController::class, 'priorityTasks'])->name('dashboard.priority-tasks');
     Route::get('dashboard/upcoming', [DashboardController::class, 'upcoming'])->name('dashboard.upcoming');
     Route::get('dashboard/communications', [DashboardController::class, 'communications'])->name('dashboard.communications');
+
+    // Read Later Queue
+    Route::prefix('read-later')->group(function () {
+        Route::get('/suggestions', [ReadLaterController::class, 'suggestions']);
+        Route::get('/', [ReadLaterController::class, 'index']);
+        Route::post('/', [ReadLaterController::class, 'store']);
+        Route::delete('/{id}', [ReadLaterController::class, 'destroy']);
+        Route::patch('/{id}/start', [ReadLaterController::class, 'start']);
+        Route::patch('/{id}/complete', [ReadLaterController::class, 'complete']);
+    });
 
     // Knowledge Resources (RAG)
     Route::get('knowledge', [KnowledgeController::class, 'index'])->name('knowledge.index');

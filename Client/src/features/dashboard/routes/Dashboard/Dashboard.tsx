@@ -22,6 +22,7 @@ import {
   Skeleton,
   CardSkeleton,
 } from "../../../../shared/components/Skeleton/Skeleton";
+import { LiquidSuggestions } from "../../components/LiquidSuggestions";
 
 export default function NewDashboard() {
   const {
@@ -65,7 +66,6 @@ export default function NewDashboard() {
         },
       });
     } else {
-      // If no session, go to focus mode in freestyle
       navigate("/focus");
     }
   };
@@ -137,7 +137,7 @@ export default function NewDashboard() {
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-            <div className="lg:col-span-8 space-y-10">
+            <div className="lg:col-span-7 space-y-10">
               <div className="sticky top-0 z-50 py-4 -mx-6 px-6 backdrop-blur-xl transition-all border-b border-transparent data-[stuck=true]:border-[#333]/50">
                 <div className="w-full">
                   <MissionBar />
@@ -268,7 +268,7 @@ export default function NewDashboard() {
               </div>
             </div>
 
-            <div className="lg:col-span-4 space-y-10">
+            <div className="lg:col-span-5 space-y-10">
               <Card className="rounded-3xl bg-card border-border/20 shadow-sm">
                 <CardContent className="p-8">
                   <div className="flex items-center gap-3 mb-8">
@@ -279,6 +279,8 @@ export default function NewDashboard() {
                   </div>
 
                   <div className="relative border-l-2 border-border/40 ml-3.5 space-y-8 py-2">
+                    <LiquidSuggestions />
+
                     {isLoadingUpcoming ? (
                       <div className="space-y-6">
                         <Skeleton className="h-12 w-full ml-4" />
@@ -290,61 +292,70 @@ export default function NewDashboard() {
                           key={i}
                           className="group/event relative pl-8 cursor-pointer hover:bg-primary/5 rounded-xl p-2 -ml-2 transition-colors duration-200"
                           onClick={() => {
-                            localStorage.removeItem("current_focus_session");
-                            navigate("/focus", {
-                              state: {
-                                taskId: event.taskId,
-                                title: event.title,
-                                isNewSession: true,
-                              },
-                            });
+                            if (
+                              event.type === "task" ||
+                              event.itemType === "task"
+                            ) {
+                              localStorage.removeItem("current_focus_session");
+                              navigate("/focus", {
+                                state: {
+                                  taskId: event.taskId
+                                    ? parseInt(event.taskId)
+                                    : undefined,
+                                  title: event.title,
+                                  isNewSession: true,
+                                },
+                              });
+                            }
                           }}
                         >
-                          <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-4 border-background bg-foreground group-hover/event:bg-primary group-hover/event:scale-125 transition-all" />
+                          <div
+                            className={cn(
+                              "absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-4 border-background transition-all group-hover/event:scale-125",
+                              event.type === "focus" ||
+                                event.type === "deep_work"
+                                ? "bg-emerald-500 group-hover/event:bg-emerald-600"
+                                : event.type === "meeting"
+                                  ? "bg-blue-500 group-hover/event:bg-blue-600"
+                                  : event.type === "task"
+                                    ? "bg-indigo-500 group-hover/event:bg-indigo-600"
+                                    : "bg-foreground group-hover/event:bg-primary",
+                            )}
+                          />
                           <div className="space-y-1">
                             <div className="text-sm font-mono text-muted-foreground">
-                              {event.time}
+                              {event.startTime
+                                ? new Date(event.startTime).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: false,
+                                    },
+                                  )
+                                : event.time}
                             </div>
                             <div className="font-medium text-base group-hover/event:text-primary transition-colors">
                               {event.title}
                             </div>
                             <div className="text-sm text-muted-foreground flex items-center justify-between">
-                              <span>{event.type || "Event"}</span>
-                              <span className="text-xs opacity-0 group-hover/event:opacity-100 transition-opacity flex items-center text-primary font-medium">
-                                Start Focus{" "}
-                                <ArrowRight className="w-3 h-3 ml-1" />
+                              <span className="capitalize">
+                                {event.meta || event.type || "Event"}
                               </span>
+                              {(event.type === "task" || event.taskId) && (
+                                <span className="text-xs opacity-0 group-hover/event:opacity-100 transition-opacity flex items-center text-primary font-medium">
+                                  Start Focus{" "}
+                                  <ArrowRight className="w-3 h-3 ml-1" />
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <>
-                        <div className="relative pl-8 pb-1">
-                          <div className="absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                          <div className="text-sm font-mono text-emerald-500 mb-1">
-                            Now • 14:30
-                          </div>
-                          <div className="font-medium text-foreground">
-                            Deep Work Block
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Focus Mode Auto-Enabled
-                          </div>
-                        </div>
-                        <div className="relative pl-8 pt-2 opacity-60">
-                          <div className="absolute -left-[5px] top-3 w-2.5 h-2.5 rounded-full bg-border" />
-                          <div className="text-sm font-mono text-muted-foreground mb-1">
-                            16:00
-                          </div>
-                          <div className="font-medium text-foreground">
-                            Team Sync
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Weekly Engineering Align...
-                          </div>
-                        </div>
-                      </>
+                      <div className="text-center py-6 text-muted-foreground">
+                        <p>No upcoming items.</p>
+                      </div>
                     )}
                   </div>
 
