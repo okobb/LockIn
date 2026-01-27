@@ -88,10 +88,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | :-----------------------------------------------------------------: | :---------------------------------------------------------------: |
 | <img src="./readme/Screens/Resource Hub Details.png" width="400" /> | <img src="./readme/Screens/Resource Hub Empty.png" width="400" /> |
 
-| Resource Hub (Image) | AI chatbot |
-| :------------------: | :--------: |
-
-| <img src="./readme/Screens/Image Resource Hub.png" width="400" /> | <img src="./readme/Screens/AI chatbot.gif" width="400" /> |
+|                       Resource Hub (Image)                        |                        AI Chatbot                         |
+| :---------------------------------------------------------------: | :-------------------------------------------------------: |
+| <img src="./readme/Screens/Image Resource Hub.png" width="400" /> | <img src="./readme/Screens/AI Chatbot.gif" width="400" /> |
 
 <br><br>
 
@@ -104,7 +103,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 |                     Services                     |                     Validation                     |                  Testing                   |
 | :----------------------------------------------: | :------------------------------------------------: | :----------------------------------------: |
-| ![Services](./readme/Development/Controller.PNG) | ![Validation](./readme/Development/Validation.png) | ![Testing](./readme/Development/tests.PNG) |
+| ![Services](./readme/Development/Controller.PNG) | ![Validation](./readme/Development/Validation.png) | ![Testing](./readme/Development/Tests.png) |
 
 <br><br>
 
@@ -112,8 +111,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 The AI assistant is powered by a Retrieval-Augmented Generation (RAG) pipeline. User resources are chunked, embedded using OpenAI embeddings, and stored in a Qdrant vector database for semantic search. The assistant uses OpenAI function calling to execute tools like creating tasks or listing resources.
 
-|              Knowledge Chunks (Database)               |                 RAG Assistant Tools                  |
-| :----------------------------------------------------: | :--------------------------------------------------: |
+|             Knowledge Chunks (Database)              |             RAG Assistant Tools             |
+| :--------------------------------------------------: | :-----------------------------------------: |
 | ![Chunks](./readme/Development/Knowledge_Chunks.png) | ![Tools](./readme/Development/AI_Tools.png) |
 
 <br><br>
@@ -122,8 +121,8 @@ The AI assistant is powered by a Retrieval-Augmented Generation (RAG) pipeline. 
 
 Users can authenticate with **Google** or **GitHub** for seamless login. Connected integrations like **Slack** and **Gmail** allow the system to receive messages, which are processed through an n8n automation workflow.
 
-|                   n8n Workflow                   |
-| :----------------------------------------------: |
+|             n8n Workflow             |
+| :----------------------------------: |
 | ![n8n](./readme/Development/n8n.png) |
 
 <br><br>
@@ -132,6 +131,28 @@ Users can authenticate with **Google** or **GitHub** for seamless login. Connect
 
 A Go-based microservice uses Bayesian classification to filter incoming messages as **Important** or **Noise**, protecting focus time by surfacing only what matters.
 
-| Important Classification | Noise Classification |
-| :----------------------: | :------------------: |
+|              Important Classification               |            Noise Classification             |
+| :-------------------------------------------------: | :-----------------------------------------: |
 | ![Important](./readme/Development/ML_Important.png) | ![Noise](./readme/Development/ML_Noise.png) |
+
+<br><br>
+
+<!-- deployment -->
+<img src="./readme/titles/title7.svg">
+
+## Deployment
+
+### GitHub Actions
+
+|             CI Tests              |             CD Deploy             |
+| :-------------------------------: | :-------------------------------: |
+| ![CI](./readme/Deployment/CI.png) | ![CD](./readme/Deployment/CD.png) |
+
+<br><br>
+
+### API Validation
+
+Production API endpoints validated via Postman to ensure the deployed service is operational.
+| User Login | Create Task | View Tasks |
+| :----------: | :--------------: | :--------------: |
+| ![Health](./readme/Deployment/Login.png) | ![User Login](./readme/Deployment/Create_Task.png) | ![API](./readme/Deployment/Get_Tasks.png) |
