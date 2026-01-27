@@ -11,7 +11,7 @@ class ToolService
      *
      * @return array
      */
-    public function getTaskTools(): array
+    public function getTools(): array
     {
         return [
             [
@@ -27,6 +27,7 @@ class ToolService
                             'due_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD format or null'],
                         ],
                         'required' => ['title'],
+                        'additionalProperties' => false,
                     ],
                 ]
             ],
@@ -46,9 +47,11 @@ class ToolService
                                     'status' => ['type' => 'string', 'enum' => ['todo', 'in_progress', 'done']],
                                     'priority' => ['type' => 'string'],
                                 ],
+                                'additionalProperties' => false,
                             ],
                         ],
                         'required' => ['task_id', 'fields'],
+                        'additionalProperties' => false,
                     ],
                 ]
             ],
@@ -63,6 +66,7 @@ class ToolService
                             'task_id' => ['type' => 'string', 'description' => 'The ID of the task to complete'],
                         ],
                         'required' => ['task_id'],
+                        'additionalProperties' => false,
                     ],
                 ]
             ],
@@ -77,6 +81,7 @@ class ToolService
                             'limit' => ['type' => 'integer', 'description' => 'Maximum number of resources to return (default 10)'],
                         ],
                         'required' => [],
+                        'additionalProperties' => false,
                     ],
                 ]
             ],
@@ -92,6 +97,7 @@ class ToolService
                             'limit' => ['type' => 'integer', 'description' => 'Max tasks to return (default 10)'],
                         ],
                         'required' => [],
+                        'additionalProperties' => false,
                     ],
                 ]
             ],
@@ -106,6 +112,7 @@ class ToolService
                             'resource_id' => ['type' => 'integer', 'description' => 'The ID of the resource to delete'],
                         ],
                         'required' => ['resource_id'],
+                        'additionalProperties' => false,
                     ],
                 ]
             ]

@@ -259,7 +259,7 @@ class RAGService
             'history' => $history,
         ];
 
-        $tools = $this->toolService->getTaskTools();
+        $tools = $this->toolService->getTools();
 
         try {
             $messages = $this->prompts->build('chat_with_tools', array_merge($systemContext, ['question' => $question]));

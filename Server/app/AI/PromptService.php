@@ -29,6 +29,7 @@ class PromptService
         2. "saved resources", "documents", "articles", "knowledge base" → use `list_resources`.
         3. Only use RAG context for answering content questions, NOT for listing items.
         4. When unsure which tool to use, prefer `list_tasks` for action-oriented queries.
+        5. When displaying lists from tools, show items EXACTLY as provided — just the title/name. Do NOT add markdown links, URLs, bold (**), or any other formatting.
 
         GUIDELINES:
         - Answer questions using the reference material when available.
