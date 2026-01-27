@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   BarChart,
   Trophy,
@@ -9,17 +9,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { cn } from "../../../../shared/lib/utils";
-import { useModal } from "../../../../shared/context/ModalContext";
-import {
-  getWeeklyStats,
-  getDailyBreakdown,
-  getInsights,
-} from "../../api/statsApi";
-import type {
-  WeeklyStats,
-  DailyBreakdown,
-  ProductivityInsight,
-} from "../../types";
+import { useStats } from "../../hooks/useStats";
 import { StatsCard } from "../../components/StatsCard";
 import { WeeklyChart } from "../../components/WeeklyChart";
 import { GoalProgress } from "../../components/GoalProgress";
@@ -28,44 +18,8 @@ import { InsightsPanel } from "../../components/InsightsPanel";
 import { StatsPageSkeleton } from "../../components/StatsPageSkeleton";
 
 export default function StatsPage() {
-  const { open } = useModal();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const [stats, setStats] = useState<WeeklyStats | null>(null);
-  const [breakdown, setBreakdown] = useState<DailyBreakdown[]>([]);
-  const [insights, setInsights] = useState<ProductivityInsight[]>([]);
-
-  const fetchData = async () => {
-    try {
-      const [statsRes, breakdownRes, insightsRes] = await Promise.all([
-        getWeeklyStats(),
-        getDailyBreakdown(),
-        getInsights(),
-      ]);
-
-      setStats(statsRes.data.data);
-      setBreakdown(breakdownRes.data.data);
-      setInsights(insightsRes.data.data);
-    } catch (error) {
-      console.error("Failed to fetch stats", error);
-      open({
-        type: "error",
-        title: "Error",
-        message: "Failed to load statistics. Please try again.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleGoalUpdate = () => {
-    fetchData(); // Reload to get updated goal/progress
-  };
+  const { stats, breakdown, insights, isLoading, refetch } = useStats();
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -165,7 +119,7 @@ export default function StatsPage() {
                       currentMinutes={stats.flow_time_minutes}
                       goalMinutes={stats.weekly_goal_minutes}
                       percentage={stats.goal_progress_percent}
-                      onGoalUpdate={handleGoalUpdate}
+                      onGoalUpdate={refetch}
                     />
                   </div>
                 </div>

@@ -27,6 +27,7 @@ import {
   type FocusSessionHistory,
   type ContextHistoryStats,
 } from "../../api/contextHistoryApi";
+import { ContextHistorySkeleton } from "../../components/ContextHistorySkeleton";
 
 type FilterStatus = "all" | "completed" | "abandoned";
 
@@ -271,9 +272,7 @@ export default function ContextHistory() {
           </Card>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
+            <ContextHistorySkeleton />
           ) : sessions.length === 0 ? (
             <div className="text-center py-20">
               <History className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
