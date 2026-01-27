@@ -18,11 +18,11 @@ export const LiquidSuggestions = () => {
     return <LiquidSuggestionsSkeleton />;
   }
 
-  if (!suggestions || suggestions.length === 0) {
-    return null; 
+  if (!suggestions || suggestions.length === 0 || !suggestions[0]) {
+    return null;
   }
 
-  const topSuggestion = suggestions[0]; 
+  const topSuggestion = suggestions[0];
 
   return (
     <Card className="bg-linear-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-indigo-100 dark:border-indigo-900/50">

@@ -324,7 +324,16 @@ export default function NewDashboard() {
                           />
                           <div className="space-y-1">
                             <div className="text-sm font-mono text-muted-foreground">
-                              {event.time}
+                              {event.startTime
+                                ? new Date(event.startTime).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: false,
+                                    },
+                                  )
+                                : event.time}
                             </div>
                             <div className="font-medium text-base group-hover/event:text-primary transition-colors">
                               {event.title}

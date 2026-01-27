@@ -4,17 +4,14 @@ import { readLater, type AddReadLaterData } from "../api/readLater";
 export const useReadLater = () => {
   const queryClient = useQueryClient();
 
-
   const queueQuery = useQuery({
     queryKey: ["read-later", "queue"],
     queryFn: readLater.getQueue,
-    select: (response) => response.data,
   });
 
   const suggestionsQuery = useQuery({
     queryKey: ["read-later", "suggestions"],
     queryFn: readLater.getSuggestions,
-    select: (response) => response.data,
   });
 
   const addMutation = useMutation({

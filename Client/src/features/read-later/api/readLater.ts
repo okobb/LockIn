@@ -36,8 +36,9 @@ export interface AddReadLaterData {
 }
 
 export const readLater = {
-  getQueue: (): Promise<{ data: ReadLaterItem[] }> => {
-    return axios.get("/read-later");
+  getQueue: async (): Promise<ReadLaterItem[]> => {
+    const response = await axios.get("/read-later");
+    return response.data.data;
   },
 
   addToQueue: (data: AddReadLaterData): Promise<{ data: ReadLaterItem }> => {
@@ -56,7 +57,8 @@ export const readLater = {
     return axios.patch(`/read-later/${id}/complete`);
   },
 
-  getSuggestions: (): Promise<{ data: LiquidSuggestion[] }> => {
-    return axios.get("/read-later/suggestions");
+  getSuggestions: async (): Promise<LiquidSuggestion[]> => {
+    const response = await axios.get("/read-later/suggestions");
+    return response.data.data;
   },
 };

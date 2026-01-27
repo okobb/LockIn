@@ -24,7 +24,7 @@ final class AgendaService
             $events = CalendarEvent::query()
                 ->where('user_id', '=', $userId, 'and')
                 ->whereDate('start_time', Carbon::today())
-                ->where('start_time', '>=', now())
+                ->orderBy('start_time')
                 ->get();
 
             $tasks = Task::query()
@@ -70,6 +70,7 @@ final class AgendaService
             'itemType' => $isTask ? 'task' : 'event',
             'taskId' => $isTask ? (string) $item->id : (($item->metadata ?? [])['task_id'] ?? null),
             'time' => $timeString,
+            'startTime' => $startTime?->toIso8601String(),
             'title' => $item->title,
             'meta' => $isTask 
                 ? ($item->estimated_minutes ? "{$item->estimated_minutes} min" : 'Task')

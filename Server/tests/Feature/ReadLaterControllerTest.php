@@ -26,6 +26,17 @@ class ReadLaterControllerTest extends TestCase
         ]);
     }
 
+    public function test_can_get_suggestions()
+    {
+        $user = User::factory()->create();
+        
+        $response = $this->actingAs($user, 'api')
+            ->getJson('/api/read-later/suggestions');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['data', 'success', 'message']);
+    }
+
     public function test_can_add_resource_to_queue()
     {
         $response = $this->actingAs($this->user)

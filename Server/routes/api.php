@@ -112,6 +112,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Read Later Queue
     Route::prefix('read-later')->group(function () {
+        Route::get('/suggestions', [ReadLaterController::class, 'suggestions']);
         Route::get('/', [ReadLaterController::class, 'index']);
         Route::post('/', [ReadLaterController::class, 'store']);
         Route::delete('/{id}', [ReadLaterController::class, 'destroy']);
