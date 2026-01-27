@@ -10,6 +10,29 @@ export const useResources = (filters: ResourceFilters) => {
   return useQuery({
     queryKey: ["resources", filters],
     queryFn: () => resourceApi.list(filters),
+    
+    // Auto-refresh when there are resources still being processed
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data?.data) return false;
+
+      const hasProcessing = data.data.some(
+        (r: Resource & { _isProcessing?: boolean }) => {
+          if (r.id < 0 || r._isProcessing) return true;
+
+          if (r.url && !r.summary) {
+            const createdAt = new Date(r.created_at).getTime();
+            const now = Date.now();
+            const thirtySecondsAgo = now - 30000;
+            if (createdAt > thirtySecondsAgo) return true;
+          }
+
+          return false;
+        },
+      );
+
+      return hasProcessing ? 5000 : false;
+    },
   });
 };
 
@@ -31,7 +54,7 @@ export const useResourceMutations = () => {
 
       // Create optimistic resource with temporary ID
       const optimisticResource: Resource = {
-        id: -Date.now(), 
+        id: -Date.now(),
         type: newResource.type || "article",
         title:
           newResource.title ||
@@ -54,7 +77,7 @@ export const useResourceMutations = () => {
           : null,
         focus_session_id: newResource.focus_session_id || null,
         created_at: new Date().toISOString(),
-        _isProcessing: true, 
+        _isProcessing: true,
       } as Resource & { _isProcessing?: boolean };
 
       // Optimistically update all matching resource queries
