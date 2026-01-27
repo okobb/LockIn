@@ -109,4 +109,32 @@ class AgendaServiceTest extends TestCase
         
         $this->assertEquals('focus', $agenda[0]['type']);
     }
+
+    #[Test]
+    public function test_deduplicates_tasks_linked_to_events()
+    {
+        Carbon::setTestNow(Carbon::parse('2024-01-01 08:00:00'));
+
+        $task = Task::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'Linked Task',
+            'status' => 'open',
+            'scheduled_start' => now()->addHours(2),
+        ]);
+
+        CalendarEvent::create([
+            'user_id' => $this->user->id,
+            'title' => 'Time Block for Task',
+            'type' => 'deep_work',
+            'start_time' => now()->addHours(2),
+            'end_time' => now()->addHours(3),
+            'metadata' => ['task_id' => $task->id],
+        ]);
+
+        $agenda = $this->service->getUnifiedAgenda($this->user->id);
+
+        $this->assertCount(1, $agenda);
+        $this->assertEquals('Time Block for Task', $agenda[0]['title']);
+        $this->assertEquals('event', $agenda[0]['itemType']);
+    }
 }
