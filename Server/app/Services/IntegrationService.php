@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exceptions\ServiceException;
 use App\Models\Integration;
 use App\Models\User;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
@@ -124,10 +125,6 @@ final class IntegrationService extends BaseService
     protected function clearUserCache(int $userId): void
     {
         Cache::forget("user:{$userId}:integrations:all");
-        // We can't easily clear specific provider keys without knowing them, 
-        // but since we only cache active ones, usually it's fine or we'd need to loop supported providers.
-        // For now, clearing the list is most important. 
-        // To be safe, we could loop common providers.
         foreach (['google', 'github', 'slack'] as $provider) {
             Cache::forget("user:{$userId}:integrations:{$provider}");
         }
@@ -179,7 +176,7 @@ final class IntegrationService extends BaseService
 
                 return $this->refreshToken($freshIntegration);
             });
-        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+        } catch (LockTimeoutException $e) {
             throw new ServiceException("Could not acquire lock to refresh token for integration {$integration->id}");
         }
     }
