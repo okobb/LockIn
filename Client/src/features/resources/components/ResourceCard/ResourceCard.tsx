@@ -108,7 +108,9 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
                   : "border-muted-foreground/50 hover:border-muted-foreground bg-transparent",
               )}
             >
-              {selected && <Check size={12} className="text-white" />}
+              {selected && (
+                <Check size={12} className="text-primary-foreground" />
+              )}
             </div>
           )}
           <div className="p-2 rounded-lg bg-muted text-primary ring-1 ring-border">
@@ -136,10 +138,10 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         <button
           onClick={handleFavorite}
           className={cn(
-            "p-1.5 rounded-full transition-colors hover:bg-white/10",
+            "p-1.5 rounded-full transition-colors hover:bg-accent",
             resource.is_favorite
               ? "text-yellow-400"
-              : "text-zinc-500 hover:text-yellow-400",
+              : "text-muted-foreground hover:text-yellow-400",
           )}
         >
           <Star
@@ -153,14 +155,14 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         {resource.title}
       </h3>
 
-      <p className="text-xs text-zinc-400 mb-3 line-clamp-2 min-h-[2.5em]">
+      <p className="text-xs text-muted-foreground mb-3 line-clamp-2 min-h-[2.5em]">
         {resource.summary || resource.notes || "No description provided."}
       </p>
 
-      <div className="mt-auto flex items-center justify-between pt-3 border-t border-white/5">
+      <div className="mt-auto flex items-center justify-between pt-3 border-t border-border">
         <div className="flex items-center gap-3">
           {resource.source_domain && (
-            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
               <img
                 src={`https://www.google.com/s2/favicons?domain=${resource.source_domain}`}
                 alt=""
@@ -170,7 +172,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             </div>
           )}
           {resource.estimated_time_minutes && (
-            <div className="flex items-center gap-1 text-[10px] text-zinc-500">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
               <Clock size={10} />
               {resource.estimated_time_minutes}m
             </div>
@@ -181,7 +183,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           <button
             onClick={handleToggleRead}
             className={cn(
-              "w-2 h-2 rounded-full ring-2 ring-offset-2 ring-offset-[#121214] transition-all",
+              "w-2 h-2 rounded-full ring-2 ring-offset-2 ring-offset-card transition-all",
               resource.is_read
                 ? "bg-emerald-500 ring-emerald-500/20"
                 : "bg-muted-foreground/50 ring-muted-foreground/20 hover:bg-primary",

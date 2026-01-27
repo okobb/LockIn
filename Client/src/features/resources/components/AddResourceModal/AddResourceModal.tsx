@@ -60,28 +60,28 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-[#0A0A0B] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#121214]">
-          <h2 className="text-lg font-semibold text-zinc-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg bg-background border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
+          <h2 className="text-lg font-semibold text-foreground">
             Add New Resource
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-zinc-500 hover:text-zinc-200 hover:bg-white/5 rounded-full transition-colors"
+            className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex p-1 mx-6 mt-6 bg-[#18181B] rounded-lg border border-white/5">
+        <div className="flex p-1 mx-6 mt-6 bg-muted/50 rounded-lg border border-border">
           <button
             onClick={() => setActiveTab("link")}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all",
               activeTab === "link"
-                ? "bg-[#27272A] text-white shadow-sm"
-                : "text-zinc-500 hover:text-zinc-300",
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Link size={16} />
@@ -92,8 +92,8 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all",
               activeTab === "file"
-                ? "bg-[#27272A] text-white shadow-sm"
-                : "text-zinc-500 hover:text-zinc-300",
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <File size={16} />
@@ -105,7 +105,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
           <div className="space-y-2">
             {activeTab === "link" ? (
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   URL
                 </label>
                 <input
@@ -114,7 +114,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                   placeholder="https://..."
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+                  className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             ) : (
@@ -128,7 +128,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Title (Optional)
               </label>
               <input
@@ -140,12 +140,12 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Tags
               </label>
               <input
@@ -153,18 +153,18 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 placeholder="React, Design..."
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Difficulty
               </label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 appearance-none"
+                className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
               >
                 <option value="">Select Level...</option>
                 <option value="beginner">Beginner</option>
@@ -175,7 +175,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Notes
             </label>
             <textarea
@@ -183,15 +183,15 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
               placeholder="Add some context..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 resize-none"
+              className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/5">
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Cancel
             </button>

@@ -232,18 +232,18 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
   const isImage = resource.type === "image";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div
-        className="w-full max-w-4xl bg-[#0A0A0B] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[90vh]"
+        className="w-full max-w-4xl bg-background border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between px-6 py-6 border-b border-white/5 bg-[#121214]">
+        <div className="flex items-start justify-between px-6 py-6 border-b border-border bg-card">
           <div className="flex gap-4">
             <div className="p-3 rounded-xl bg-muted text-primary ring-1 ring-border h-fit">
               <TypeIcon size={24} />
             </div>
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-zinc-100 leading-tight">
+              <h2 className="text-xl font-semibold text-foreground leading-tight">
                 {resource.title}
               </h2>
               <a
@@ -259,16 +259,16 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-zinc-500 hover:text-zinc-200 hover:bg-white/5 rounded-full transition-colors"
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors"
           >
             <X size={20} />
           </button>
         </div>
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar border-r border-white/5">
+          <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar border-r border-border">
             {(isImage || isPDF || isTextFile) && (
-              <div className="mb-6 rounded-lg overflow-hidden border border-white/10 bg-[#18181B] min-h-[300px] flex items-center justify-center">
+              <div className="mb-6 rounded-lg overflow-hidden border border-border bg-muted/50 min-h-[300px] flex items-center justify-center">
                 {loadingUrl ? (
                   <Spinner className="animate-spin text-primary" size={32} />
                 ) : signedUrl ? (
@@ -288,13 +288,13 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
                       />
                     )}
                     {isTextFile && textContent !== null && (
-                      <pre className="w-full h-[500px] overflow-auto p-4 text-sm text-zinc-300 font-mono whitespace-pre-wrap wrap-break bg-[#0d0d0e]">
+                      <pre className="w-full h-[500px] overflow-auto p-4 text-sm text-foreground font-mono whitespace-pre-wrap wrap-break bg-card">
                         {textContent}
                       </pre>
                     )}
                   </>
                 ) : (
-                  <div className="text-zinc-500 text-sm">
+                  <div className="text-muted-foreground text-sm">
                     Preview unavailable
                   </div>
                 )}
@@ -302,46 +302,46 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
             )}
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-3 rounded-lg bg-[#18181B] border border-white/5 space-y-1">
-                <div className="text-xs text-zinc-500 uppercase font-medium flex items-center gap-1.5">
+              <div className="p-3 rounded-lg bg-card border border-border space-y-1">
+                <div className="text-xs text-muted-foreground uppercase font-medium flex items-center gap-1.5">
                   <Target size={12} /> Difficulty
                 </div>
-                <div className="text-sm font-medium text-zinc-200 capitalize">
+                <div className="text-sm font-medium text-foreground capitalize">
                   {resource.difficulty || "—"}
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-[#18181B] border border-white/5 space-y-1">
-                <div className="text-xs text-zinc-500 uppercase font-medium flex items-center gap-1.5">
+              <div className="p-3 rounded-lg bg-card border border-border space-y-1">
+                <div className="text-xs text-muted-foreground uppercase font-medium flex items-center gap-1.5">
                   <Clock size={12} /> Time
                 </div>
-                <div className="text-sm font-medium text-zinc-200">
+                <div className="text-sm font-medium text-foreground">
                   {resource.estimated_time_minutes
                     ? `${resource.estimated_time_minutes} min`
                     : "—"}
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-[#18181B] border border-white/5 space-y-1">
-                <div className="text-xs text-zinc-500 uppercase font-medium flex items-center gap-1.5">
+              <div className="p-3 rounded-lg bg-card border border-border space-y-1">
+                <div className="text-xs text-muted-foreground uppercase font-medium flex items-center gap-1.5">
                   <Calendar size={12} /> Added
                 </div>
-                <div className="text-sm font-medium text-zinc-200">
+                <div className="text-sm font-medium text-foreground">
                   {new Date(resource.created_at).toLocaleDateString()}
                 </div>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                 Summary
               </h3>
-              <p className="text-zinc-300 leading-relaxed text-sm md:text-base whitespace-pre-wrap">
+              <p className="text-foreground leading-relaxed text-sm md:text-base whitespace-pre-wrap">
                 {resource.summary || resource.notes || "No summary provided."}
               </p>
             </div>
 
             {resource.tags && resource.tags.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <Tag size={14} /> Tags
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -362,11 +362,11 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
           </div>
         </div>
 
-        <div className="p-6 border-t border-white/5 bg-[#121214] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-6 border-t border-border bg-card flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex gap-3 w-full sm:w-auto">
             <button
               onClick={handleDelete}
-              className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-colors border border-red-500/20"
+              className="px-4 py-2.5 bg-destructive/10 hover:bg-destructive/20 text-destructive hover:text-destructive/80 rounded-xl transition-colors border border-destructive/20"
               title="Delete Resource"
             >
               <Trash size={16} />
@@ -377,7 +377,7 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
               rel="noopener noreferrer"
               download={!resource.url}
               className={cn(
-                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[#18181B] hover:bg-[#202022] text-zinc-200 rounded-xl transition-colors text-sm font-medium border border-white/5",
+                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-xl transition-colors text-sm font-medium border border-border",
                 !signedUrl && "opacity-50 pointer-events-none",
               )}
             >
@@ -400,7 +400,7 @@ export const ResourceDetailModal: React.FC<ResourceDetailModalProps> = ({
               className={cn(
                 "btn",
                 activeSessionId
-                  ? "bg-success hover:bg-success/90 text-success-foreground"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                   : "btn-primary",
               )}
             >

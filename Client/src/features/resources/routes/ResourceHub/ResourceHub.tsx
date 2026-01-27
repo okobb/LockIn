@@ -202,7 +202,7 @@ export const ResourceHub: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#0A0A0B] text-zinc-100 font-sans selection:bg-purple-500/20">
+    <div className="flex h-screen bg-background text-foreground font-sans selection:bg-primary/20">
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -213,25 +213,25 @@ export const ResourceHub: React.FC = () => {
           isSidebarCollapsed ? "pl-[70px]" : "pl-[260px]"
         }`}
       >
-        <div className="sticky top-0 z-30 bg-[#0A0A0B]/80 backdrop-blur-md border-b border-white/5 px-8 py-4">
+        <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border px-8 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-foreground">
                 Resource Hub
               </h1>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-muted-foreground">
                 Manage your learning materials
               </p>
             </div>
             <div className="flex items-center gap-3">
               {selectedResourceIds.size > 0 && (
                 <div className="flex items-center gap-2 mr-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <span className="text-sm text-zinc-400">
+                  <span className="text-sm text-muted-foreground">
                     {selectedResourceIds.size} selected
                   </span>
                   <button
                     onClick={handleStartSessionWithResources}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium border border-white/5 disabled:opacity-50 transition-colors mr-2 cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg text-xs font-medium border border-border disabled:opacity-50 transition-colors mr-2 cursor-pointer"
                   >
                     <Play size={12} />
                     Start Session
@@ -250,14 +250,14 @@ export const ResourceHub: React.FC = () => {
                   </button>
                   <button
                     onClick={handleBulkDelete}
-                    className="p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-red-400 transition-colors mr-1"
+                    className="p-1.5 hover:bg-accent hover:text-red-500 rounded-lg text-muted-foreground transition-colors mr-1"
                     title="Delete selected"
                   >
                     <Trash size={14} />
                   </button>
                   <button
                     onClick={() => setSelectedResourceIds(new Set())}
-                    className="p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-zinc-300 transition-colors"
+                    className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                     title="Clear selection"
                   >
                     <X size={14} />
@@ -279,7 +279,7 @@ export const ResourceHub: React.FC = () => {
           <div className="flex items-center gap-4 flex-wrap">
             <div className="relative flex-1 min-w-[300px]">
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                 size={16}
               />
               <input
@@ -287,7 +287,7 @@ export const ResourceHub: React.FC = () => {
                 placeholder="Search resources..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-secondary border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/50 transition-all text-foreground placeholder:text-muted-foreground"
+                className="w-full bg-secondary/50 border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring transition-all text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
@@ -296,7 +296,7 @@ export const ResourceHub: React.FC = () => {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, type: e.target.value as any }))
               }
-              className="bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring/50 transition-all cursor-pointer min-w-[150px]"
+              className="bg-secondary/50 border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all cursor-pointer min-w-[150px]"
             >
               <option value="all">All Types</option>
               <option value="article">Article</option>
@@ -310,7 +310,7 @@ export const ResourceHub: React.FC = () => {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, difficulty: e.target.value as any }))
               }
-              className="bg-secondary border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring/50 transition-all cursor-pointer min-w-[150px]"
+              className="bg-secondary/50 border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all cursor-pointer min-w-[150px]"
             >
               <option value="all">All Difficulties</option>
               <option value="beginner">Beginner</option>
@@ -335,8 +335,8 @@ export const ResourceHub: React.FC = () => {
                 />
               ))}
               {resources.length === 0 && (
-                <div className="col-span-full text-center py-20 text-zinc-500">
-                  <div className="bg-[#18181B] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
+                <div className="col-span-full text-center py-20 text-muted-foreground">
+                  <div className="bg-secondary/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
                     <BookOpen size={24} className="opacity-50" />
                   </div>
                   <p>No resources found.</p>
