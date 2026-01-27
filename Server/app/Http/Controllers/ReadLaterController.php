@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ReadLater\StoreReadLaterRequest;
+use App\Services\LiquidSchedulerService;
 use App\Services\ReadLaterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,8 @@ use Illuminate\Http\Request;
 final class ReadLaterController extends BaseController
 {
     public function __construct(
-        private readonly ReadLaterService $readLaterService
+        private readonly ReadLaterService $readLaterService,
+        private readonly LiquidSchedulerService $liquidSchedulerService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -47,5 +49,11 @@ final class ReadLaterController extends BaseController
     {
         $item = $this->readLaterService->markCompleted($request->user()->id, $id);
         return $this->successResponse($item, 'Marked as completed');
+    }
+
+    public function suggestions(Request $request): JsonResponse
+    {
+        $suggestions = $this->liquidSchedulerService->getTodaySuggestions($request->user()->id);
+        return $this->successResponse($suggestions);
     }
 }
