@@ -115,3 +115,13 @@ The AI assistant is powered by a Retrieval-Augmented Generation (RAG) pipeline. 
 |              Knowledge Chunks (Database)               |                 RAG Assistant Tools                  |
 | :----------------------------------------------------: | :--------------------------------------------------: |
 | ![Chunks](./readme/Development/Knowledge_Chunks.png) | ![Tools](./readme/Development/AI_Tools.png) |
+
+<br><br>
+
+### Integrations & Message Processing
+
+Users can authenticate with **Google** or **GitHub** for seamless login. Connected integrations like **Slack** and **Gmail** allow the system to receive messages, which are processed through an n8n automation workflow.
+
+|                   n8n Workflow                   |
+| :----------------------------------------------: |
+| ![n8n](./readme/Development/n8n.png) |
