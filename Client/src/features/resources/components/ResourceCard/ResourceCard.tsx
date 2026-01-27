@@ -13,6 +13,8 @@ import {
   Check,
 } from "lucide-react";
 import { useResourceMutations } from "../../hooks/useResources";
+
+import { AddReadLaterButton } from "../../../read-later/components/AddReadLaterButton";
 import { cn } from "../../../../lib/utils";
 
 interface ResourceCardProps {
@@ -90,7 +92,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "group relative flex flex-col p-4 rounded-xl border transition-all duration-300 backdrop-blur-sm select-none",
+        "group relative flex flex-col p-4 rounded-xl border transition-all duration-300 backdrop-blur-sm select-none hover:z-50",
         selected
           ? "bg-primary/10 border-primary/50"
           : "bg-card/50 border-border hover:bg-card hover:border-border/80",
@@ -183,6 +185,14 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <div
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <AddReadLaterButton resourceId={resource.id} />
+          </div>
           <button
             onClick={handleToggleRead}
             className={cn(

@@ -21,7 +21,9 @@ export interface ReadLaterItem {
 export interface LiquidSuggestion {
   gap: {
     start: string;
+    start_iso?: string;
     end: string;
+    end_iso?: string;
     duration_minutes: number;
     description: string;
   };

@@ -137,7 +137,7 @@ export default function NewDashboard() {
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-            <div className="lg:col-span-8 space-y-10">
+            <div className="lg:col-span-7 space-y-10">
               <div className="sticky top-0 z-50 py-4 -mx-6 px-6 backdrop-blur-xl transition-all border-b border-transparent data-[stuck=true]:border-[#333]/50">
                 <div className="w-full">
                   <MissionBar />
@@ -268,7 +268,7 @@ export default function NewDashboard() {
               </div>
             </div>
 
-            <div className="lg:col-span-4 space-y-10">
+            <div className="lg:col-span-5 space-y-10">
               <Card className="rounded-3xl bg-card border-border/20 shadow-sm">
                 <CardContent className="p-8">
                   <div className="flex items-center gap-3 mb-8">
