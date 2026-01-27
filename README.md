@@ -125,3 +125,13 @@ Users can authenticate with **Google** or **GitHub** for seamless login. Connect
 |                   n8n Workflow                   |
 | :----------------------------------------------: |
 | ![n8n](./readme/Development/n8n.png) |
+
+<br><br>
+
+### ML Message Classification
+
+A Go-based microservice uses Bayesian classification to filter incoming messages as **Important** or **Noise**, protecting focus time by surfacing only what matters.
+
+| Important Classification | Noise Classification |
+| :----------------------: | :------------------: |
+| ![Important](./readme/Development/ML_Important.png) | ![Noise](./readme/Development/ML_Noise.png) |
