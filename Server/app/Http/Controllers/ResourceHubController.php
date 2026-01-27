@@ -44,6 +44,16 @@ class ResourceHubController extends Controller
                 $validated
             );
         } else {
+
+            $existing = KnowledgeResource::where('user_id', $userId)
+                ->where('url', $request->input('url'))
+                ->where('created_at', '>=', now()->subMinute())
+                ->first();
+
+            if ($existing) {
+                return response()->json($existing, 200);
+            }
+
             $resource = $this->service->createFromUrl(
                 $request->input('url'),
                 $userId,

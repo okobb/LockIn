@@ -286,5 +286,10 @@ export function useTaskBacklog() {
     removeBacklogTask,
     completeTask,
     scheduleTask,
+    isAdding: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+    isCompleting: completeMutation.isPending,
+    isScheduling: scheduleMutation.isPending,
   };
 }

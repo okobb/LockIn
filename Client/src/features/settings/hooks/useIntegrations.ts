@@ -40,7 +40,7 @@ export const AVAILABLE_INTEGRATIONS: IntegrationConfig[] = [
  * Maps service names to scope identifiers that should be present in the integration.
  */
 function getRequiredScopeIdentifier(
-  service: IntegrationService
+  service: IntegrationService,
 ): string | null {
   switch (service) {
     case "calendar":
@@ -76,6 +76,7 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
   } = useQuery({
     queryKey: ["integrations"],
     queryFn: () => integrations.getAll(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1,
   });
 
@@ -84,10 +85,10 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
   // Check if a specific integration is connected with the required scopes
   const isConnected = (
     provider: string,
-    service: IntegrationService
+    service: IntegrationService,
   ): boolean => {
     const integration = userIntegrations.find(
-      (i) => i.provider === provider && i.is_active
+      (i) => i.provider === provider && i.is_active,
     );
 
     if (!integration) {
@@ -101,7 +102,7 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
 
     return (
       integration.scopes?.some((scope) =>
-        scope.toLowerCase().includes(requiredScopeId)
+        scope.toLowerCase().includes(requiredScopeId),
       ) ?? false
     );
   };
@@ -127,7 +128,7 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
       onError(
         `Failed to initiate connection: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
+        }`,
       );
     },
   });
@@ -135,7 +136,29 @@ export function useIntegrations(options: UseIntegrationsOptions = {}) {
   const disconnectMutation = useMutation({
     mutationFn: (integrationId: number) =>
       integrations.disconnect(integrationId),
-    onSuccess: () => {
+    onMutate: async (integrationId) => {
+      await queryClient.cancelQueries({ queryKey: ["integrations"] });
+      const previousIntegrations = queryClient.getQueryData(["integrations"]);
+
+      queryClient.setQueryData(["integrations"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: old.data.filter((i: Integration) => i.id !== integrationId),
+        };
+      });
+
+      return { previousIntegrations };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousIntegrations) {
+        queryClient.setQueryData(
+          ["integrations"],
+          context.previousIntegrations,
+        );
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["integrations"] });
     },
   });

@@ -10,8 +10,8 @@ export const useResources = (filters: ResourceFilters) => {
   return useQuery({
     queryKey: ["resources", filters],
     queryFn: () => resourceApi.list(filters),
-    
-    // Auto-refresh when there are resources still being processed
+
+    // Poll every 5 seconds while processing
     refetchInterval: (query) => {
       const data = query.state.data;
       if (!data?.data) return false;
@@ -20,6 +20,7 @@ export const useResources = (filters: ResourceFilters) => {
         (r: Resource & { _isProcessing?: boolean }) => {
           if (r.id < 0 || r._isProcessing) return true;
 
+          // Check for recently created URL resources without summary
           if (r.url && !r.summary) {
             const createdAt = new Date(r.created_at).getTime();
             const now = Date.now();
@@ -33,6 +34,7 @@ export const useResources = (filters: ResourceFilters) => {
 
       return hasProcessing ? 5000 : false;
     },
+    staleTime: 1000 * 60, // 1 minute
   });
 };
 
@@ -42,7 +44,6 @@ export const useResourceMutations = () => {
   const createResource = useMutation({
     mutationFn: (data: CreateResourceRequest) => resourceApi.create(data),
 
-    // Optimistic update: show immediately with placeholder data
     onMutate: async (newResource) => {
       // Cancel any outgoing refetches to prevent overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: ["resources"] });
@@ -117,14 +118,58 @@ export const useResourceMutations = () => {
 
   const deleteResource = useMutation({
     mutationFn: (id: number) => resourceApi.delete(id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["resources"] });
+      const previousResources = queryClient.getQueryData(["resources"]);
+
+      queryClient.setQueriesData(
+        { queryKey: ["resources"] },
+        (old: { data: Resource[] } | undefined) => {
+          if (!old) return old;
+          return {
+            data: old.data.filter((r) => r.id !== id),
+          };
+        },
+      );
+
+      return { previousResources };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previousResources) {
+        queryClient.setQueryData(["resources"], context.previousResources);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
   });
 
   const toggleFavorite = useMutation({
     mutationFn: (id: number) => resourceApi.toggleFavorite(id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["resources"] });
+      const previousResources = queryClient.getQueryData(["resources"]);
+
+      queryClient.setQueriesData(
+        { queryKey: ["resources"] },
+        (old: { data: Resource[] } | undefined) => {
+          if (!old) return old;
+          return {
+            data: old.data.map((r) =>
+              r.id === id ? { ...r, is_favorite: !r.is_favorite } : r,
+            ),
+          };
+        },
+      );
+
+      return { previousResources };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previousResources) {
+        queryClient.setQueryData(["resources"], context.previousResources);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
   });
@@ -132,7 +177,30 @@ export const useResourceMutations = () => {
   const markAsRead = useMutation({
     mutationFn: ({ id, isRead }: { id: number; isRead: boolean }) =>
       resourceApi.markAsRead(id, isRead),
-    onSuccess: () => {
+    onMutate: async ({ id, isRead }) => {
+      await queryClient.cancelQueries({ queryKey: ["resources"] });
+      const previousResources = queryClient.getQueryData(["resources"]);
+
+      queryClient.setQueriesData(
+        { queryKey: ["resources"] },
+        (old: { data: Resource[] } | undefined) => {
+          if (!old) return old;
+          return {
+            data: old.data.map((r) =>
+              r.id === id ? { ...r, is_read: isRead } : r,
+            ),
+          };
+        },
+      );
+
+      return { previousResources };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousResources) {
+        queryClient.setQueryData(["resources"], context.previousResources);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
   });
@@ -156,6 +224,12 @@ export const useResourceMutations = () => {
     toggleFavorite,
     markAsRead,
     addToSession,
+    isCreating: createResource.isPending,
+    isUpdating: updateResource.isPending,
+    isDeleting: deleteResource.isPending,
+    isTogglingFavorite: toggleFavorite.isPending,
+    isMarkingAsRead: markAsRead.isPending,
+    isAddingToSession: addToSession.isPending,
   };
 };
 
