@@ -135,3 +135,17 @@ A Go-based microservice uses Bayesian classification to filter incoming messages
 | Important Classification | Noise Classification |
 | :----------------------: | :------------------: |
 | ![Important](./readme/Development/ML_Important.png) | ![Noise](./readme/Development/ML_Noise.png) |
+
+<br><br>
+
+<!-- deployment -->
+<img src="./readme/titles/title7.svg">
+
+## Deployment
+
+### GitHub Actions
+| CI Tests | CD Deploy |
+| :------: | :-------: |
+| ![CI](./readme/Deployment/CI.png) | ![CD](./readme/Deployment/CD.png) |
+
+<br><br>
