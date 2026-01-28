@@ -321,6 +321,7 @@ export const ContextSave = () => {
         git_state: gitState || undefined,
         voice_file: voiceFile,
         checklist: manualChecklist,
+        should_complete: true,
       });
 
       setIsSuccess(true);
