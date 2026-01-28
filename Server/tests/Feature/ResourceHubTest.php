@@ -24,6 +24,9 @@ class ResourceHubTest extends TestCase
         parent::setUp();
         $this->user = User::factory()->create();
         
+        // Clear cache to avoid stale data from previous tests
+        \Illuminate\Support\Facades\Cache::flush();
+        
         $this->app['router']->aliasMiddleware('signed', \Illuminate\Routing\Middleware\ValidateSignature::class);
         
         \Illuminate\Support\Facades\URL::forceRootUrl('http://localhost');
@@ -69,12 +72,10 @@ class ResourceHubTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJson([
-                'title' => 'Test Title',
-                'url' => 'http://example.com/article',
-                'type' => \RESOURCE_TYPE_ARTICLE,
-                'source_domain' => 'example.com',
-            ]);
+            ->assertJsonPath('data.title', 'Test Title')
+            ->assertJsonPath('data.url', 'http://example.com/article')
+            ->assertJsonPath('data.type', \RESOURCE_TYPE_ARTICLE)
+            ->assertJsonPath('data.source_domain', 'example.com');
 
         $this->assertDatabaseHas('knowledge_resources', [
             'user_id' => $this->user->id,
@@ -97,10 +98,8 @@ class ResourceHubTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJson([
-                'title' => 'document.pdf',
-                'type' => \RESOURCE_TYPE_DOCUMENT,
-            ]);
+            ->assertJsonPath('data.title', 'document.pdf')
+            ->assertJsonPath('data.type', \RESOURCE_TYPE_DOCUMENT);
 
         $resource = KnowledgeResource::first();
         Storage::disk('public')->assertExists($resource->file_path);
@@ -126,15 +125,15 @@ class ResourceHubTest extends TestCase
 
         $response = $this->getJson('/api/resources?type=' . \RESOURCE_TYPE_VIDEO);
         $response->assertStatus(200)
-            ->assertJsonCount(1, 'data')
+            ->assertJsonCount(1, 'data.data')
             ->assertJsonFragment(['title' => 'Vue Video']);
         $response = $this->getJson('/api/resources?status=unread');
         $response->assertStatus(200)
-            ->assertJsonCount(1, 'data')
+            ->assertJsonCount(1, 'data.data')
             ->assertJsonFragment(['title' => 'React Guide']);
         $response = $this->getJson('/api/resources?search=React');
         $response->assertStatus(200)
-            ->assertJsonCount(1, 'data')
+            ->assertJsonCount(1, 'data.data')
             ->assertJsonFragment(['title' => 'React Guide']);
     }
 
@@ -149,7 +148,7 @@ class ResourceHubTest extends TestCase
         $response = $this->postJson("/api/resources/{$resource->id}/favorite");
         
         $response->assertStatus(200)
-            ->assertJson(['is_favorite' => true]);
+            ->assertJsonPath('data.is_favorite', true);
             
         $this->assertDatabaseHas('knowledge_resources', [
             'id' => $resource->id,

@@ -133,15 +133,14 @@ final class ContextSnapshotService extends BaseService
     public function forkSnapshot(ContextSnapshot $source, FocusSession $newSession): ContextSnapshot
     {
         return $this->executeInTransaction(function () use ($source, $newSession) {
-            $attributes = $source->replicate([
+            $replica = $source->replicate([
                 'user_id', 'created_at', 'updated_at', 'id', 'focus_session_id', 'restored_at'
-            ])->getAttributes();
+            ]);
             
-            $attributes['user_id'] = $newSession->user_id;
-            $attributes['focus_session_id'] = $newSession->id;
-            $attributes['type'] = 'forked';
-
-            $replica = $this->create($attributes);
+            $replica->user_id = $newSession->user_id;
+            $replica->focus_session_id = $newSession->id;
+            $replica->type = 'forked';
+            $replica->save();
 
             $newSession->update(['context_snapshot_id' => $replica->id]);
 
