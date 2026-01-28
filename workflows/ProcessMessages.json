@@ -1,0 +1,324 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=# Role\nYou are the AI Triage & Task Extraction Specialist for a busy software developer. Your goal is to analyze incoming messages to determine urgency and extract actionable task data.\n\n# Objective\nFilter noise and extract dynamic task details (Title, Description, Priority, Deadlines) from the message. Do NOT hallucinate IDs, provider names, or external metadata; the system handles those.\n\n# Input Data\n- **Sender:** {{ $json.sender }}\n- **Source Context:** {{ $json.channel }}\n- **Message:** \"{{ $json.content }}\"\n- **Timestamp:** {{ $json.received_at }}\n\n# Analysis Rules\n\n## 1. Action Determination (Crucial)\n- **IGNORE:** If the message is a newsletter, social notification (Reddit/Shein), spam, or has NO actionable request.\n- **CREATE_TASK:** If the message requires specific effort, a reply, or contains information you need to store.\n\n## 2. Scoring Urgency (0.0 - 1.0)\n- **CRITICAL (0.9 - 1.0):** System failure (500 error, crash), Security (breach, leak), Financial (payment failed).\n- **HIGH (0.7 - 0.8):** Direct blockers, \"ASAP\", specific deadlines today, broken builds.\n- **NORMAL (0.4 - 0.6):** Feature requests, general code reviews, non-urgent questions.\n- **LOW/SKIP (< 0.4):** Social chatter (\"lunch?\", \"thanks\"), automated newsletters, vague greetings.\n\n## 3. Field Extraction Logic\n- **title:** Create a concise, verb-led action item. (e.g., \"Fix login 500 error\" NOT \"Error report\").\n- **description:** Summarize the specific request or context. If the message is short (e.g., \"see attachment\"), use context to explain what needs review.\n- **priority:** Map urgency score: >0.8=\"high\", >0.6=\"normal\", <0.6=\"low\".\n- **due_date:** Extract ONLY if explicitly stated (e.g., \"by Friday\", \"Jan 15\"). Format YYYY-MM-DD. If none, return null.\n- **estimated_minutes:** Estimate based on complexity (e.g., typo=5, review=30, debug=60). Return integer.\n\n# Output Schema (Strict JSON)\nReturn ONLY a valid JSON object. Do not include markdown formatting or explanations outside the JSON.\n\n{\n  \"action\": string,           // MUST be either \"create_task\" or \"ignore\"\n  \"urgency_score\": float,     // 0.0 to 1.0\n  \"title\": string,            // Required if action is \"create_task\". If \"ignore\", use a short summary.\n  \"description\": string,      // Context/summary\n  \"reasoning\": string,        // Why did you choose this action?\n  \"priority\": string,         // \"low\", \"normal\", \"high\", \"urgent\"\n  \"due_date\": string | null,\n  \"estimated_minutes\": int\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -128,
+        416
+      ],
+      "id": "d2803b1f-6c24-43e2-a508-fd28b5e24d9d",
+      "name": "Parse Incoming Messages",
+      "credentials": {
+        "openAiApi": {
+          "id": "Fgb5h5jiIXv2S3nM",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d40b733c-1127-4d97-8e34-f012d79020f8",
+              "name": "message_id",
+              "value": "={{ $('Loop Over Unprocessed Messages').item.json.message_id }}",
+              "type": "string"
+            },
+            {
+              "id": "0b6cc5a0-8d3c-4466-9542-e48eb4448026",
+              "name": "title",
+              "value": "={{ $json.output[0].content[0].text.title }}",
+              "type": "string"
+            },
+            {
+              "id": "572dd924-08a9-4f14-976c-d1e1eb8e9b2d",
+              "name": "description",
+              "value": "={{ $json.output[0].content[0].text.description }}",
+              "type": "string"
+            },
+            {
+              "id": "3a637307-33d4-442e-ae72-c6189664b41d",
+              "name": "urgency_score",
+              "value": "={{ $json.output[0].content[0].text.urgency_score }}",
+              "type": "number"
+            },
+            {
+              "id": "be1a9706-4716-46aa-9d8e-59b947e5997f",
+              "name": "priority",
+              "value": "={{ $json.output[0].content[0].text.priority }}",
+              "type": "string"
+            },
+            {
+              "id": "2c9fb181-2525-4721-ad02-908b049d2bd0",
+              "name": "due_date",
+              "value": "={{ $json.output[0].content[0].text.due_date }}",
+              "type": "string"
+            },
+            {
+              "id": "6395d702-24b6-4a4d-b21e-c804ff413e82",
+              "name": "estimated__minutes",
+              "value": "={{ $json.output[0].content[0].text.estimated_minutes }}",
+              "type": "number"
+            },
+            {
+              "id": "338eabe7-19a4-4f08-b061-11dbcac801a4",
+              "name": "extracted_action",
+              "value": "create_task",
+              "type": "string"
+            },
+            {
+              "id": "9838ad8d-5b29-4170-a6e9-1760e1e190c0",
+              "name": "reasoning",
+              "value": "={{ $json.output[0].content[0].text.reasoning }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        416
+      ],
+      "id": "d4e834b8-2c45-4954-af47-fac900f8bfd0",
+      "name": "Format AI Response"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -976,
+        400
+      ],
+      "id": "94bcdee0-e335-46d1-a3ce-59a1068b8f6a",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -384,
+        400
+      ],
+      "id": "efb4250e-0702-4c69-88c7-0751848c83c9",
+      "name": "Loop Over Unprocessed Messages"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8000/api/n8n/messages/unprocessed",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -800,
+        400
+      ],
+      "id": "708a8f57-01f8-4a0b-bbcc-3cd42d39cb90",
+      "name": "Get Unprocessed Messages",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9UTqPSaNpTgDBNZJ",
+          "name": "API Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        400
+      ],
+      "id": "62f90cc8-f2a9-402f-990b-a3df740db71d",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/api/n8n/messages/processed",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=message_id",
+              "value": "={{ $('Split Out1').item.json.message_id }}"
+            },
+            {
+              "name": "=title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "priority",
+              "value": "={{ $json.priority }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.description }}"
+            },
+            {
+              "name": "due_date",
+              "value": "={{ $json.due_date }}"
+            },
+            {
+              "name": "estimated_minutes",
+              "value": "={{ $json.estimated__minutes }}"
+            },
+            {
+              "name": "reasoning",
+              "value": "={{ $json.reasoning }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        320,
+        416
+      ],
+      "id": "face84e6-fcc0-4249-9293-28a7ae54dcca",
+      "name": "Create Task",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9UTqPSaNpTgDBNZJ",
+          "name": "API Secret"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Parse Incoming Messages": {
+      "main": [
+        [
+          {
+            "node": "Format AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format AI Response": {
+      "main": [
+        [
+          {
+            "node": "Create Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Get Unprocessed Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Unprocessed Messages": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Parse Incoming Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Unprocessed Messages": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Unprocessed Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Task": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Unprocessed Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3c426f859fd515b7a353cf79a29bf5aa41e83335be67513a4efb6fe445b99ab0"
+  }
+}
