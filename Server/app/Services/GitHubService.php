@@ -41,7 +41,7 @@ final class GitHubService
         foreach ($prs as $pr) {
             try {
                 $createdTasks[] = $this->processPr($pr, $userId, $integration, $user, $taskService);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error("GitHub Sync: Failed to process PR #{$pr['number']}: " . $e->getMessage());
                 continue;
             }
