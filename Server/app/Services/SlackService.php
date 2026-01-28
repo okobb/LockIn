@@ -53,7 +53,7 @@ final class SlackService
                 try {
                     $messages = $this->fetchRecentMessages($userId, $ch['id'], $limit);
                     $stored = $stored->merge($this->storeMessages($userId, $messages));
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::warning("Failed to sync Slack channel {$ch['id']}: " . $e->getMessage());
                 }
             }

@@ -133,14 +133,15 @@ final class ContextSnapshotService extends BaseService
     public function forkSnapshot(ContextSnapshot $source, FocusSession $newSession): ContextSnapshot
     {
         return $this->executeInTransaction(function () use ($source, $newSession) {
-            $replica = $source->replicate([
+            $attributes = $source->replicate([
                 'user_id', 'created_at', 'updated_at', 'id', 'focus_session_id', 'restored_at'
-            ]);
+            ])->getAttributes();
             
-            $replica->user_id = $newSession->user_id;
-            $replica->focus_session_id = $newSession->id;
-            $replica->type = 'forked';
-            $replica->save();
+            $attributes['user_id'] = $newSession->user_id;
+            $attributes['focus_session_id'] = $newSession->id;
+            $attributes['type'] = 'forked';
+
+            $replica = $this->create($attributes);
 
             $newSession->update(['context_snapshot_id' => $replica->id]);
 
@@ -371,5 +372,45 @@ final class ContextSnapshotService extends BaseService
         $snapshot->refresh();
         
         return $snapshot;
+    }
+    /**
+     * Get Git snapshot info for a session, including fallback to task snapshot.
+     */
+    public function getGitSnapshotForSession(FocusSession $session): ?array
+    {
+        if ($session->contextSnapshot) {
+            $snapshot = $session->contextSnapshot;
+            $hasGitData = !empty($snapshot->repository_source) || !empty($snapshot->git_branch);
+            
+            if ($hasGitData) {
+                 return [
+                    'branch' => $snapshot->git_branch ?? 'unknown',
+                    'files_changed' => $snapshot->git_files_changed ?? [],
+                    'additions' => $snapshot->git_additions ?? 0,
+                    'deletions' => $snapshot->git_deletions ?? 0,
+                    'repo' => $snapshot->repository_source ?? 'Unknown',
+                    'source' => 'snapshot' 
+                ];
+            }
+        } 
+        
+        if ($session->task_id) {
+             $task = Task::withTrashed()->find($session->task_id, ['*']);
+             if ($task && $task->context_snapshot_id) {
+                  $snapshot = ContextSnapshot::find($task->context_snapshot_id, ['*']);
+                  if ($snapshot) {
+                        return [
+                            'branch' => $snapshot->git_branch ?? 'unknown',
+                            'files_changed' => $snapshot->git_files_changed ?? [],
+                            'additions' => $snapshot->git_additions ?? 0,
+                            'deletions' => $snapshot->git_deletions ?? 0,
+                            'repo' => $snapshot->repository_source ?? 'Unknown',
+                            'source' => 'task_snapshot_fallback' 
+                        ];
+                  }
+             }
+        }
+
+        return null;
     }
 }

@@ -174,7 +174,7 @@ class VideoMetadataService
             $minutes = ($interval->h * 60) + $interval->i;
             if ($interval->s > 30) $minutes++; // Round up seconds
             return $minutes ?: 1; // Minimum 1 min
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return 0;
         }
     }

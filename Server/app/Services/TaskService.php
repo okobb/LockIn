@@ -101,8 +101,7 @@ final class TaskService extends BaseService
             $stat = DailyStat::query()->firstOrCreate(
                 ['user_id' => $task->user_id, 'date' => now()->toDateString()]
             );
-            $stat->tasks_completed += 1;
-            $stat->save();
+            $stat->increment('tasks_completed');
 
             $hasActiveSession = FocusSession::query()->where('task_id', $task->id)
                 ->where('status', 'active')
