@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Storage;
 
-class ResourceHubController extends Controller
+class ResourceHubController extends BaseController
 {
     public function __construct(
         private ResourceHubService $service
@@ -29,7 +29,7 @@ class ResourceHubController extends Controller
             $request->only(['search', 'type', 'difficulty', 'status'])
         );
 
-        return response()->json($resources);
+        return $this->successResponse($resources);
     }
 
     public function store(StoreResourceRequest $request): JsonResponse
@@ -37,65 +37,51 @@ class ResourceHubController extends Controller
         $userId = (int) Auth::id();
         $validated = $request->validated();
 
-        if ($request->hasFile('file')) {
-            $resource = $this->service->createFromFile(
-                $request->file('file'),
-                $userId,
-                $validated
-            );
-        } else {
+        $result = $this->service->createOrFindResource(
+            $userId,
+            $validated,
+            $request->file('file')
+        );
 
-            $existing = KnowledgeResource::where('user_id', $userId)
-                ->where('url', $request->input('url'))
-                ->where('created_at', '>=', now()->subMinute())
-                ->first();
-
-            if ($existing) {
-                return response()->json($existing, 200);
-            }
-
-            $resource = $this->service->createFromUrl(
-                $request->input('url'),
-                $userId,
-                $validated
-            );
+        if ($result['code'] === 201) {
+            return $this->createdResponse($result['resource']);
         }
 
-        return response()->json($resource, 201);
+        return $this->successResponse($result['resource']);
     }
 
     public function show(KnowledgeResource $resource): JsonResponse
     {
-        $this->authorizeResource($resource);
-        return response()->json($resource);
+        $this->checkOwnership($resource);
+        return $this->successResponse($resource);
     }
 
     public function update(UpdateResourceRequest $request, KnowledgeResource $resource): JsonResponse
     {
-        $this->authorizeResource($resource);
+        $this->checkOwnership($resource);
         $updated = $this->service->updateResource($resource, $request->validated());
-        return response()->json($updated);
+        return $this->successResponse($updated);
     }
 
     public function destroy(KnowledgeResource $resource): JsonResponse
     {
-        $this->authorizeResource($resource);
+        $this->checkOwnership($resource);
         $this->service->deleteResource($resource);
-        return response()->json(null, 204);
+        return $this->noContentResponse();
     }
 
     public function toggleFavorite(KnowledgeResource $resource): JsonResponse
     {
-        $this->authorizeResource($resource);
+        $this->checkOwnership($resource);
         $updated = $this->service->toggleFavorite($resource);
-        return response()->json($updated);
+        return $this->successResponse($updated);
     }
 
     public function markAsRead(KnowledgeResource $resource, Request $request): JsonResponse
     {
-        $this->authorizeResource($resource);
+        $this->checkOwnership($resource);
         $updated = $this->service->markAsRead($resource, $request->boolean('is_read', true));
-        return response()->json($updated);
+        return $this->successResponse($updated);
     }
 
     public function bulkImport(BulkImportRequest $request): JsonResponse
@@ -105,7 +91,7 @@ class ResourceHubController extends Controller
             (int) Auth::id()
         );
 
-        return response()->json(['data' => $created], 201);
+        return $this->createdResponse(['data' => $created]);
     }
 
     public function suggestions(Request $request): JsonResponse
@@ -117,10 +103,10 @@ class ResourceHubController extends Controller
             $sessionId ? (int) $sessionId : null
         );
 
-        return response()->json($suggestions);
+        return $this->successResponse($suggestions);
     }
 
-    private function authorizeResource(KnowledgeResource $resource): void
+    private function checkOwnership(KnowledgeResource $resource): void
     {
         if ($resource->user_id !== Auth::id()) {
             abort(403);
@@ -129,7 +115,7 @@ class ResourceHubController extends Controller
 
     public function getDownloadUrl(KnowledgeResource $resource): JsonResponse
     {
-        $this->authorizeResource($resource);
+        $this->checkOwnership($resource);
         
         if (!$resource->file_path) {
             abort(404, 'No file associated with this resource');
@@ -142,14 +128,14 @@ class ResourceHubController extends Controller
             ['resource' => $resource->id]
         );
         
-        return response()->json(['url' => $url]);
+        return $this->successResponse(['url' => $url]);
     }
 
     public function download(KnowledgeResource $resource): mixed
     {
         // If the request is not signed, we enforce standard auth
         if (!request()->hasValidSignature()) {
-            $this->authorizeResource($resource);
+            $this->checkOwnership($resource);
         }
         
         if (!$resource->file_path || !Storage::disk('public')->exists($resource->file_path)) {

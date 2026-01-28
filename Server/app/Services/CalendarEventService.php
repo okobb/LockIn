@@ -25,7 +25,6 @@ final class CalendarEventService extends BaseService
     {
         $tags = $data['tags'] ?? [];
         
-        // Add Manual tag if not present
         if (!in_array('Manual', $tags)) {
             $tags[] = 'Manual';
         }

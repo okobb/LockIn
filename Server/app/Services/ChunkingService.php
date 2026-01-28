@@ -6,9 +6,7 @@ namespace App\Services;
 
 class ChunkingService
 {
-    private const TARGET_CHUNK_SIZE = 500; // Tokens
-    private const MIN_CHUNK_SIZE = 100; // Tokens
-    private const OVERLAP_SIZE = 50; // Tokens
+
 
     /**
      * Main entry point to chunk content.
@@ -56,7 +54,7 @@ class ChunkingService
 
         foreach ($chunks as $chunk) {
             // If adding this chunk keeps us under target + margin, merge it
-            if ($currentTokens + $chunk['token_count'] < self::TARGET_CHUNK_SIZE) {
+            if ($currentTokens + $chunk['token_count'] < CHUNKING_TARGET_SIZE) {
                 $currentChunk .= ($currentChunk ? "\n\n" : '') . $chunk['content'];
                 $currentTokens += $chunk['token_count'];
             } else {
@@ -88,7 +86,7 @@ class ChunkingService
         $final = [];
 
         foreach ($chunks as $chunk) {
-            if ($chunk['token_count'] <= self::TARGET_CHUNK_SIZE + 100) {
+            if ($chunk['token_count'] <= CHUNKING_TARGET_SIZE + 100) {
                 // Acceptable size
                 $final[] = [
                     'content' => $chunk['content'],
@@ -107,7 +105,7 @@ class ChunkingService
             foreach ($words as $word) {
                 $wordTokenCount = $this->countTokens($word . ' '); // Approximation
                 
-                if ($currentCount + $wordTokenCount > self::TARGET_CHUNK_SIZE) {
+                if ($currentCount + $wordTokenCount > CHUNKING_TARGET_SIZE) {
                     $text = implode(' ', $currentSegment);
                     $final[] = [
                         'content' => $text,

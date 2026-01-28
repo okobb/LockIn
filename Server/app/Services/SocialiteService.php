@@ -7,11 +7,19 @@ namespace App\Services;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use App\Models\User;
+use App\Services\AuthService;
+use App\Services\IntegrationService;
+use Exception;
 
 require_once __DIR__ . '/../consts.php';
 
 final class SocialiteService
 {
+    public function __construct(
+        private readonly AuthService $authService,
+        private readonly IntegrationService $integrationService
+    ) {}
 
     /**
      * Get the OAuth redirect URL for login (identity scopes only).
@@ -81,6 +89,119 @@ final class SocialiteService
     }
 
     /**
+     * Handle the full OAuth completion flow: users, integrations, and redirects.
+     */
+    public function handleOAuthComplete(string $provider, ?string $state): string
+    {
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+
+        if (!$this->isProviderSupported($provider)) {
+            return $frontendUrl . '/login?error=' . urlencode("Unsupported provider: {$provider}");
+        }
+
+        ['service' => $service, 'user_id' => $userId] = $this->parseState($state);
+
+        try {
+            $socialUser = $this->handleCallback($provider);
+
+            $scopes = $service 
+                ? $this->getServiceScopes($provider, $service)
+                : $this->getLoginScopes($provider);
+
+            if ($userId && $service) {
+                return $this->handleIntegrationConnect($userId, $provider, $socialUser, $scopes, $frontendUrl);
+            }
+
+            return $this->handleLoginOrRegister($provider, $socialUser, $scopes, $frontendUrl);
+
+        } catch (Exception $e) {
+            $redirectTarget = $service ? '/settings' : '/login';
+            return $frontendUrl . $redirectTarget . '?error=' . urlencode('OAuth validation failed: ' . $e->getMessage());
+        }
+    }
+
+    private function parseState(?string $state): array
+    {
+        if (!$state) {
+            return ['service' => null, 'user_id' => null];
+        }
+        $stateParts = [];
+        parse_str($state, $stateParts);
+        return [
+            'service' => $stateParts['service'] ?? null,
+            'user_id' => isset($stateParts['user_id']) ? (int) $stateParts['user_id'] : null,
+        ];
+    }
+
+    private function handleIntegrationConnect(int $userId, string $provider, SocialiteUser $socialUser, array $scopes, string $frontendUrl): string
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return "{$frontendUrl}/settings?error=" . urlencode('User not found');
+        }
+        
+        $this->integrationService->upsertFromOAuth(
+            user: $user,
+            provider: $provider,
+            providerId: (string) $socialUser->getId(),
+            accessToken: $socialUser->token,
+            refreshToken: $socialUser->refreshToken ?? null,
+            scopes: $scopes,
+            expiresAt: isset($socialUser->expiresIn)
+                ? now()->addSeconds($socialUser->expiresIn)
+                : null
+        );
+
+        return "{$frontendUrl}/settings?connected=true";
+    }
+
+    private function handleLoginOrRegister(string $provider, SocialiteUser $socialUser, array $scopes, string $frontendUrl): string
+    {
+        $authPayload = $this->authService->loginOrRegisterFromOAuth(
+            email: $socialUser->getEmail(),
+            name: $socialUser->getName() ?? $socialUser->getNickname() ?? 'User',
+            avatar: $socialUser->getAvatar()
+        );
+
+        $existingIntegration = $this->integrationService->getActiveIntegration(
+            $authPayload['user']->id,
+            $provider
+        );
+        
+        $shouldUpdateTokens = true;
+        if ($existingIntegration) {
+            $existingScopes = $existingIntegration->scopes ?? [];
+            if (count($existingScopes) > count($scopes)) {
+                $shouldUpdateTokens = false;
+            }
+        }
+
+        if ($shouldUpdateTokens) {
+            $this->integrationService->upsertFromOAuth(
+                user: $authPayload['user'],
+                provider: $provider,
+                providerId: (string) $socialUser->getId(),
+                accessToken: $socialUser->token,
+                refreshToken: $socialUser->refreshToken ?? null,
+                scopes: $scopes,
+                expiresAt: isset($socialUser->expiresIn)
+                    ? now()->addSeconds($socialUser->expiresIn)
+                    : null
+            );
+        }
+
+        $token = $authPayload['token'];
+        $userArray = [
+            'id' => $authPayload['user']->id,
+            'name' => $authPayload['user']->name,
+            'email' => $authPayload['user']->email,
+        ];
+        $userJson = urlencode(json_encode($userArray));
+
+        return "{$frontendUrl}/auth/callback?token={$token}&user={$userJson}";
+    }
+
+    /**
      * Get login scopes (identity only) for a provider.
      *
      * @return array<string>
@@ -103,13 +224,13 @@ final class SocialiteService
     public function getServiceScopes(string $provider, string $service): array
     {
         return match ([$provider, $service]) {
-            // Consolidated Google Workspace - includes both Gmail and Calendar
+            // Gmail and Calendar
             [PROVIDER_GOOGLE, 'workspace'] => [
                 'openid', 'email', 'profile',
                 'https://www.googleapis.com/auth/gmail.readonly',
                 'https://www.googleapis.com/auth/calendar.readonly',
             ],
-            // Legacy individual services (still supported for backwards compatibility)
+            // Legacy individual services
             [PROVIDER_GOOGLE, SERVICE_GMAIL] => [
                 'openid', 'email', 'profile',
                 'https://www.googleapis.com/auth/gmail.readonly',

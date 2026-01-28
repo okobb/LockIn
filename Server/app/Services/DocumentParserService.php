@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Exception;
 use Illuminate\Support\Facades\Storage;
 use Smalot\PdfParser\Parser;
 use ZipArchive;
@@ -63,7 +64,7 @@ class DocumentParserService
             $parser = new Parser();
             $pdf = $parser->parseFile($filePath);
             return trim($pdf->getText());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }

@@ -9,6 +9,7 @@ use App\Models\KnowledgeChunk;
 use App\Models\KnowledgeResource;
 use App\Models\Task;
 use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -421,5 +422,20 @@ class RAGService
             'content' => "Here are your tasks:\n\n{$taskList}",
             'sources' => [],
         ];
+    }
+    public function getResources(int $userId, array $filters = []): LengthAwarePaginator
+    {
+        $query = KnowledgeResource::query()->where('user_id', $userId)
+            ->orderBy('created_at', 'desc');
+
+        if (!empty($filters['search'])) {
+            $searchTerm = $filters['search'];
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'ilike', "%{$searchTerm}%")
+                  ->orWhere('summary', 'ilike', "%{$searchTerm}%");
+            });
+        }
+
+        return $query->paginate(20);
     }
 }

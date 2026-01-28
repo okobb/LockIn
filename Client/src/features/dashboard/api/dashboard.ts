@@ -14,7 +14,9 @@ export interface PriorityTask {
   tagColor: "red" | "yellow" | "blue" | "green" | "purple";
   reference?: string;
   reason: string;
-  timeAgo: string;
+  dueDate?: string;
+  scheduledStart?: string;
+  createdAt: string;
 }
 
 export interface UpcomingEvent {

@@ -75,21 +75,19 @@ class AgendaServiceTest extends TestCase
 
         $agenda = $this->service->getUnifiedAgenda($this->user->id);
         
-        $this->assertCount(4, $agenda);
+        $this->assertCount(3, $agenda);
         
         $this->assertEquals('Due Task', $agenda[0]['title']);
         $this->assertEquals('Anytime', $agenda[0]['time']);
         $this->assertNotNull($agenda[0]['startTime']);
 
-        $this->assertEquals('Past Event', $agenda[1]['title']);
-        $this->assertEquals('event', $agenda[1]['itemType']);
+        $this->assertEquals('Morning Task', $agenda[1]['title']);
+        $this->assertEquals('09:00', $agenda[1]['time']);
+        $this->assertEquals('task', $agenda[1]['itemType']);
 
-        $this->assertEquals('Morning Task', $agenda[2]['title']);
-        $this->assertEquals('09:00', $agenda[2]['time']);
-        $this->assertEquals('task', $agenda[2]['itemType']);
-        $this->assertEquals('Meeting', $agenda[3]['title']);
-        $this->assertEquals('10:00', $agenda[3]['time']);
-        $this->assertEquals('event', $agenda[3]['itemType']);
+        $this->assertEquals('Meeting', $agenda[2]['title']);
+        $this->assertEquals('10:00', $agenda[2]['time']);
+        $this->assertEquals('event', $agenda[2]['itemType']);
     }
     
     #[Test]

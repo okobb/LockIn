@@ -6,9 +6,11 @@ namespace App\Services;
 
 use App\Exceptions\ServiceException;
 use App\Models\Integration;
+use App\Models\FocusSession;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\Traits\UsesIntegrationTokens;
+use Exception;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
 
@@ -39,7 +41,7 @@ final class GitHubService
         foreach ($prs as $pr) {
             try {
                 $createdTasks[] = $this->processPr($pr, $userId, $integration, $user, $taskService);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error("GitHub Sync: Failed to process PR #{$pr['number']}: " . $e->getMessage());
                 continue;
             }
@@ -350,5 +352,71 @@ final class GitHubService
             'additions' => (int) ($item['additions'] ?? $item['added'] ?? 0),
             'deletions' => (int) ($item['deletions'] ?? $item['removed'] ?? $item['deleted'] ?? 0),
         ], $items));
+    }
+    /**
+     * Get active work for a task: either specific PR changes or general active repo.
+     */
+    public function getActiveWork(Task $task, int $userId): ?array
+    {
+        $repo = $task->source_metadata['repo'] ?? $task->source_metadata['source_metadata']['repo'] ?? null;
+        
+        if (!$repo) {
+            return null;
+        }
+
+        try {
+            $changes = $this->getUncommittedChanges($repo, $userId);
+            
+            $isEmpty = empty($changes) || (isset($changes['status']) && $changes['status'] === 'empty');
+            
+            if ($isEmpty && $task->source_type === 'github_pr') {
+                return [
+                    'branch' => $task->source_metadata['branch'] ?? $task->source_metadata['source_metadata']['branch'] ?? 'unknown',
+                    'files_changed' => $task->source_metadata['files'] ?? $task->source_metadata['source_metadata']['files'] ?? [],
+                    'additions' => $task->source_metadata['additions'] ?? $task->source_metadata['source_metadata']['additions'] ?? 0,
+                    'deletions' => $task->source_metadata['deletions'] ?? $task->source_metadata['source_metadata']['deletions'] ?? 0,
+                    'repo' => $repo
+                ];
+            }
+            
+            if ($isEmpty) {
+                return null;
+            }
+
+            return [
+                'branch' => $task->source_metadata['branch'] ?? 'unknown',
+                'files_changed' => array_column($changes, 'file'),
+                'additions' => array_sum(array_column($changes, 'additions')),
+                'deletions' => array_sum(array_column($changes, 'deletions')),
+                'repo' => $repo
+            ];
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get Git data for a session, checking snapshot first then live GitHub data.
+     */
+    public function getGitDataForSession(FocusSession $session): ?array
+    {
+        if (!$session->relationLoaded('contextSnapshot')) {
+            $session->load('contextSnapshot');
+        }
+
+        $snapshotData = $this->contextSnapshotService->getGitSnapshotForSession($session);
+
+        if ($snapshotData) {
+            return $snapshotData;
+        }
+
+        if ($session->task_id) {
+            $task = Task::withTrashed()->find($session->task_id);
+            if ($task) {
+                return $this->getActiveWork($task, $session->user_id);
+            }
+        }
+
+        return null;
     }
 }

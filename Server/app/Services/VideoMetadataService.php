@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use DateInterval;
+use Exception;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -38,7 +39,7 @@ class VideoMetadataService
 
         return Cache::remember("youtube_details_{$videoId}", now()->addDays(30), function () use ($videoId, $apiKey) {
             try {
-                /** @var \Illuminate\Http\Client\Response $response */
+                /** @var Response $response */
                 $response = Http::get('https://www.googleapis.com/youtube/v3/videos', [
                     'id' => $videoId,
                     'part' => 'snippet,contentDetails',
@@ -65,7 +66,7 @@ class VideoMetadataService
                         ];
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return null;
             }
 
@@ -93,7 +94,7 @@ class VideoMetadataService
                     $seconds = $response->json('duration');
                     return (int) ceil($seconds / 60);
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return null;
             }
             return null;
@@ -160,7 +161,7 @@ class VideoMetadataService
 
                 return implode(' ', $text);
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return null;
             }
         });
@@ -173,7 +174,7 @@ class VideoMetadataService
             $minutes = ($interval->h * 60) + $interval->i;
             if ($interval->s > 30) $minutes++; // Round up seconds
             return $minutes ?: 1; // Minimum 1 min
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return 0;
         }
     }

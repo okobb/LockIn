@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useDebounce } from "../../../../shared/hooks/useDebounce";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Zap, Command, Plus } from "lucide-react";
 import api from "../../../../shared/lib/axios";
@@ -12,6 +13,7 @@ interface TaskSuggestion {
 
 export default function MissionBar() {
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 300);
   const [suggestions, setSuggestions] = useState<TaskSuggestion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -21,7 +23,7 @@ export default function MissionBar() {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (query.length < 2) {
+      if (debouncedQuery.length < 2) {
         setSuggestions([]);
         return;
       }
@@ -29,7 +31,7 @@ export default function MissionBar() {
       try {
         setError(null);
         const response = await api.get("/tasks/suggestions/list", {
-          params: { query },
+          params: { query: debouncedQuery },
         });
         if (response.data.success) {
           setSuggestions(response.data.data);
@@ -41,9 +43,8 @@ export default function MissionBar() {
       }
     };
 
-    const timer = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(timer);
-  }, [query]);
+    fetchSuggestions();
+  }, [debouncedQuery]);
 
   // Handle clicking outside to close suggestions
   useEffect(() => {

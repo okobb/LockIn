@@ -11,6 +11,7 @@ import { ResourceDetailModal } from "../../components/ResourceDetailModal/Resour
 import { type Resource } from "../../types";
 import { useSessionContext } from "../../../focus/context/SessionContext";
 import { useModal } from "../../../../shared/context/ModalContext";
+import { useDebounce } from "../../../../shared/hooks/useDebounce";
 
 export const ResourceHub: React.FC = () => {
   const navigate = useNavigate();
@@ -31,15 +32,7 @@ export const ResourceHub: React.FC = () => {
 
   // Debounced search
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  // Debounce search term
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+  const debouncedSearch = useDebounce(searchTerm, 300);
 
   const { data, isLoading } = useResources({
     ...filters,

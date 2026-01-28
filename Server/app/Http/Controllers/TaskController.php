@@ -95,7 +95,7 @@ final class TaskController extends BaseController
         return $this->successResponse($suggestions->map(fn($task) => [
             'id' => $task->id,
             'title' => $task->title,
-            'number' => $task->id // Using ID as number for now
+            'number' => $task->id 
         ]));
     }
 }

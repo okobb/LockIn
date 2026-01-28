@@ -73,7 +73,6 @@ final class GoogleCalendarService
 
         $syncedEventsCount = 0;
     
-        // Get all dismissed external IDs for this user
         $dismissedExternalIds = CalendarEvent::query()
             ->where('user_id', $userId)
             ->whereBoolean('is_dismissed', true)

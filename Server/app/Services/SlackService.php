@@ -8,6 +8,7 @@ use App\Exceptions\ServiceException;
 use App\Models\IncomingMessage;
 use App\Models\Integration;
 use App\Services\Traits\UsesIntegrationTokens;
+use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -52,7 +53,7 @@ final class SlackService
                 try {
                     $messages = $this->fetchRecentMessages($userId, $ch['id'], $limit);
                     $stored = $stored->merge($this->storeMessages($userId, $messages));
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::warning("Failed to sync Slack channel {$ch['id']}: " . $e->getMessage());
                 }
             }
@@ -133,7 +134,6 @@ final class SlackService
         $integration = $this->getSlackIntegration($userId);
         $integration = $this->integrationService->refreshTokenIfExpired($integration);
 
-        // If no channel specified, get the first available channel
         if ($channel === null) {
             $channels = $this->listChannels($integration);
             $channel = $channels[0]['id'] ?? null;
@@ -162,13 +162,11 @@ final class SlackService
             );
         }
 
-        // Filter out system messages (joins, leaves, etc.)
         $messages = array_filter(
             $data['messages'] ?? [],
             fn ($msg) => !isset($msg['subtype']) || $msg['subtype'] === 'bot_message'
         );
 
-        // Resolve user IDs to names
         $userCache = [];
         $result = [];
         foreach ($messages as $msg) {
@@ -178,7 +176,6 @@ final class SlackService
             }
             $parsed = $this->parseMessage($msg, $channel);
             $parsed['user_name'] = $userCache[$userId] ?? $parsed['user'];
-            // Also resolve @mentions in text
             $parsed['text'] = $this->resolveUserMentions($integration, $parsed['text'], $userCache);
             $result[] = $parsed;
         }
@@ -206,8 +203,7 @@ final class SlackService
                     ?: $data['user']['name']
                     ?? $userId;
             }
-        } catch (\Exception $e) {
-            // Fall back to user ID if lookup fails
+        } catch (Exception $e) {
         }
 
         return $userId;

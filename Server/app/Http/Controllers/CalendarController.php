@@ -14,7 +14,9 @@ use App\Services\GoogleCalendarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 final class CalendarController extends BaseController
 {
@@ -99,9 +101,8 @@ final class CalendarController extends BaseController
         }
 
         // If it's an external event, don't delete it, just mark as dismissed
-        // If it's an external event, don't delete it, just mark as dismissed
         if ($event->external_id) {
-            $event->update(['is_dismissed' => \Illuminate\Support\Facades\DB::raw('true')]);
+            $event->update(['is_dismissed' => DB::raw('true')]);
             return $this->successResponse(null, 'Event dismissed successfully');
         }
 
@@ -127,7 +128,7 @@ final class CalendarController extends BaseController
             );
         } catch (ServiceException $e) {
             return $this->handleServiceException($e);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Calendar Sync Failed: ' . $e->getMessage());
             return $this->errorResponse('Failed to sync calendar. Please try again later.', 500);
         }

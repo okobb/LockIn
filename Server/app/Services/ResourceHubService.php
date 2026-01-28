@@ -30,6 +30,28 @@ class ResourceHubService
         private AIService $aiService
     ) {}
 
+    /**
+     * Create a resource from file or URL, checking for duplicates.
+     * Returns ['resource' => KnowledgeResource, 'code' => int]
+     */
+    public function createOrFindResource(int $userId, array $validated, ?UploadedFile $file): array
+    {
+        if ($file) {
+            $resource = $this->createFromFile($file, $userId, $validated);
+            return ['resource' => $resource, 'code' => 201];
+        }
+
+        $url = $validated['url'] ?? '';
+        $existing = $this->findRecentResourceByUrl($userId, $url);
+
+        if ($existing) {
+            return ['resource' => $existing, 'code' => 200];
+        }
+
+        $resource = $this->createFromUrl($url, $userId, $validated);
+        return ['resource' => $resource, 'code' => 201];
+    }
+
     public function createFromUrl(string $url, int $userId, array $overrides = []): KnowledgeResource
     {
         // Create Resource immediately with minimal data
@@ -61,7 +83,6 @@ class ResourceHubService
             'type' => $type,
         ], $overrides));
 
-        // Chain Jobs
         $jobs = [
             new FetchResourceMetadata($resource),
         ];
@@ -70,7 +91,6 @@ class ResourceHubService
             $jobs[] = new GenerateResourceTitle($resource);
         }
 
-        // Generate AI metadata (tags, difficulty, summary)
         $jobs[] = new GenerateResourceMetadata($resource);
         
         $jobs[] = new ProcessResourceEmbedding($resource);
@@ -115,10 +135,8 @@ class ResourceHubService
             GenerateResourceTitle::dispatch($resource);
         }
 
-        // Generate Metadata (Tags, Difficulty, Summary)
         GenerateResourceMetadata::dispatch($resource);
 
-        // Index for RAG
         if ($resource->summary || $resource->file_path) {
             ProcessResourceEmbedding::dispatch($resource);
         }
@@ -223,5 +241,12 @@ class ResourceHubService
         return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($query) {
             return $query->paginate(20);
         });
+    }
+    public function findRecentResourceByUrl(int $userId, string $url): ?KnowledgeResource
+    {
+        return KnowledgeResource::where('user_id', $userId)
+            ->where('url', $url)
+            ->where('created_at', '>=', now()->subMinute())
+            ->first();
     }
 }

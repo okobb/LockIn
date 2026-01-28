@@ -12,6 +12,7 @@ export interface GitState {
 
 export interface SaveContextRequest {
   focus_session_id: number;
+  should_complete?: boolean;
   note?: string;
   browser_state?: BrowserTab[];
   git_state?: GitState;

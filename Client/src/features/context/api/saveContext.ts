@@ -2,7 +2,7 @@ import api from "../../../shared/lib/axios";
 import type { SaveContextRequest, SaveContextResponse } from "../types/index";
 
 export const saveContextSnapshot = async (
-  request: SaveContextRequest
+  request: SaveContextRequest,
 ): Promise<SaveContextResponse> => {
   const formData = new FormData();
   formData.append("focus_session_id", String(request.focus_session_id));
@@ -29,6 +29,10 @@ export const saveContextSnapshot = async (
     });
   }
 
+  if (request.should_complete) {
+    formData.append("should_complete", "1");
+  }
+
   const response = await api.post<SaveContextResponse>(
     "/context/save",
     formData,
@@ -36,7 +40,7 @@ export const saveContextSnapshot = async (
       headers: {
         "Content-Type": "multipart/form-data",
       },
-    }
+    },
   );
 
   return response.data;

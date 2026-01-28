@@ -10,6 +10,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class StatsService
 {
@@ -27,18 +28,15 @@ class StatsService
         return Cache::remember("stats:weekly:{$userId}", now()->addMinutes(10), function () use ($userId) {
             ['start' => $startOfWeek, 'end' => $endOfWeek] = $this->getCurrentWeekRange();
 
-        // Fetch daily stats for this week
         $dailyStats = DailyStat::query()->where('user_id', $userId)
             ->whereBetween('date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
             ->get();
 
-        // Calculate aggregates
         $totalFlowTime = $dailyStats->sum('flow_time_min');
         $totalDeepWorkBlocks = $dailyStats->sum('deep_work_blocks');
         $totalTasksCompleted = $dailyStats->sum('tasks_completed');
         $totalContextsSaved = $dailyStats->sum('contexts_saved');
 
-        // Get previous week for comparison
         $startOfLastWeek = now()->subWeek()->startOfWeek();
         $endOfLastWeek = now()->subWeek()->endOfWeek();
         
@@ -46,17 +44,15 @@ class StatsService
             ->whereBetween('date', [$startOfLastWeek->toDateString(), $endOfLastWeek->toDateString()])
             ->sum('flow_time_min');
 
-        // Calculate flow time change percentage
         $flowTimeChange = 0;
         if ($lastWeekFlowTime > 0) {
             $flowTimeChange = round((($totalFlowTime - $lastWeekFlowTime) / $lastWeekFlowTime) * 100);
         } elseif ($totalFlowTime > 0) {
-            $flowTimeChange = 100; // 100% increase if last week was 0
+            $flowTimeChange = 100;
         }
 
         $currentStreak = $this->getCurrentStreak($userId);
 
-        // Get weekly goal
         $user = User::query()->find($userId);
         $weeklyGoalMin = $user->weekly_goal_min;
 
@@ -194,8 +190,7 @@ class StatsService
     public function getProductivityInsights(int $userId): array
     {
         
-        // Find best day of week
-        $dowExpression = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite'
+        $dowExpression = DB::connection()->getDriverName() === 'sqlite'
             ? "strftime('%w', date)"
             : "EXTRACT(DOW FROM date)";
 

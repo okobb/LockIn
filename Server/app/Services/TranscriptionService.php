@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Exception;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -44,7 +45,7 @@ class TranscriptionService
 
             Log::error('OpenAI Transcription API Error: ' . $response->body());
             return null;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Transcription Exception: ' . $e->getMessage());
             return null;
         }

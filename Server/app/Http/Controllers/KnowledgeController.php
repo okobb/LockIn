@@ -20,18 +20,12 @@ class KnowledgeController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
-        $query = KnowledgeResource::query()->where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc');
+        $resources = $this->ragService->getResources(
+            (int) Auth::id(),
+            $request->only(['search'])
+        );
 
-        if ($request->has('search')) {
-            $searchTerm = $request->input('search');
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('title', 'ilike', "%{$searchTerm}%")
-                  ->orWhere('summary', 'ilike', "%{$searchTerm}%");
-            });
-        }
-
-        return $this->successResponse($query->paginate(20));
+        return $this->successResponse($resources);
     }
 
     public function store(StoreKnowledgeRequest $request): JsonResponse

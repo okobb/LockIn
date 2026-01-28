@@ -372,4 +372,44 @@ final class ContextSnapshotService extends BaseService
         
         return $snapshot;
     }
+    /**
+     * Get Git snapshot info for a session, including fallback to task snapshot.
+     */
+    public function getGitSnapshotForSession(FocusSession $session): ?array
+    {
+        if ($session->contextSnapshot) {
+            $snapshot = $session->contextSnapshot;
+            $hasGitData = !empty($snapshot->repository_source) || !empty($snapshot->git_branch);
+            
+            if ($hasGitData) {
+                 return [
+                    'branch' => $snapshot->git_branch ?? 'unknown',
+                    'files_changed' => $snapshot->git_files_changed ?? [],
+                    'additions' => $snapshot->git_additions ?? 0,
+                    'deletions' => $snapshot->git_deletions ?? 0,
+                    'repo' => $snapshot->repository_source ?? 'Unknown',
+                    'source' => 'snapshot' 
+                ];
+            }
+        } 
+        
+        if ($session->task_id) {
+             $task = Task::withTrashed()->find($session->task_id, ['*']);
+             if ($task && $task->context_snapshot_id) {
+                  $snapshot = ContextSnapshot::find($task->context_snapshot_id, ['*']);
+                  if ($snapshot) {
+                        return [
+                            'branch' => $snapshot->git_branch ?? 'unknown',
+                            'files_changed' => $snapshot->git_files_changed ?? [],
+                            'additions' => $snapshot->git_additions ?? 0,
+                            'deletions' => $snapshot->git_deletions ?? 0,
+                            'repo' => $snapshot->repository_source ?? 'Unknown',
+                            'source' => 'task_snapshot_fallback' 
+                        ];
+                  }
+             }
+        }
+
+        return null;
+    }
 }

@@ -207,14 +207,11 @@ final class GmailService
             return $this->decodeBody($payload['body']['data']);
         }
 
-        // Multipart message - look for text/plain part
         if (isset($payload['parts'])) {
             foreach ($payload['parts'] as $part) {
-                // Prefer text/plain
                 if (($part['mimeType'] ?? '') === 'text/plain' && isset($part['body']['data'])) {
                     return $this->decodeBody($part['body']['data']);
                 }
-                // Recursively check nested parts
                 if (isset($part['parts'])) {
                     $nestedBody = $this->extractBody($part);
                     if ($nestedBody) {
