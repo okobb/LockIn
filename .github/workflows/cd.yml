@@ -34,7 +34,7 @@ jobs:
 
             echo "${DOCKERHUB_TOKEN}" | sudo docker login -u ${DOCKERHUB_USERNAME} --password-stdin
 
-            sudo docker system prune -f
+            sudo docker system prune -a -f
 
             sudo docker compose pull
             sudo docker compose up -d --remove-orphans
