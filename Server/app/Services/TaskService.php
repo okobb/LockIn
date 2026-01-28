@@ -98,7 +98,6 @@ final class TaskService extends BaseService
         if (isset($data['status']) && $data['status'] === 'done' && $task->status !== 'done') {
             $data['completed_at'] = now();
             
-            // Increment daily stats
             $stat = DailyStat::query()->firstOrCreate(
                 ['user_id' => $task->user_id, 'date' => now()->toDateString()]
             );

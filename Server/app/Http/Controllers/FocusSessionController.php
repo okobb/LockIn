@@ -12,6 +12,7 @@ use Illuminate\Validation\Rule;
 use App\Http\Requests\FocusSession\StoreFocusSessionRequest;
 use App\Services\ContextSnapshotService;
 use App\Services\FocusSessionService;
+use Exception;
 
 final class FocusSessionController extends BaseController
 {
@@ -166,7 +167,7 @@ final class FocusSessionController extends BaseController
         try {
             $snapshot = $this->contextSnapshotService->toggleChecklistItem($snapshot, $index);
             return $this->successResponse(['snapshot' => $snapshot], 'Checklist item toggled');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), 400);
         }
     }

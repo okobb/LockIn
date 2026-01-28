@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\ContextSnapshot;
 use App\Models\FocusSession;
 use App\Models\Task;
 use App\Services\GitHubService;
@@ -40,7 +41,7 @@ final class GitController extends BaseController
              if ($session->task_id) {
                  $task = Task::withTrashed()->find($session->task_id, ['*']);
                  if ($task && $task->context_snapshot_id) {
-                      $snapshot = \App\Models\ContextSnapshot::find($task->context_snapshot_id, ['*']);
+                      $snapshot = ContextSnapshot::find($task->context_snapshot_id, ['*']);
                       if ($snapshot) {
                             return $this->successResponse([
                                 'branch' => $snapshot->git_branch ?? 'unknown',

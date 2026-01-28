@@ -45,7 +45,7 @@ final class SocialAuthController extends BaseController
             return redirect($frontendUrl . '/login?error=' . urlencode("Unsupported provider: {$provider}"));
         }
 
-        // Check for service and user_id in state (indicating a "Connect Integration" intent)
+        // Check for service and user_id in state
         $service = null;
         $userId = null;
         if ($request->has('state')) {

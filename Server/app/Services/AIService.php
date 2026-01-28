@@ -8,7 +8,10 @@ use OpenAI;
 use OpenAI\Contracts\ClientContract;
 
 use App\AI\PromptService;
+use Exception;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AIService
 {
@@ -52,8 +55,8 @@ class AIService
 
         try {
             $response = $this->client->chat()->create($payload);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OpenAI API Error', [
+        } catch (Throwable $e) {
+            Log::error('OpenAI API Error', [
                 'error' => $e->getMessage(),
                 'payload' => $payload
             ]);
@@ -61,11 +64,11 @@ class AIService
         }
 
         if (empty($response->choices)) {
-             \Illuminate\Support\Facades\Log::error('OpenAI Invalid Response', [
+             Log::error('OpenAI Invalid Response', [
                 'response' => json_encode($response),
                 'payload' => $payload
             ]);
-            throw new \Exception('OpenAI returned no choices in response.');
+            throw new Exception('OpenAI returned no choices in response.');
         }
 
         $message = $response->choices[0]->message;
