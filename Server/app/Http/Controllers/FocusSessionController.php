@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\FocusSession\AddChecklistItemRequest;
+use App\Http\Requests\FocusSession\AddResourceToSessionRequest;
 use App\Models\FocusSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -114,15 +116,9 @@ final class FocusSessionController extends BaseController
 
         return $this->successResponse(['session' => $session], 'Focus session retrieved');
     }
-    public function addToChecklist(Request $request, FocusSession $session): JsonResponse
+    public function addToChecklist(AddChecklistItemRequest $request, FocusSession $session): JsonResponse
     {
-        if ($session->user_id !== $request->user()->id) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'text' => 'required|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $snapshot = $session->contextSnapshot;
         if (!$snapshot) {
@@ -172,16 +168,9 @@ final class FocusSessionController extends BaseController
         }
     }
 
-    public function addResource(Request $request, FocusSession $session): JsonResponse
+    public function addResource(AddResourceToSessionRequest $request, FocusSession $session): JsonResponse
     {
-        if ($session->user_id !== $request->user()->id) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'url' => 'required|url',
-        ]);
+        $validated = $request->validated();
 
         $snapshot = $session->contextSnapshot;
         if (!$snapshot) {

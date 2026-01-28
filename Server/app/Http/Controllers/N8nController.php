@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Exceptions\ServiceException;
+use App\Http\Requests\N8n\HandleProcessedMessageRequest;
 use App\Models\IncomingMessage;
 use App\Models\Integration;
 use App\Services\GmailService;
@@ -14,6 +15,7 @@ use App\Services\IncomingMessageService;
 use App\Services\IntegrationService;
 use App\Services\SlackService;
 use App\Services\TaskService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -38,20 +40,7 @@ final class N8nController extends BaseController
      */
     public function activeIntegrations(): JsonResponse
     {
-        $integrations = Integration::query()
-            ->whereBoolean('is_active', true)
-            ->select(['user_id', 'provider', 'provider_id', 'scopes'])
-            ->get()
-            ->groupBy('user_id')
-            ->map(fn ($userIntegrations) => [
-                'user_id' => $userIntegrations->first()->user_id,
-                'integrations' => $userIntegrations->map(fn ($i) => [
-                    'provider' => $i->provider,
-                    'provider_id' => $i->provider_id,
-                    'scopes' => $i->scopes,
-                ])->values(),
-            ])
-            ->values();
+        $integrations = $this->integrationService->getAllActiveGroupedByUser();
 
         return $this->successResponse($integrations);
     }
@@ -61,7 +50,7 @@ final class N8nController extends BaseController
      */
     public function syncCalendar(int $userId): JsonResponse
     {
-        set_time_limit(300); // Increase timeout to 5 minutes
+        set_time_limit(300);
         try {
             $result = $this->googleCalendarService->syncEventsForUser($userId);
 
@@ -150,20 +139,7 @@ final class N8nController extends BaseController
      */
     public function unprocessedMessages(): JsonResponse
     {
-        $messages = IncomingMessage::query()
-            ->where('status', '=', 'pending')
-            ->select(['id', 'user_id', 'provider', 'external_id', 'content_raw', 'sender_info', 'channel_info', 'created_at'])
-            ->get()
-            ->map(fn ($m) => [
-                'message_id' => $m->id,
-                'user_id' => $m->user_id,
-                'provider' => $m->provider,
-                'external_id' => $m->external_id,
-                'content' => $m->content_raw,
-                'sender' => $m->sender_info,
-                'channel' => $m->channel_info,
-                'received_at' => $m->created_at?->toIso8601String(),
-            ]);
+        $messages = $this->incomingMessageService->getPendingMessagesForAI();
 
         return $this->successResponse($messages);
     }
@@ -171,73 +147,22 @@ final class N8nController extends BaseController
     /**
      * Handle AI-processed message: create task and mark message as processed.
      */
-    public function handleProcessedMessage(Request $request): JsonResponse
+    public function handleProcessedMessage(HandleProcessedMessageRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'message_id' => 'required|integer|exists:incoming_messages,id',
-            'action' => 'nullable|string|in:create_task,ignore',
-            'title' => 'required|string|max:255',
-            'priority' => 'nullable|string|in:low,normal,medium,high,urgent,critical',
-            'description' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'estimated_minutes' => 'nullable|integer',
-            'reasoning' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         try {
-            $message = IncomingMessage::with('user')->findOrFail($validated['message_id']);
 
-            // Check if already processed
-            if ($message->status !== 'pending') {
-                return $this->errorResponse(
-                    "Message {$validated['message_id']} has already been processed (status: {$message->status})",
-                    400
-                );
-            }
-
-            if (($validated['action'] ?? '') === 'ignore') {
-            $this->incomingMessageService->markAsSkipped(
-                $message,
-                $validated['reasoning'] ?? 'AI suggested ignoring this message.'
+            $result = $this->incomingMessageService->processMessage(
+                $validated['message_id'],
+                $validated,
+                $this->taskService
             );
 
-            return $this->successResponse([
-                'status' => 'skipped',
-                'message' => 'Message skipped (no task created)'
-            ]);
-        }
-
-            // Ensure message has a user
-            if (!$message->user) {
-                return $this->errorResponse(
-                    "Message {$validated['message_id']} has no associated user",
-                    400
-                );
-            }
-
-            $title = $validated['title'] ?? 'Untitled Task';
-            // Create task from AI output
-            $task = $this->taskService->createFromWebhookPayload([
-                'title' => $title,
-                'priority' => $validated['priority'] ?? 'normal',
-                'description' => $validated['description'] ?? '',
-                'source_type' => $message->provider,
-                'source_link' => $message->external_id,
-                'due_date' => $validated['due_date'] ?? null,
-                'estimated_minutes' => $validated['estimated_minutes'] ?? null,
-                'ai_reasoning' => $validated['reasoning'] ?? null,
-            ], $message->user);
-
-            // Mark message as processed
-            $this->incomingMessageService->markAsProcessed($message, $task->id);
-
-            return $this->successResponse([
-                'message_id' => $message->id,
-                'task_id' => $task->id,
-                'task_title' => $task->title,
-                'status' => 'processed',
-            ]);
-        } catch (\Exception $e) {
+            return $this->successResponse($result);
+        } catch (ServiceException $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode());
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to process message: ' . $e->getMessage(), 500);
         }
     }

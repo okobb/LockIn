@@ -9,7 +9,9 @@ use App\Models\Integration;
 use App\Models\User;
 use App\Services\IntegrationService;
 use App\Services\SocialiteService;
+use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -55,7 +57,7 @@ final class IntegrationController extends BaseController
     /**
      * Handle the OAuth callback for connecting a service.
      */
-    public function callback(Request $request, string $provider): \Illuminate\Http\RedirectResponse
+    public function callback(Request $request, string $provider): RedirectResponse
     {
         $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
 
@@ -102,7 +104,7 @@ final class IntegrationController extends BaseController
             );
 
             return redirect("{$frontendUrl}/settings?connected=true");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return redirect("{$frontendUrl}/settings?error=" . urlencode('Failed to connect service: ' . $e->getMessage()));
         }
     }
