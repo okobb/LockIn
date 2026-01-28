@@ -59,7 +59,7 @@ final class DashboardService
         return Task::query()
             ->where('user_id', '=', $userId, 'and')
             ->whereIn('status', ['open', 'in_progress'])
-            ->where('priority', '<=', 2)
+            ->where('priority', '<=', PRIORITY_HIGH)
             ->orderBy('priority', 'asc')
             ->orderBy('created_at', 'desc')
             ->with('incomingMessages')
@@ -143,44 +143,22 @@ final class DashboardService
 
     private function mapSourceToTag(?string $source): string
     {
-        return match ($source) {
-            'gmail' => 'Email',
-            'slack' => 'Slack',
-            'github' => 'GitHub',
-            'n8n' => 'Automation',
-            default => 'Task',
-        };
+        return DASHBOARD_SOURCE_TAGS[$source] ?? 'Task';
     }
 
     private function mapPriorityToColor(int $priority): string
     {
-        return match ($priority) {
-            1 => 'red',
-            2 => 'yellow',
-            3 => 'blue',
-            4 => 'green',
-            default => 'blue',
-        };
+        return DASHBOARD_PRIORITY_COLORS[$priority] ?? 'blue';
     }
 
     private function mapEventType(?string $type): string
     {
-        return match ($type) {
-            'deep_work' => 'focus',
-            'meeting' => 'meeting',
-            'external' => 'external',
-            default => 'focus',
-        };
+        return DASHBOARD_EVENT_TYPES[$type] ?? 'focus';
     }
 
     private function mapProviderToSource(string $provider): string
     {
-        return match ($provider) {
-            'gmail' => 'email',
-            'slack' => 'slack',
-            'github' => 'pr',
-            default => 'email',
-        };
+        return DASHBOARD_PROVIDER_SOURCES[$provider] ?? 'email';
     }
 
     /**

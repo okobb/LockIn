@@ -40,3 +40,35 @@ const PRIORITY_HIGH = 2;
 const PRIORITY_NORMAL = 3;
 const PRIORITY_LOW = 4;
 
+// Dashboard Mappings
+const DASHBOARD_SOURCE_TAGS = [
+    'gmail' => 'Email',
+    'slack' => 'Slack',
+    'github' => 'GitHub',
+    'n8n' => 'Automation',
+];
+
+const DASHBOARD_PRIORITY_COLORS = [
+    PRIORITY_CRITICAL => 'red',
+    PRIORITY_HIGH => 'yellow',
+    PRIORITY_NORMAL => 'blue',
+    PRIORITY_LOW => 'green',
+];
+
+const DASHBOARD_EVENT_TYPES = [
+    'deep_work' => 'focus',
+    'meeting' => 'meeting',
+    'external' => 'external',
+];
+
+const DASHBOARD_PROVIDER_SOURCES = [
+    'gmail' => 'email',
+    'slack' => 'slack',
+    'github' => 'pr',
+];
+
+// Chunking Configuration
+const CHUNKING_TARGET_SIZE = 500; // Tokens
+const CHUNKING_MIN_SIZE = 100; // Tokens
+const CHUNKING_OVERLAP_SIZE = 50; // Tokens
+
