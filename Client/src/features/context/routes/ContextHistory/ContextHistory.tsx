@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   History,
@@ -21,12 +21,9 @@ import { Input } from "../../../../shared/components/UI/Input";
 import { cn } from "../../../../shared/lib/utils";
 import { useModal } from "../../../../shared/context/ModalContext";
 import { QualityScoreBadge } from "../../../../shared/components/QualityScoreBadge/QualityScoreBadge";
-import {
-  getContextHistory,
-  deleteSession,
-  type FocusSessionHistory,
-  type ContextHistoryStats,
-} from "../../api/contextHistoryApi";
+import { type FocusSessionHistory } from "../../api/contextHistoryApi";
+import { useContextHistoryQuery } from "../../hooks/useContextHistoryQuery";
+import { useDebounce } from "../../../../shared/hooks/useDebounce";
 import { ContextHistorySkeleton } from "../../components/ContextHistorySkeleton";
 
 type FilterStatus = "all" | "completed" | "abandoned";
@@ -36,43 +33,14 @@ export default function ContextHistory() {
   const { open, confirm } = useModal();
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [sessions, setSessions] = useState<FocusSessionHistory[]>([]);
-  const [stats, setStats] = useState<ContextHistoryStats>({
-    total_contexts: 0,
-    this_week: 0,
-    time_saved_minutes: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearchQuery = useDebounce(searchInput, 300);
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
 
-  // Fetch data
-  useEffect(() => {
-    const fetchHistory = async () => {
-      setIsLoading(true);
-      try {
-        const response = await getContextHistory({
-          search: searchQuery || undefined,
-          status: activeFilter,
-        });
-        setSessions(response.data.sessions.data);
-        setStats(response.data.stats);
-      } catch (error) {
-        console.error("Failed to fetch context history", error);
-        open({
-          type: "error",
-          title: "Error",
-          message: "Failed to load context history. Please try again.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // Debounce search
-    const timer = setTimeout(fetchHistory, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, activeFilter, open]);
+  const { sessions, stats, isLoading, removeSession } = useContextHistoryQuery({
+    search: debouncedSearchQuery || undefined,
+    status: activeFilter,
+  });
 
   // Group sessions by date
   const groupedSessions = useMemo(() => {
@@ -156,12 +124,7 @@ export default function ContextHistory() {
 
     if (confirmed) {
       try {
-        await deleteSession(session.id);
-        setSessions((prev) => prev.filter((s) => s.id !== session.id));
-        setStats((prev) => ({
-          ...prev,
-          total_contexts: prev.total_contexts - 1,
-        }));
+        await removeSession(session.id);
       } catch (error) {
         open({
           type: "error",
@@ -244,8 +207,8 @@ export default function ContextHistory() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search contexts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-10 bg-background/50 border-muted-foreground/20"
                 />
               </div>
