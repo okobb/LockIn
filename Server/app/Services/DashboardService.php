@@ -72,7 +72,9 @@ final class DashboardService
                 'tagColor' => $this->mapPriorityToColor($task->priority),
                 'reference' => $this->extractSender($task),
                 'reason' => $task->ai_reasoning ?? 'High priority task',
-                'timeAgo' => $task->created_at->diffForHumans(),
+                'dueDate' => $task->due_date?->toIso8601String(),
+                'scheduledStart' => $task->scheduled_start?->toIso8601String(),
+                'createdAt' => $task->created_at->toIso8601String(),
             ]);
     }
 

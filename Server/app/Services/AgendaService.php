@@ -19,11 +19,12 @@ final class AgendaService
      */
     public function getUnifiedAgenda(int $userId, int $limit = 5): Collection
     {
-        return Cache::remember("dashboard:agenda:{$userId}", now()->addMinutes(1), function () use ($userId, $limit) {
+        return Cache::remember("dashboard:agenda:{$userId}", now()->addSeconds(30), function () use ($userId, $limit) {
             
             $events = CalendarEvent::query()
                 ->where('user_id', '=', $userId, 'and')
                 ->whereDate('start_time', Carbon::today())
+                ->where('end_time', '>=', now())
                 ->orderBy('start_time')
                 ->get();
 
@@ -37,6 +38,10 @@ final class AgendaService
                 ->where(function($q) {
                     $q->whereDate('scheduled_start', Carbon::today())
                       ->orWhereDate('due_date', Carbon::today());
+                })
+                ->where(function($q) {
+                    $q->whereNull('scheduled_start')
+                      ->orWhere('scheduled_start', '>=', now());
                 })
                 ->whereNull('completed_at')
                 ->whereNotIn('id', $eventTaskIds)

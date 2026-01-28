@@ -225,10 +225,10 @@ export default function NewDashboard() {
 
                           <div className="hidden md:block text-right group-hover:opacity-0 group-hover:translate-x-4 transition-all duration-300 absolute right-5">
                             <div className="text-sm font-medium text-foreground">
-                              Due Today
+                              {formatDueDate(task).label}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              In 2 hours
+                              {formatDueDate(task).detail}
                             </div>
                           </div>
 
@@ -422,4 +422,37 @@ function StatCard({ label, value, unit, icon: Icon, trend, color, bg }: any) {
       </CardContent>
     </Card>
   );
+}
+
+function formatDueDate(task: any): { label: string; detail: string } {
+  const now = new Date();
+  const targetDate = task.scheduledStart
+    ? new Date(task.scheduledStart)
+    : task.dueDate
+      ? new Date(task.dueDate)
+      : null;
+
+  if (!targetDate) return { label: "No due date", detail: "" };
+
+  const isToday = targetDate.toDateString() === now.toDateString();
+  const diffHours = Math.round(
+    (targetDate.getTime() - now.getTime()) / 3600000,
+  );
+
+  if (isToday) {
+    if (diffHours <= 0) return { label: "Due Today", detail: "Overdue" };
+    return {
+      label: "Due Today",
+      detail: `In ${diffHours} hour${diffHours !== 1 ? "s" : ""}`,
+    };
+  }
+
+  const diffDays = Math.ceil((targetDate.getTime() - now.getTime()) / 86400000);
+  if (diffDays === 1) return { label: "Due Tomorrow", detail: "" };
+  if (diffDays < 0)
+    return { label: "Overdue", detail: `${Math.abs(diffDays)} days ago` };
+  return {
+    label: `Due in ${diffDays} days`,
+    detail: targetDate.toLocaleDateString(),
+  };
 }
