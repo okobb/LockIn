@@ -40,7 +40,7 @@ class AIService
     public function chatWithTools(array $messages, array $tools = [], array $config = []): array
     {
         $model = $config['model'] ?? 'gpt-4o-mini';
-        $temperature = $config['temperature'] ?? 0.7;
+        $temperature = $config['temperature'] ?? 0.4;
 
         $payload = [
             'model' => $model,

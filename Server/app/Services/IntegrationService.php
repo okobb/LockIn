@@ -237,4 +237,25 @@ final class IntegrationService extends BaseService
 
         return $integration->fresh();
     }
+
+    /**
+     * Get all active integrations grouped by user.
+     */
+    public function getAllActiveGroupedByUser(): Collection
+    {
+        return Integration::query()
+            ->whereBoolean('is_active', true)
+            ->select(['user_id', 'provider', 'provider_id', 'scopes'])
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn ($userIntegrations) => [
+                'user_id' => $userIntegrations->first()->user_id,
+                'integrations' => $userIntegrations->map(fn ($i) => [
+                    'provider' => $i->provider,
+                    'provider_id' => $i->provider_id,
+                    'scopes' => $i->scopes,
+                ])->values(),
+            ])
+            ->values();
+    }
 }
