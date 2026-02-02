@@ -162,16 +162,38 @@ export function useTaskBacklog() {
       start: string;
       end: string;
     }) => tasks.schedule(id, start, end),
+    onMutate: async ({ id }) => {
+      // Cancel in-flight queries
+      await queryClient.cancelQueries({ queryKey: ["tasks"] });
+
+      // Snapshot current state
+      const previousData = queryClient.getQueryData<TasksResponse>(queryKey);
+
+      // Optimistically remove task from backlog (it's now scheduled)
+      queryClient.setQueryData<TasksResponse>(queryKey, (old) => {
+        if (!old) return old;
+        return { ...old, data: old.data.filter((task) => task.id !== id) };
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
-    onError: async (error) => {
+    onError: async (error, _variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
       console.error("Schedule task failed:", error);
       await modal.open({
         type: "error",
         title: "Schedule Failed",
         message: "Failed to schedule task. Please try again.",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 
