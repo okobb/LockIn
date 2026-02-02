@@ -14,9 +14,8 @@ import {
 
 import Sidebar from "../../../../shared/components/Sidebar/Sidebar";
 import { DayColumn } from "../../components/DayColumn";
-import { CreateBlockModal } from "../../components/modals/CreateBlockModal";
-import { CreateTaskModal } from "../../../tasks/components/CreateTaskModal";
-import { EditBlockModal } from "../../components/modals/EditBlockModal";
+import { BlockModal } from "../../components/modals/BlockModal";
+import { TaskModal } from "../../../tasks/components/TaskModal";
 import { MoveOvertimeModal } from "../../components/modals/MoveOvertimeModal";
 import { ConnectModal } from "../../../settings/components/ConnectModal";
 import { TaskInput } from "../../../../shared/components/TaskInput";
@@ -718,31 +717,32 @@ export default function WeeklyPlanner() {
           </div>
         </div>
 
-        <CreateTaskModal
+        <TaskModal
           isOpen={isCreateTaskModalOpen}
           onClose={() => setIsCreateTaskModalOpen(false)}
-          onConfirm={(task) => {
+          onCreate={(task) => {
             addBacklogTask(task);
             setIsCreateTaskModalOpen(false);
           }}
         />
 
-        <CreateBlockModal
+        <BlockModal
           isOpen={createBlockState.isOpen}
           onClose={closeCreateBlockModal}
-          onConfirm={confirmCreateBlock}
+          onCreate={confirmCreateBlock}
           weekDays={weekDays}
           initialDate={createBlockState.date}
           initialHour={createBlockState.hour}
           initialDuration={createBlockState.duration}
         />
 
-        <EditBlockModal
+        <BlockModal
           isOpen={editBlockModalState.isOpen}
           onClose={closeEditModal}
-          onConfirm={onUpdateBlock}
+          onUpdate={onUpdateBlock}
           onDelete={onDeleteBlock}
           block={editBlockModalState.block}
+          weekDays={weekDays}
         />
 
         {pendingMoveState && (
