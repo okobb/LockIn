@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   Clock,
@@ -46,10 +46,8 @@ function getEndTime(startHour: number, durationMinutes: number): string {
 export interface BlockModalProps {
   isOpen: boolean;
   onClose: () => void;
-  // Mode: If block is provided, we are in EDIT mode. Otherwise CREATE mode.
   block?: CalendarBlock | null;
 
-  // Create Mode Props
   onCreate?: (
     title: string,
     type: "deep_work" | "meeting" | "external",
@@ -60,11 +58,10 @@ export interface BlockModalProps {
   ) => void;
   initialDate?: Date | null;
   initialHour?: number | null;
-  initialDuration?: number | null; // Optional override for default duration
+  initialDuration?: number | null;
   weekDays?: { name: string; date: Date; isToday: boolean }[];
   workEndHour?: number;
 
-  // Edit Mode Props
   onUpdate?: (
     id: string,
     updates: {
@@ -93,25 +90,21 @@ export const BlockModal = ({
   const isEditMode = !!block;
   const { confirm } = useModal();
 
-  // Shared State
   const [title, setTitle] = useState("Deep Work");
   const [type, setType] = useState<"deep_work" | "meeting" | "external">(
     "deep_work",
   );
   const [duration, setDuration] = useState(90);
 
-  // Create Mode Specific State
   const [selectedDateStr, setSelectedDateStr] = useState("");
   const [selectedHour, setSelectedHour] = useState(9);
   const [showOvertimeConfirm, setShowOvertimeConfirm] = useState(false);
   const [isTimeOpen, setIsTimeOpen] = useState(false);
 
-  // Initialize state when opening
   useEffect(() => {
     if (!isOpen) return;
 
     if (isEditMode && block) {
-      // Initialize for Edit Mode
       setTitle(block.title);
       setType(block.type ?? "external");
 
@@ -122,7 +115,6 @@ export const BlockModal = ({
       );
       setDuration(durationMin);
 
-      // Initialize date: try to find the exact day in weekDays to match Select options
       const matchedDay = weekDays.find((d) => isSameDay(d.date, start));
       if (matchedDay) {
         setSelectedDateStr(matchedDay.date.toISOString());
@@ -130,14 +122,12 @@ export const BlockModal = ({
         setSelectedDateStr(start.toISOString());
       }
 
-      // Handle half-hours: Round to nearest 0.5
       const preciseHour = start.getHours() + start.getMinutes() / 60;
       const roundedHour = Math.round(preciseHour * 2) / 2;
       setSelectedHour(roundedHour);
 
       setShowOvertimeConfirm(false);
     } else {
-      // Initialize for Create Mode
       setTitle("Deep Work");
       setType("deep_work");
       if (initialDuration) setDuration(initialDuration);
@@ -167,7 +157,6 @@ export const BlockModal = ({
     weekDays,
   ]);
 
-  // Derived state
   const isOvertimeBlock = blockExtendsToOvertime(
     selectedHour,
     duration,
@@ -175,11 +164,9 @@ export const BlockModal = ({
   );
   const endTimeDisplay = getEndTime(selectedHour, duration);
 
-  // Time slots generator (5:00 AM to 9:30 PM in 30 min intervals)
   const timeSlots: number[] = [];
   for (let h = 5; h <= 21.5; h += 0.5) timeSlots.push(h);
 
-  // Handlers
   const handleCreateSubmit = () => {
     if (!onCreate || !selectedDateStr) return;
 
@@ -239,7 +226,6 @@ export const BlockModal = ({
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div className="bg-card border border-border rounded-xl w-full max-w-[400px] shadow-2xl flex flex-col max-h-[70vh] overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
-        {/* Header */}
         <div className="flex-none flex justify-between items-center p-4 border-b border-border bg-card z-10">
           <h3 className="text-lg font-semibold text-foreground tracking-tight">
             {isEditMode ? "Edit Block" : "Create New Block"}
@@ -254,8 +240,7 @@ export const BlockModal = ({
           </Button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+          <div className="flex-1 overflow-y-auto custom-scrollbar relative">
           {showOvertimeConfirm ? (
             <div className="p-4">
               <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
@@ -353,7 +338,7 @@ export const BlockModal = ({
                             <div
                               key={hour}
                               className={cn(
-                                "relative flex cursor-default select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors",
+                                "relative flex cursor-default select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground transition-colors",
                                 hour === selectedHour &&
                                   "bg-accent text-accent-foreground font-medium",
                               )}
@@ -397,7 +382,6 @@ export const BlockModal = ({
           )}
         </div>
 
-        {/* Footer */}
         {!showOvertimeConfirm && (
           <div className="flex-none flex justify-between items-center p-4 border-t border-border bg-card">
             {isEditMode ? (

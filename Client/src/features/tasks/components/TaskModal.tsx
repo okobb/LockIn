@@ -12,10 +12,8 @@ export interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
 
-  // Edit Mode: if provided
   task?: BacklogTask | null;
 
-  // Handlers
   onCreate?: (task: BacklogTask) => void;
   onUpdate?: (
     id: string,
@@ -46,7 +44,6 @@ export const TaskModal = ({
   const [duration, setDuration] = useState(60);
   const [tags, setTags] = useState("");
 
-  // Initialize state
   useEffect(() => {
     if (!isOpen) return;
 
@@ -54,9 +51,6 @@ export const TaskModal = ({
       setTitle(task.title);
       setPriority(task.priority || "medium");
       setDuration(task.estimatedMinutes);
-      // Tags not currently in EditTaskModal but present in CreateTaskModal
-      // If BacklogTask type has tags, we should probably support editing them too
-      // But EditTaskModal didn't have them. I'll add them if task has them.
       setTags(task.tags ? task.tags.join(", ") : "");
     } else {
       setTitle("");
@@ -151,7 +145,6 @@ export const TaskModal = ({
               </div>
             </div>
 
-            {/* Tags were only in Create, adding to both for consistency if we want */}
             <div className="space-y-2">
               <Label>Tags</Label>
               <Input
