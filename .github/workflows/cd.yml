@@ -34,8 +34,6 @@ jobs:
 
             echo "${DOCKERHUB_TOKEN}" | sudo docker login -u ${DOCKERHUB_USERNAME} --password-stdin
 
-            sudo docker system prune -a -f
-
             sudo docker compose pull
             sudo docker compose up -d --remove-orphans
 
@@ -49,4 +47,5 @@ jobs:
             echo "Running health checks..."
             curl -sf http://localhost/api/health > /dev/null && echo "✓ Laravel API is healthy" || echo "✗ Laravel API check failed"
 
+            sudo docker system prune -a -f
             echo "Deployment complete!"
