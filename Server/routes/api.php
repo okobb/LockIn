@@ -45,7 +45,7 @@ Route::get('integrations/callback/{provider}', [IntegrationController::class, 'c
     ->name('integrations.callback');
 
 // Protected Routes
-Route::middleware('auth:api')->group(function () {
+Route::middleware(['auth:api', 'throttle:60,1'])->group(function () {
     Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('email/resend', [AuthController::class, 'resendVerification'])
