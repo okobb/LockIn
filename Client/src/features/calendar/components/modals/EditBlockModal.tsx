@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { X, Trash2 } from "lucide-react";
 import type { CalendarBlock } from "../../types/calendar";
 import { formatDateWithOffset } from "../../utils/domain";
-import { cn } from "../../../../shared/lib/utils";
 import { Button } from "../../../../shared/components/UI/Button";
 import { Input } from "../../../../shared/components/UI/Input";
 import { Label } from "../../../../shared/components/UI/Label";
+import { BlockTypeSelector } from "../../../../shared/components/BlockTypeSelector/BlockTypeSelector";
+import { DurationSelect } from "../../../../shared/components/DurationSelect/DurationSelect";
+import { useModal } from "../../../../shared/context/ModalContext";
 
 interface EditBlockModalProps {
   isOpen: boolean;
@@ -16,7 +18,7 @@ interface EditBlockModalProps {
       title: string;
       type?: "deep_work" | "meeting" | "external";
       end_time?: string;
-    }
+    },
   ) => void;
   onDelete: (id: string) => void;
   block: CalendarBlock | null;
@@ -31,7 +33,7 @@ export const EditBlockModal = ({
 }: EditBlockModalProps) => {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<"deep_work" | "meeting" | "external">(
-    "deep_work"
+    "deep_work",
   );
   const [duration, setDuration] = useState(60);
 
@@ -43,7 +45,7 @@ export const EditBlockModal = ({
       const start = new Date(block.start_time);
       const end = new Date(block.end_time);
       const durationMin = Math.round(
-        (end.getTime() - start.getTime()) / (1000 * 60)
+        (end.getTime() - start.getTime()) / (1000 * 60),
       );
       setDuration(durationMin);
     }
@@ -64,9 +66,16 @@ export const EditBlockModal = ({
     onClose();
   };
 
-  const handleDelete = () => {
+  const { confirm } = useModal();
+
+  const handleDelete = async () => {
     if (!block) return;
-    if (confirm("Are you sure you want to delete this block?")) {
+    if (
+      await confirm(
+        "Delete Block",
+        "Are you sure you want to delete this block?",
+      )
+    ) {
       onDelete(block.id);
       onClose();
     }
@@ -102,59 +111,12 @@ export const EditBlockModal = ({
 
           <div className="space-y-2">
             <Label>Type</Label>
-            <div className="grid grid-cols-3 gap-2">
-              <Button
-                type="button"
-                variant={type === "deep_work" ? "default" : "outline"}
-                className={cn(
-                  "w-full",
-                  type === "deep_work" && "bg-primary text-primary-foreground"
-                )}
-                onClick={() => setType("deep_work")}
-              >
-                Deep Work
-              </Button>
-              <Button
-                type="button"
-                variant={type === "meeting" ? "default" : "outline"}
-                className={cn(
-                  "w-full",
-                  type === "meeting" && "bg-primary text-primary-foreground"
-                )}
-                onClick={() => setType("meeting")}
-              >
-                Meeting
-              </Button>
-              <Button
-                type="button"
-                variant={type === "external" ? "default" : "outline"}
-                className={cn(
-                  "w-full",
-                  type === "external" && "bg-primary text-primary-foreground"
-                )}
-                onClick={() => setType("external")}
-              >
-                External
-              </Button>
-            </div>
+            <BlockTypeSelector value={type} onChange={setType} />
           </div>
 
           <div className="space-y-2">
             <Label>Duration</Label>
-            <select
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value={15}>15 min</option>
-              <option value={30}>30 min</option>
-              <option value={45}>45 min</option>
-              <option value={60}>1 hour</option>
-              <option value={90}>1.5 hours</option>
-              <option value={120}>2 hours</option>
-              <option value={180}>3 hours</option>
-              <option value={240}>4 hours</option>
-            </select>
+            <DurationSelect value={duration} onChange={setDuration} />
           </div>
         </div>
 

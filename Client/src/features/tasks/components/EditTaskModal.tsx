@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Clock, Trash2 } from "lucide-react";
 import type { BacklogTask } from "../../calendar/types/calendar";
+import { Button } from "../../../shared/components/UI/Button";
+import { Input } from "../../../shared/components/UI/Input";
+import { Label } from "../../../shared/components/UI/Label";
+import { PrioritySelector } from "../../../shared/components/PrioritySelector/PrioritySelector";
+import { DurationSelect } from "../../../shared/components/DurationSelect/DurationSelect";
+import { useModal } from "../../../shared/context/ModalContext";
 
-export const EditTaskModal = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  task,
-}: {
+interface EditTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (
@@ -16,10 +17,19 @@ export const EditTaskModal = ({
       title: string;
       priority?: "urgent" | "high" | "medium" | "low";
       estimatedMinutes: number;
-    }
+    },
   ) => void;
+  onDelete?: (id: string) => void;
   task: BacklogTask | null;
-}) => {
+}
+
+export const EditTaskModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  onDelete,
+  task,
+}: EditTaskModalProps) => {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<
     "urgent" | "high" | "medium" | "low"
@@ -40,70 +50,82 @@ export const EditTaskModal = ({
     onClose();
   };
 
+  const { confirm } = useModal();
+
+  const handleDelete = async () => {
+    if (!task || !onDelete) return;
+    if (
+      await confirm("Delete Task", "Are you sure you want to delete this task?")
+    ) {
+      onDelete(task.id);
+      onClose();
+    }
+  };
+
   if (!isOpen || !task) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h3>Edit Task</h3>
-          <button className="btn-close" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="text-lg font-semibold tracking-tight">Edit Task</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
-        <div className="modal-body">
-          <div className="form-group">
-            <label>Title</label>
-            <input
+
+        <div className="p-6 space-y-4">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="form-control"
               autoFocus
             />
           </div>
 
-          <div className="form-group">
-            <label>Priority</label>
-            <div className="type-options">
-              {(["urgent", "high", "medium", "low"] as const).map((p) => (
-                <button
-                  key={p}
-                  className={`type-option ${priority === p ? "active" : ""}`}
-                  onClick={() => setPriority(p)}
-                  style={{ textTransform: "capitalize" }}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-2">
+            <Label>Priority</Label>
+            <PrioritySelector value={priority} onChange={setPriority} />
           </div>
 
-          <div className="form-group">
-            <label>Duration</label>
-            <select
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
-              className="form-control"
-            >
-              <option value={15}>15 min</option>
-              <option value={30}>30 min</option>
-              <option value={45}>45 min</option>
-              <option value={60}>1 hour</option>
-              <option value={90}>1.5 hours</option>
-              <option value={120}>2 hours</option>
-              <option value={180}>3 hours</option>
-              <option value={240}>4 hours</option>
-            </select>
+          <div className="space-y-2">
+            <Label>Duration</Label>
+            <div className="relative">
+              <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+              <DurationSelect
+                value={duration}
+                onChange={setDuration}
+                className="pl-9"
+              />
+            </div>
           </div>
         </div>
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" onClick={handleSubmit}>
-            Save Changes
-          </button>
+
+        <div className="flex items-center justify-between p-6 pt-0">
+          {onDelete && (
+            <Button
+              variant="ghost"
+              onClick={handleDelete}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 size={16} className="mr-2" />
+              Delete
+            </Button>
+          )}
+
+          <div className="flex gap-2 ml-auto">
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit}>Save Changes</Button>
+          </div>
         </div>
       </div>
     </div>

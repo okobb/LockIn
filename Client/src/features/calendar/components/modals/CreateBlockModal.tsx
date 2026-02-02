@@ -1,17 +1,14 @@
 import { useState, useEffect } from "react";
 import { X, Clock, AlertTriangle } from "lucide-react";
-import {
-  TIME_SLOTS,
-  formatTime,
-  formatMinutesToHours,
-  WORK_END_HOUR,
-} from "../../utils/domain";
-import { cn } from "../../../../shared/lib/utils";
+import { TIME_SLOTS, formatTime, WORK_END_HOUR } from "../../utils/domain";
 import { Button } from "../../../../shared/components/UI/Button";
 import { Input } from "../../../../shared/components/UI/Input";
 import { Label } from "../../../../shared/components/UI/Label";
 
 // Default work end time from domain constants
+import { BlockTypeSelector } from "../../../../shared/components/BlockTypeSelector/BlockTypeSelector";
+import { DurationSelect } from "../../../../shared/components/DurationSelect/DurationSelect";
+
 const WORK_END_TIME = WORK_END_HOUR;
 
 interface CreateBlockModalProps {
@@ -23,7 +20,7 @@ interface CreateBlockModalProps {
     duration: number,
     date: Date,
     hour: number,
-    isOvertime?: boolean
+    isOvertime?: boolean,
   ) => void;
   weekDays: { name: string; date: Date; isToday: boolean }[];
   initialDate: Date | null;
@@ -35,7 +32,7 @@ interface CreateBlockModalProps {
 function blockExtendsToOvertime(
   startHour: number,
   durationMinutes: number,
-  workEndHour: number
+  workEndHour: number,
 ): boolean {
   const endHour = startHour + durationMinutes / 60;
   return endHour > workEndHour;
@@ -62,7 +59,7 @@ export const CreateBlockModal = ({
 }: CreateBlockModalProps) => {
   const [title, setTitle] = useState("Deep Work");
   const [type, setType] = useState<"deep_work" | "meeting" | "external">(
-    "deep_work"
+    "deep_work",
   );
   const [duration, setDuration] = useState(90);
   const [selectedDateStr, setSelectedDateStr] = useState("");
@@ -99,7 +96,7 @@ export const CreateBlockModal = ({
   const isOvertimeBlock = blockExtendsToOvertime(
     selectedHour,
     duration,
-    workEndHour
+    workEndHour,
   );
   const endTimeDisplay = getEndTime(selectedHour, duration);
 
@@ -236,71 +233,12 @@ export const CreateBlockModal = ({
 
               <div className="space-y-2">
                 <Label>Type</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    type="button"
-                    variant={type === "deep_work" ? "default" : "outline"}
-                    className={cn(
-                      "w-full",
-                      type === "deep_work" &&
-                        "bg-primary text-primary-foreground"
-                    )}
-                    onClick={() => setType("deep_work")}
-                  >
-                    Deep Work
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={type === "meeting" ? "default" : "outline"}
-                    className={cn(
-                      "w-full",
-                      type === "meeting" && "bg-primary text-primary-foreground"
-                    )}
-                    onClick={() => setType("meeting")}
-                  >
-                    Meeting
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={type === "external" ? "default" : "outline"}
-                    className={cn(
-                      "w-full",
-                      type === "external" &&
-                        "bg-primary text-primary-foreground"
-                    )}
-                    onClick={() => setType("external")}
-                  >
-                    External
-                  </Button>
-                </div>
+                <BlockTypeSelector value={type} onChange={setType} />
               </div>
 
               <div className="space-y-2">
                 <Label>Duration</Label>
-                <select
-                  value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value={30}>30 min</option>
-                  <option value={60}>1 hour</option>
-                  <option value={90}>1.5 hours</option>
-                  <option value={120}>2 hours</option>
-                  <option value={150}>2.5 hours</option>
-                  <option value={180}>3 hours</option>
-                  <option value={240}>4 hours</option>
-                  <option value={300}>5 hours</option>
-                  <option value={480}>8 hours</option>
-
-                  {/* Fallback option if custom duration is dragging */}
-                  {![30, 60, 90, 120, 150, 180, 240, 300, 480].includes(
-                    duration
-                  ) && (
-                    <option value={duration}>
-                      {formatMinutesToHours(duration)}
-                    </option>
-                  )}
-                </select>
+                <DurationSelect value={duration} onChange={setDuration} />
               </div>
 
               {isOvertimeBlock && (
