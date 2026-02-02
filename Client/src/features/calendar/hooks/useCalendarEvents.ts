@@ -194,7 +194,33 @@ export function useCalendarEvents({
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => calendar.deleteBlock(id),
-    onError: async (error) => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["calendar-events"] });
+
+      const previousData =
+        queryClient.getQueryData<CalendarEventsResponse>(queryKey);
+
+      // Optimistically remove block from calendar
+      queryClient.setQueryData<CalendarEventsResponse>(
+        queryKey,
+        (old: CalendarEventsResponse | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: old.data.filter(
+              (event: CalendarEvent) => String(event.id) !== id,
+            ),
+          };
+        },
+      );
+
+      return { previousData };
+    },
+    onError: async (error, _id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
       console.error("Delete block failed:", error);
       await modal.open({
         type: "error",

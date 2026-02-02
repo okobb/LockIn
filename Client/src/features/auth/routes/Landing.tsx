@@ -49,7 +49,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
             <img
-              src="/Project logo.png"
+              src="/logo.png"
               alt="Lock In"
               className="h-8 w-8 rounded-lg object-contain"
             />
@@ -343,11 +343,7 @@ export default function Landing() {
       <footer className="border-t border-border/40 py-12 px-6 bg-muted/10">
         <div className="container mx-auto max-w-6xl text-center">
           <div className="flex items-center justify-center gap-2 mb-6 opacity-80 hover:opacity-100 transition-opacity">
-            <img
-              src="../../public/Project Logo.png"
-              alt="Lock In"
-              className="w-10 h-10"
-            />
+            <img src="/logo.png" alt="Lock In" className="w-10 h-10" />
             <span className="font-bold text-lg">Lock In</span>
           </div>
           <p className="text-muted-foreground text-sm mb-8">

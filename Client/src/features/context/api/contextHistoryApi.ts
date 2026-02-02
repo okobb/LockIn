@@ -1,4 +1,5 @@
 import api from "../../../shared/lib/axios";
+import type { Task } from "../../../shared/types";
 import type { BrowserTab } from "../types";
 
 export interface ContextSnapshot {
@@ -35,6 +36,7 @@ export interface FocusSessionHistory {
   checklist_completed: number;
   checklist_total: number;
   context_snapshot?: ContextSnapshot;
+  task?: Task;
 }
 
 export interface ContextHistoryStats {

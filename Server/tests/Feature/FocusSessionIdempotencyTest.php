@@ -100,6 +100,8 @@ class FocusSessionIdempotencyTest extends TestCase
             'planned_duration_min' => 25,
         ]);
 
+        $snapshot->update(['focus_session_id' => $pastSession->id]);
+
         $response = $this->postJson('/api/focus-sessions', [
             'title' => 'Project X',
         ]);
@@ -114,6 +116,11 @@ class FocusSessionIdempotencyTest extends TestCase
 
         /** @var FocusSession $newSession */
         $newSession = FocusSession::query()->where('id', '!=', $pastSession->id)->first(['*']);
-        $this->assertEquals($snapshot->id, $newSession->context_snapshot_id);
+        $this->assertNotNull($newSession->context_snapshot_id);
+        $this->assertNotEquals($snapshot->id, $newSession->context_snapshot_id);
+        
+        $newSnapshot = $newSession->contextSnapshot;
+        $this->assertEquals('forked', $newSnapshot->type);
+        $this->assertEquals($snapshot->title, $newSnapshot->title);
     }
 }

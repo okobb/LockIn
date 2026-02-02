@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { BacklogTask, CalendarBlock } from "../types/calendar";
+import type { CalendarBlock } from "../types/calendar";
 import { useCalendarNavigation } from "./useCalendarNavigation";
 import { useCalendarEvents } from "./useCalendarEvents";
+import { useCalendarDragDrop } from "./useCalendarDragDrop";
 import { useTaskBacklog } from "../../tasks/hooks/useTaskBacklog";
 import { useIntegrations } from "../../settings/hooks/useIntegrations";
 import { useAuthContext } from "../../auth/context/AuthContext";
@@ -75,101 +76,15 @@ export function useWeeklyPlanner() {
     syncCalendar();
   }, [isConnected, syncCalendar, user]);
 
-  const handleTaskDrop = useCallback(
-    async (taskId: string, date: Date, hour: number) => {
-      const task = backlogTasks.find((t) => t.id === taskId);
-      if (!task) return;
-
-      const startTime = new Date(date);
-      const absoluteHour = Math.floor(hour);
-      const minutes = Math.round((hour - absoluteHour) * 60);
-      startTime.setHours(absoluteHour, minutes, 0, 0);
-
-      const endTime = new Date(startTime);
-      endTime.setMinutes(startTime.getMinutes() + task.estimatedMinutes);
-
-      // Check against CALENDAR_END_HOUR
-      const endHour = endTime.getHours() + endTime.getMinutes() / 60;
-      const isNextDay = endTime.getDate() !== startTime.getDate();
-
-      if (
-        absoluteHour >= CALENDAR_END_HOUR ||
-        (isNextDay && endHour > 0) ||
-        (!isNextDay && endHour > CALENDAR_END_HOUR)
-      ) {
-        await modal.open({
-          type: "error",
-          title: "Schedule Conflict",
-          message: "Cannot schedule tasks past 9 PM.",
-        });
-        return;
-      }
-
-      if (checkOverlap(startTime, endTime)) {
-        await modal.open({
-          type: "error",
-          title: "Schedule Conflict",
-          message: "This time slot overlaps with an existing block.",
-        });
-        return;
-      }
-
-      scheduleTask(taskId, startTime.toISOString(), endTime.toISOString());
-
-      // Add block to calendar (async with optimistic update)
-      const newBlock: CalendarBlock = {
-        id: `block-${Date.now()}`,
-        title: task.title,
-        start_time: formatDateWithOffset(startTime),
-        end_time: formatDateWithOffset(endTime),
-        type: "deep_work",
-        priority: task.priority,
-        tags: task.tags,
-        task_id: Number(taskId),
-      };
-
-      addBlock(newBlock);
-    },
-    [backlogTasks, checkOverlap, addBlock, scheduleTask, modal],
-  );
-
-  const returnToBacklog = useCallback(
-    (blockId: string, fallbackTitle?: string) => {
-      // Try to find by ID first, then fall back to title match
-      let block = calendarBlocks.find((b) => b.id === blockId);
-
-      // If not found by ID (stale temp ID), try to find by title
-      if (!block && fallbackTitle) {
-        block = calendarBlocks.find((b) => b.title === fallbackTitle);
-        console.log("Block ID not found, matched by title:", block?.id);
-      }
-
-      if (!block) {
-        console.error("Cannot return to backlog: block not found", {
-          blockId,
-          fallbackTitle,
-        });
-        return;
-      }
-
-      const start = new Date(block.start_time);
-      const end = new Date(block.end_time);
-      const durationMinutes = Math.round(
-        (end.getTime() - start.getTime()) / (1000 * 60),
-      );
-
-      const newTask: BacklogTask = {
-        id: block.id,
-        title: block.title,
-        priority: block.priority || "medium",
-        estimatedMinutes: durationMinutes,
-        tags: block.tags,
-      };
-      addBacklogTask(newTask);
-      removeBlock(block.id);
-    },
-    [calendarBlocks, addBacklogTask, removeBlock],
-  );
+  const { handleTaskDrop, returnToBacklog } = useCalendarDragDrop({
+    backlogTasks,
+    calendarBlocks,
+    addBlock,
+    removeBlock,
+    scheduleTask,
+    addBacklogTask,
+    checkOverlap,
+  });
 
   const handleAddBlock = useCallback(
     async (date: Date, hour: number) => {

@@ -35,6 +35,7 @@ import {
 import { Badge } from "../../../shared/components/UI/Badge";
 import type { BrowserTab } from "../types";
 import { useSessionContext } from "../../focus/context/SessionContext";
+import { useModal } from "../../../shared/context/ModalContext";
 
 type Tab = "voice" | "text" | "checklist";
 
@@ -43,6 +44,7 @@ export const ContextSave = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { activeSession, updateSession, clearSession } = useSessionContext();
+  const { open } = useModal();
 
   const [activeTab, setActiveTab] = useState<Tab>("voice");
   const [isRecording, setIsRecording] = useState(false);
@@ -186,9 +188,12 @@ export const ContextSave = () => {
         }, 1000);
       } catch (error) {
         console.error("Microphone access denied:", error);
-        alert(
-          "Could not access microphone. Please ensure you have granted permission.",
-        );
+        open({
+          type: "error",
+          title: "Microphone Access Denied",
+          message:
+            "Could not access microphone. Please ensure you have granted permission.",
+        });
       }
     }
   };
@@ -284,7 +289,11 @@ export const ContextSave = () => {
 
       if (!sessionId) {
         if (!taskName.trim()) {
-          alert("Please enter a task name to start a new session.");
+          open({
+            type: "warning",
+            title: "Task Name Required",
+            message: "Please enter a task name to start a new session.",
+          });
           setIsSaving(false);
           return;
         }

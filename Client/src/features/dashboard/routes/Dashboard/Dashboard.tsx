@@ -23,6 +23,7 @@ import {
   CardSkeleton,
 } from "../../../../shared/components/Skeleton/Skeleton";
 import { LiquidSuggestions } from "../../components/LiquidSuggestions";
+import { StatCard } from "../../../../shared/components/StatCard/StatCard";
 
 export default function NewDashboard() {
   const {
@@ -106,7 +107,7 @@ export default function NewDashboard() {
                   value={stats.flowTime}
                   icon={Zap}
                   color="text-warning"
-                  bg="bg-warning/10"
+                  bgColor="bg-warning/10"
                 />
                 <StatCard
                   label="Contexts Saved"
@@ -114,7 +115,7 @@ export default function NewDashboard() {
                   unit="sessions"
                   icon={RotateCcw}
                   color="text-primary"
-                  bg="bg-primary/10"
+                  bgColor="bg-primary/10"
                 />
                 <StatCard
                   label="Deep Work"
@@ -122,7 +123,7 @@ export default function NewDashboard() {
                   unit="blocks"
                   icon={Layers}
                   color="text-primary"
-                  bg="bg-primary/10"
+                  bgColor="bg-primary/10"
                 />
                 <StatCard
                   label="Tasks Done"
@@ -130,7 +131,7 @@ export default function NewDashboard() {
                   unit="completed"
                   icon={CheckCircle2}
                   color="text-emerald-500"
-                  bg="bg-emerald-500/10"
+                  bgColor="bg-emerald-500/10"
                 />
               </>
             )}
@@ -373,54 +374,6 @@ export default function NewDashboard() {
         </div>
       </main>
     </div>
-  );
-}
-
-function StatCard({ label, value, unit, icon: Icon, trend, color, bg }: any) {
-  return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-transparent",
-        bg,
-      )}
-    >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div
-            className={cn(
-              "p-2.5 rounded-xl transition-colors bg-background/50 border border-border/10",
-            )}
-          >
-            <Icon className={cn("w-5 h-5", color)} />
-          </div>
-          {trend && (
-            <span
-              className={cn(
-                "text-xs font-medium px-2 py-1 rounded-full bg-background border border-border/50",
-                color,
-              )}
-            >
-              {trend}
-            </span>
-          )}
-        </div>
-        <div className="space-y-1 relative z-10">
-          <h4 className="text-3xl font-light tracking-tight text-foreground">
-            {value}{" "}
-            <span className="text-base text-muted-foreground font-normal ml-0.5">
-              {unit}
-            </span>
-          </h4>
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        </div>
-        <div
-          className={cn(
-            "absolute -bottom-6 -right-6 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity",
-            color.replace("text-", "bg-"),
-          )}
-        />
-      </CardContent>
-    </Card>
   );
 }
 

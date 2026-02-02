@@ -137,7 +137,13 @@ class RAGService
     {
         $resourceIds = array_column(array_column($rankedResults, 'payload'), 'resource_id');
         [$chunks, $resources] = $this->fetchChunksAndResources($resourceIds);
-        $dedupedResults = $this->deduplicateByResource($rankedResults, $limit);
+        
+        $validResults = array_filter($rankedResults, function ($item) use ($resources) {
+            $resourceId = $item['payload']['resource_id'];
+            return isset($resources[$resourceId]);
+        });
+        
+        $dedupedResults = $this->deduplicateByResource($validResults, $limit);
         
         return $this->formatSearchResults($dedupedResults, $chunks, $resources);
     }

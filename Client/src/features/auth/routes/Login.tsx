@@ -31,7 +31,7 @@ export default function Login() {
           to="/"
           className="flex items-center justify-center gap-3 w-full text-center hover:opacity-80 transition-opacity"
         >
-          <img src="/Project logo.png" alt="Lock In" className="h-10 w-auto" />
+          <img src="/logo.png" alt="Lock In" className="h-10 w-auto" />
           <span className="text-xl font-bold text-foreground">Lock In</span>
         </Link>
 

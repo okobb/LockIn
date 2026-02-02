@@ -21,6 +21,7 @@ import { Input } from "../../../../shared/components/UI/Input";
 import { cn } from "../../../../shared/lib/utils";
 import { useModal } from "../../../../shared/context/ModalContext";
 import { QualityScoreBadge } from "../../../../shared/components/QualityScoreBadge/QualityScoreBadge";
+import { startFocusSession } from "../../../focus/api/focusApi";
 import { type FocusSessionHistory } from "../../api/contextHistoryApi";
 import { useContextHistoryQuery } from "../../hooks/useContextHistoryQuery";
 import { useDebounce } from "../../../../shared/hooks/useDebounce";
@@ -103,12 +104,28 @@ export default function ContextHistory() {
       }
     }
 
-    navigate("/focus", {
-      state: {
-        sessionId: session.id,
+    try {
+      const newSession = await startFocusSession({
         title: session.title,
-      },
-    });
+        task_id: session.task?.id,
+      });
+
+      navigate("/focus", {
+        state: {
+          sessionId: newSession.id,
+          title: newSession.title,
+          taskId: newSession.task_id,
+          isNewSession: true, // Flag to ensure timer resets
+        },
+      });
+    } catch (error) {
+      console.error("Failed to resume session", error);
+      open({
+        type: "error",
+        title: "Resume Failed",
+        message: "Could not start a new session. Please try again.",
+      });
+    }
   };
 
   const handleDelete = async (
@@ -407,7 +424,10 @@ export default function ContextHistory() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {session.status === "abandoned" && (
+                                {(session.status === "abandoned" ||
+                                  (session.context_snapshot &&
+                                    (!session.task ||
+                                      !session.task.completed_at))) && (
                                   <Button
                                     size="sm"
                                     variant="default"

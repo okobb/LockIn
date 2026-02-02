@@ -57,12 +57,8 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
   const { open: openModal } = useModal();
-  
-  const {
-    isConnected,
-    connect,
-    connectingKey,
-  } = useIntegrations({
+
+  const { isConnected, connect, connectingKey } = useIntegrations({
     onError: (message) => {
       openModal({
         type: "error",
@@ -120,11 +116,7 @@ export default function Onboarding() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
             <div className="text-center space-y-4">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4">
-                <img
-                  src="/Project logo.png"
-                  alt="Lock In"
-                  className="h-10 w-auto"
-                />
+                <img src="/logo.png" alt="Lock In" className="h-10 w-auto" />
               </div>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                 Your Cognitive Command Center

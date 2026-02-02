@@ -120,7 +120,7 @@ export default function Sidebar({
           )}
         >
           <img
-            src="/Project logo.png"
+            src="/logo.png"
             alt="Lock In"
             className="h-8 w-8 rounded-lg object-contain"
           />

@@ -46,7 +46,7 @@ export default function AuthCallback() {
         <div className="relative">
           <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full"></div>
           <img
-            src="/Project logo.png"
+            src="/logo.png"
             alt="Lock In"
             className="h-16 w-auto relative z-10 animate-pulse"
           />
