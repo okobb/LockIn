@@ -41,6 +41,10 @@ import { QualityScoreBadge } from "../../../shared/components/QualityScoreBadge/
 import { useSessionContext } from "../context/SessionContext";
 import { EndSessionModal } from "../components/EndSessionModal";
 import { tasks } from "../../tasks/api/tasks";
+import { FocusTimer } from "../components/FocusTimer";
+import { FocusTask } from "../components/FocusTask";
+import { FocusChecklist } from "../components/FocusChecklist";
+import { FocusControls } from "../components/FocusControls";
 
 interface FocusState {
   taskId?: number;
@@ -521,174 +525,27 @@ export default function FocusMode() {
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <div className="w-full max-w-5xl mx-auto p-8 md:p-12 space-y-12 min-h-full flex flex-col">
-              <div className="flex flex-col gap-6">
-                <div className="flex items-center gap-3 animate-fade-in">
-                  <Badge
-                    variant="warning"
-                    className="rounded-full px-3 py-1 bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20"
-                  >
-                    HIGH PRIORITY
-                  </Badge>
-                  <span className="text-sm font-mono text-muted-foreground uppercase tracking-widest text-[10px]">
-                    {activeState.isFreestyle
-                      ? "FREESTYLE_MODE"
-                      : "PLANNED_SESSION"}
-                  </span>
-                </div>
+              <FocusTask
+                title={activeState.title}
+                isFreestyle={activeState.isFreestyle}
+              />
 
-                <div className="space-y-2 animate-slide-in-from-bottom">
-                  <h1 className="text-4xl md:text-5xl font-light tracking-tight text-foreground flex items-center gap-4">
-                    <span className="p-3 bg-primary/10 rounded-xl text-primary">
-                      <Terminal size={32} strokeWidth={1.5} />
-                    </span>
-                    {activeState.title}
-                  </h1>
-                  <p className="text-muted-foreground text-lg font-light pl-1">
-                    Focus mode engaged. Eliminate distractions.
-                  </p>
-                </div>
-              </div>
+              <FocusTimer
+                timer={timer}
+                isPaused={isPaused}
+                onTogglePause={togglePause}
+                onAddFiveMinutes={() => setTimer((t: number) => t + 300)}
+              />
 
-              <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] space-y-8 py-8">
-                <div className="relative group cursor-default select-none transition-all">
-                  <div
-                    className={cn(
-                      "text-7xl md:text-9xl leading-none font-mono font-bold tracking-tighter tabular-nums text-foreground transition-all duration-300",
-                      isPaused && "opacity-50",
-                    )}
-                  >
-                    {formatTime(timer)}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6 z-10">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-14 w-14 rounded-full border-2 border-border hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-300"
-                    onClick={togglePause}
-                  >
-                    {isPaused ? (
-                      <Play className="w-6 h-6 fill-current translate-x-0.5" />
-                    ) : (
-                      <Pause className="w-6 h-6 fill-current" />
-                    )}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="h-14 px-6 rounded-full border-2 border-border hover:border-primary/50 hover:bg-primary/5 gap-2 transition-all duration-300 text-sm font-medium"
-                    onClick={() => setTimer((t: number) => t + 300)}
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>5m</span>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="w-full space-y-4 animate-fade-in delay-75">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <LayoutDashboard className="w-3.5 h-3.5" /> Session
-                    Checklist
-                  </h3>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
-                    onClick={handleGenerateAIChecklist}
-                    disabled={isGeneratingChecklist}
-                  >
-                    {isGeneratingChecklist ? (
-                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-3 h-3 mr-1" />
-                    )}
-                    AI Generate
-                  </Button>
-                </div>
-
-                <div className="flex gap-2 mb-4">
-                  <Input
-                    value={newChecklistItem}
-                    onChange={(e) => setNewChecklistItem(e.target.value)}
-                    placeholder="Add a new item..."
-                    className="h-9 bg-card/40 border-border/40 text-sm"
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && handleAddChecklistItem()
-                    }
-                  />
-                  <Button
-                    size="sm"
-                    className="h-9 w-9 p-0 shrink-0"
-                    onClick={handleAddChecklistItem}
-                    disabled={!newChecklistItem.trim()}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[...(session?.context_snapshot?.ai_resume_checklist || [])]
-                    .length > 0 ? (
-                    session?.context_snapshot?.ai_resume_checklist?.map(
-                      (item, i) => (
-                        <Card
-                          key={i}
-                          onClick={() => handleToggleChecklist(i)}
-                          className={cn(
-                            "transition-all cursor-pointer group select-none relative overflow-hidden border",
-                            (item as any).is_completed
-                              ? "bg-primary/5 border-primary/20 hover:bg-primary/10 shadow-sm"
-                              : "bg-card/40 border-border/40 hover:bg-card/60 hover:border-primary/20 hover:shadow-sm",
-                          )}
-                        >
-                          <div className="p-3 flex items-start gap-3">
-                            <div
-                              className={cn(
-                                "mt-0.5 h-4 w-4 shrink-0 rounded-md border transition-all duration-300 flex items-center justify-center shadow-sm",
-                                (item as any).is_completed
-                                  ? "bg-primary border-primary text-primary-foreground scale-100"
-                                  : "border-muted-foreground/30 group-hover:border-primary/50 bg-background/50",
-                              )}
-                            >
-                              {(item as any).is_completed && (
-                                <Check className="w-2.5 h-2.5 stroke-[3px]" />
-                              )}
-                            </div>
-                            <div className="flex-1 space-y-1.5">
-                              <div
-                                className={cn(
-                                  "text-sm font-medium leading-relaxed transition-all duration-300",
-                                  (item as any).is_completed
-                                    ? "text-muted-foreground line-through decoration-primary/30"
-                                    : "text-foreground/90 group-hover:text-foreground",
-                                )}
-                              >
-                                {item.text}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-wider flex items-center gap-1">
-                                <span
-                                  className={cn(
-                                    "w-1 h-1 rounded-full",
-                                    item.source === "ai"
-                                      ? "bg-purple-500/50"
-                                      : "bg-blue-500/50",
-                                  )}
-                                />
-                                {item.source}
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      ),
-                    )
-                  ) : (
-                    <div className="col-span-2 text-center text-muted-foreground text-sm italic py-4">
-                      No checklist items available.
-                    </div>
-                  )}
-                </div>
-              </div>
+              <FocusChecklist
+                items={session?.context_snapshot?.ai_resume_checklist || []}
+                isGenerating={isGeneratingChecklist}
+                newItemText={newChecklistItem}
+                onNewItemChange={setNewChecklistItem}
+                onAddItem={handleAddChecklistItem}
+                onGenerate={handleGenerateAIChecklist}
+                onToggleItem={handleToggleChecklist}
+              />
 
               <div className="w-full space-y-4 animate-fade-in delay-100">
                 <div className="flex items-center justify-between">
@@ -707,23 +564,10 @@ export default function FocusMode() {
                 />
               </div>
 
-              <div className="pt-8 flex items-center justify-between border-t border-border/20">
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate("/dashboard")}
-                  className="text-muted-foreground hover:text-foreground hover:bg-transparent px-0 hover:underline underline-offset-4"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-                </Button>
-
-                <Button
-                  size="lg"
-                  className="h-12 rounded-full px-8 shadow-lg shadow-primary/20 hover:shadow-primary/40 text-sm font-semibold bg-primary hover:bg-primary/90 transition-all active:scale-95"
-                  onClick={() => setIsEndSessionModalOpen(true)}
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> End Session
-                </Button>
-              </div>
+              <FocusControls
+                onBack={() => navigate("/dashboard")}
+                onEndSession={() => setIsEndSessionModalOpen(true)}
+              />
             </div>
           </div>
         </div>
