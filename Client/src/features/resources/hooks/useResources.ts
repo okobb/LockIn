@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useOptimisticMutation } from "../../../shared/hooks/useOptimisticMutation";
 import { resourceApi } from "../api/resourceApi";
 import type {
   CreateResourceRequest,
@@ -41,17 +42,11 @@ export const useResources = (filters: ResourceFilters) => {
 export const useResourceMutations = () => {
   const queryClient = useQueryClient();
 
-  const createResource = useMutation({
+  const createResource = useOptimisticMutation({
     mutationFn: (data: CreateResourceRequest) => resourceApi.create(data),
-
-    onMutate: async (newResource) => {
-      // Cancel any outgoing refetches to prevent overwriting optimistic update
-      await queryClient.cancelQueries({ queryKey: ["resources"] });
-
-      // Snapshot current cache
-      const previousResources = queryClient.getQueriesData({
-        queryKey: ["resources"],
-      });
+    queryKey: ["resources"],
+    updateFn: (old: any, newResource: CreateResourceRequest) => {
+      if (!old?.data?.data) return old;
 
       // Create optimistic resource with temporary ID
       const optimisticResource: Resource = {
@@ -81,34 +76,13 @@ export const useResourceMutations = () => {
         _isProcessing: true,
       } as Resource & { _isProcessing?: boolean };
 
-      // Optimistically update all matching resource queries
-      queryClient.setQueriesData({ queryKey: ["resources"] }, (old: any) => {
-        if (!old?.data?.data) return old;
-
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            data: [optimisticResource, ...old.data.data],
-          },
-        };
-      });
-
-      return { previousResources };
-    },
-
-    // On error, rollback to the previous state
-    onError: (_err, _newResource, context) => {
-      if (context?.previousResources) {
-        context.previousResources.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
-    },
-
-    // Always refetch after error or success to get real data
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["resources"] });
+      return {
+        ...old,
+        data: {
+          ...old.data,
+          data: [optimisticResource, ...old.data.data],
+        },
+      };
     },
   });
 
@@ -120,95 +94,53 @@ export const useResourceMutations = () => {
     },
   });
 
-  const deleteResource = useMutation({
+  const deleteResource = useOptimisticMutation({
     mutationFn: (id: number) => resourceApi.delete(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["resources"] });
-      const previousResources = queryClient.getQueryData(["resources"]);
-
-      queryClient.setQueriesData({ queryKey: ["resources"] }, (old: any) => {
-        if (!old?.data?.data) return old;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            data: old.data.data.filter((r: Resource) => r.id !== id),
-          },
-        };
-      });
-
-      return { previousResources };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previousResources) {
-        queryClient.setQueryData(["resources"], context.previousResources);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["resources"] });
+    queryKey: ["resources"],
+    updateFn: (old: any, id: number) => {
+      if (!old?.data?.data) return old;
+      return {
+        ...old,
+        data: {
+          ...old.data,
+          data: old.data.data.filter((r: Resource) => r.id !== id),
+        },
+      };
     },
   });
 
-  const toggleFavorite = useMutation({
+  const toggleFavorite = useOptimisticMutation({
     mutationFn: (id: number) => resourceApi.toggleFavorite(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["resources"] });
-      const previousResources = queryClient.getQueryData(["resources"]);
-
-      queryClient.setQueriesData({ queryKey: ["resources"] }, (old: any) => {
-        if (!old?.data?.data) return old;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            data: old.data.data.map((r: Resource) =>
-              r.id === id ? { ...r, is_favorite: !r.is_favorite } : r,
-            ),
-          },
-        };
-      });
-
-      return { previousResources };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previousResources) {
-        queryClient.setQueryData(["resources"], context.previousResources);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["resources"] });
+    queryKey: ["resources"],
+    updateFn: (old: any, id: number) => {
+      if (!old?.data?.data) return old;
+      return {
+        ...old,
+        data: {
+          ...old.data,
+          data: old.data.data.map((r: Resource) =>
+            r.id === id ? { ...r, is_favorite: !r.is_favorite } : r,
+          ),
+        },
+      };
     },
   });
 
-  const markAsRead = useMutation({
+  const markAsRead = useOptimisticMutation({
     mutationFn: ({ id, isRead }: { id: number; isRead: boolean }) =>
       resourceApi.markAsRead(id, isRead),
-    onMutate: async ({ id, isRead }) => {
-      await queryClient.cancelQueries({ queryKey: ["resources"] });
-      const previousResources = queryClient.getQueryData(["resources"]);
-
-      queryClient.setQueriesData({ queryKey: ["resources"] }, (old: any) => {
-        if (!old?.data?.data) return old;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            data: old.data.data.map((r: Resource) =>
-              r.id === id ? { ...r, is_read: isRead } : r,
-            ),
-          },
-        };
-      });
-
-      return { previousResources };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousResources) {
-        queryClient.setQueryData(["resources"], context.previousResources);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["resources"] });
+    queryKey: ["resources"],
+    updateFn: (old: any, { id, isRead }: { id: number; isRead: boolean }) => {
+      if (!old?.data?.data) return old;
+      return {
+        ...old,
+        data: {
+          ...old.data,
+          data: old.data.data.map((r: Resource) =>
+            r.id === id ? { ...r, is_read: isRead } : r,
+          ),
+        },
+      };
     },
   });
 
