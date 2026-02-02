@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\ContextSnapshot;
 use App\Models\FocusSession;
 use App\Models\Task;
 use Illuminate\Support\Facades\DB;
 use App\Traits\CachesData;
 use Illuminate\Support\Facades\Cache;
+use App\Models\ContextSnapshot;
 
 /**
  * @extends BaseService<FocusSession>
@@ -72,27 +72,34 @@ final class FocusSessionService extends BaseService
             ]);
         }
 
-            $prevSession = FocusSession::query()
+            $prevSnapshot = ContextSnapshot::query()
                 ->where('user_id', $userId)
-                ->where(function ($query) use ($validated) {
-                    $query->where('title', $validated['title'])
+                ->whereIn('focus_session_id', function ($query) use ($validated) {
+                    $query->select('id')
+                        ->from('focus_sessions')
+                        ->where('title', $validated['title'])
                         ->when(isset($validated['task_id']), function ($q) use ($validated) {
                             $q->orWhere('task_id', $validated['task_id']);
                         });
                 })
-                ->whereNotNull('context_snapshot_id')
-                ->orderBy('ended_at', 'desc')
-                ->first(['*']);
+                ->orderBy('created_at', 'desc')
+                ->first();
 
             $session = $this->startSession(
                 $userId,
                 $validated['title'],
                 $validated['task_id'] ?? null,
                 $validated['duration_min'] ?? 25,
-                $prevSession?->context_snapshot_id
+                null // Start with no snapshot, will fork below
             );
 
-            $restoredContext = (bool) $prevSession;
+            $restoredContext = false;
+            
+            if ($prevSnapshot) {
+                 app(ContextSnapshotService::class)->forkSnapshot($prevSnapshot, $session);
+                 $session->refresh();
+                 $restoredContext = true;
+            }
 
             if (!$restoredContext && !empty($validated['task_id'])) {
                 $task = Task::find($validated['task_id'], ['*']);

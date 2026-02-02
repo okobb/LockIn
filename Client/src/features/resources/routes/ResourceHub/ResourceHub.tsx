@@ -40,7 +40,8 @@ export const ResourceHub: React.FC = () => {
   });
   const { addToSession, deleteResource } = useResourceMutations();
   const { activeSession } = useSessionContext();
-  const resources = data?.data || [];
+  const rawData = data?.data as Resource[] | { data: Resource[] } | undefined;
+  const resources = Array.isArray(rawData) ? rawData : rawData?.data || [];
 
   const handleBulkDelete = async () => {
     if (selectedResourceIds.size === 0) return;
@@ -300,7 +301,10 @@ export const ResourceHub: React.FC = () => {
             <select
               value={filters.type as string}
               onChange={(e) =>
-                setFilters((f) => ({ ...f, type: e.target.value as any }))
+                setFilters((f) => ({
+                  ...f,
+                  type: e.target.value as ResourceFilters["type"],
+                }))
               }
               className="bg-secondary/50 border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all cursor-pointer min-w-[150px]"
             >
@@ -314,7 +318,10 @@ export const ResourceHub: React.FC = () => {
             <select
               value={(filters.difficulty as string) || "all"}
               onChange={(e) =>
-                setFilters((f) => ({ ...f, difficulty: e.target.value as any }))
+                setFilters((f) => ({
+                  ...f,
+                  difficulty: e.target.value as ResourceFilters["difficulty"],
+                }))
               }
               className="bg-secondary/50 border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all cursor-pointer min-w-[150px]"
             >

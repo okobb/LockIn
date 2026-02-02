@@ -13,10 +13,10 @@ export const useResources = (filters: ResourceFilters) => {
 
     // Poll every 5 seconds while processing
     refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data?.data) return false;
+      const data = query.state.data as any;
+      if (!data?.data?.data) return false;
 
-      const hasProcessing = data.data.some(
+      const hasProcessing = data.data.data.some(
         (r: Resource & { _isProcessing?: boolean }) => {
           if (r.id < 0 || r._isProcessing) return true;
 
@@ -82,13 +82,17 @@ export const useResourceMutations = () => {
       } as Resource & { _isProcessing?: boolean };
 
       // Optimistically update all matching resource queries
-      queryClient.setQueriesData(
-        { queryKey: ["resources"] },
-        (old: { data: Resource[] } | undefined) => {
-          if (!old) return { data: [optimisticResource] };
-          return { data: [optimisticResource, ...old.data] };
-        },
-      );
+      queryClient.setQueriesData({ queryKey: ["resources"] }, (old: any) => {
+        if (!old?.data?.data) return old;
+
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: [optimisticResource, ...old.data.data],
+          },
+        };
+      });
 
       return { previousResources };
     },
@@ -122,15 +126,16 @@ export const useResourceMutations = () => {
       await queryClient.cancelQueries({ queryKey: ["resources"] });
       const previousResources = queryClient.getQueryData(["resources"]);
 
-      queryClient.setQueriesData(
-        { queryKey: ["resources"] },
-        (old: { data: Resource[] } | undefined) => {
-          if (!old) return old;
-          return {
-            data: old.data.filter((r) => r.id !== id),
-          };
-        },
-      );
+      queryClient.setQueriesData({ queryKey: ["resources"] }, (old: any) => {
+        if (!old?.data?.data) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: old.data.data.filter((r: Resource) => r.id !== id),
+          },
+        };
+      });
 
       return { previousResources };
     },
@@ -150,17 +155,18 @@ export const useResourceMutations = () => {
       await queryClient.cancelQueries({ queryKey: ["resources"] });
       const previousResources = queryClient.getQueryData(["resources"]);
 
-      queryClient.setQueriesData(
-        { queryKey: ["resources"] },
-        (old: { data: Resource[] } | undefined) => {
-          if (!old) return old;
-          return {
-            data: old.data.map((r) =>
+      queryClient.setQueriesData({ queryKey: ["resources"] }, (old: any) => {
+        if (!old?.data?.data) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: old.data.data.map((r: Resource) =>
               r.id === id ? { ...r, is_favorite: !r.is_favorite } : r,
             ),
-          };
-        },
-      );
+          },
+        };
+      });
 
       return { previousResources };
     },
@@ -181,17 +187,18 @@ export const useResourceMutations = () => {
       await queryClient.cancelQueries({ queryKey: ["resources"] });
       const previousResources = queryClient.getQueryData(["resources"]);
 
-      queryClient.setQueriesData(
-        { queryKey: ["resources"] },
-        (old: { data: Resource[] } | undefined) => {
-          if (!old) return old;
-          return {
-            data: old.data.map((r) =>
+      queryClient.setQueriesData({ queryKey: ["resources"] }, (old: any) => {
+        if (!old?.data?.data) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: old.data.data.map((r: Resource) =>
               r.id === id ? { ...r, is_read: isRead } : r,
             ),
-          };
-        },
-      );
+          },
+        };
+      });
 
       return { previousResources };
     },

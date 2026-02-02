@@ -409,6 +409,14 @@ export default function FocusMode() {
           ],
         },
       });
+    } else {
+      setSession({
+        ...session,
+        context_snapshot: {
+          browser_state: [],
+          ai_resume_checklist: [newItem as any],
+        },
+      });
     }
     setNewChecklistItem("");
 
@@ -796,7 +804,6 @@ export default function FocusMode() {
                               key={i}
                               className="flex items-center gap-3 p-2 rounded bg-card/40 border border-border/50 text-xs group"
                             >
-                              
                               <div
                                 className="font-mono truncate text-foreground/90"
                                 title={filePath}
@@ -812,7 +819,6 @@ export default function FocusMode() {
                                 </span>
                               </div>
                             </div>
-                            
                           );
                         })}
                       </div>
