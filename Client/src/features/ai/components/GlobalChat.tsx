@@ -196,7 +196,7 @@ export function GlobalChat() {
             <FolderOpen className="h-6 w-6 text-white" />
           ) : (
             <img
-              src="/Project logo.png"
+              src="/logo.png"
               alt="Lock In Assistant"
               className="h-10 w-10 object-contain"
             />
@@ -227,7 +227,7 @@ export function GlobalChat() {
                 </span>
               ) : (
                 <img
-                  src="/Project logo.png"
+                  src="/logo.png"
                   alt="Logo"
                   className="h-6 w-6 object-contain"
                 />
@@ -273,7 +273,7 @@ export function GlobalChat() {
             {messages.length === 0 && (
               <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground p-4">
                 <img
-                  src="/Project logo.png"
+                  src="/logo.png"
                   alt="Logo"
                   className="h-12 w-12 mb-2 opacity-20 object-contain"
                 />
